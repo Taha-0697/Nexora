@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import type { ServiceCategory } from '../../types';
-import { 
-  Lock, 
-  FolderPlus, 
-  MessageSquarePlus, 
-  RefreshCw, 
-  Trash2, 
-  Eye, 
-  CheckCircle, 
-  Star, 
-  Mail, 
+import { useTheme } from '../../context/ThemeContext';
+import type { ServiceCategory, Project, UserRole, AdminUser, AdCampaign } from '../../types';
+import {
+  Lock,
+  FolderPlus,
+  MessageSquarePlus,
+  RefreshCw,
+  Trash2,
+  Edit,
+  Eye,
+  CheckCircle,
+  Star,
+  Mail,
   ArrowLeft,
-  RotateCcw,
-  Sliders
+  Sliders,
+  Sun,
+  Moon,
+  Users,
+  Megaphone,
+  BarChart3,
+  ExternalLink,
+  Plus,
+  X,
+  Play,
+  Pause
 } from 'lucide-react';
 
 interface AdminPortalProps {
@@ -21,34 +32,59 @@ interface AdminPortalProps {
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => {
-  const { 
-    projects, 
-    addProject, 
-    deleteProject, 
-    reviews, 
-    addReview, 
-    deleteReview, 
+  const { theme, toggleTheme } = useTheme();
+  const {
+    projects,
+    addProject,
+    updateProject,
+    deleteProject,
+    reviews,
+    addReview,
+    deleteReview,
     syncGoogleReviews,
     inquiries,
     updateInquiryStatus,
     deleteInquiry,
     googleSettings,
     updateGoogleSettings,
+    adminUsers,
+    updateAdminUser,
+    addAdminUser,
+    marketingSettings,
+    updateMarketingSettings,
+    addAdCampaign,
+    deleteAdCampaign,
+    toggleAdCampaignStatus,
     resetToDefaults
   } = useData();
 
   // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('nexora_admin_auth') === 'true';
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('nexora_active_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
-  const [passcode, setPasscode] = useState('');
-  const [authError, setAuthError] = useState(false);
+
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'projects' | 'reviews' | 'leads' | 'settings'>('projects');
+  const [activeTab, setActiveTab] = useState<
+    'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team'
+  >('projects');
 
-  // New Project Form State
+  // Modals State
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const [showAddCampaignModal, setShowAddCampaignModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+
+  // New / Edit Project Form
   const [projectForm, setProjectForm] = useState({
     titleEn: '',
     titleAr: '',
@@ -60,19 +96,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     fullDescEn: '',
     fullDescAr: '',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-    tags: 'Odoo 17, Cloud, PostgreSQL, Docker',
-    metric1Val: '+50%',
-    metric1LabelEn: 'Performance',
-    metric1LabelAr: 'زيادة الأداء',
-    metric2Val: '99.9%',
-    metric2LabelEn: 'Uptime',
-    metric2LabelAr: 'نسبة التوفر',
-    liveUrl: '',
-    featured: true
+    tags: '.NET Core Web API, Next.js, MSSQL, Redis, REST APIs',
+    metric1Val: '+65%',
+    metric1LabelEn: 'Processing Speed',
+    metric1LabelAr: 'سرعة العمليات',
+    metric2Val: '99.99%',
+    metric2LabelEn: 'Accuracy',
+    metric2LabelAr: 'دقة المحاسبة',
+    metric3Val: '-80%',
+    metric3LabelEn: 'Time Saved',
+    metric3LabelAr: 'توفير الوقت',
+    liveUrl: 'https://demo-portal.nexora.io',
+    featured: true,
+    completionDate: '2026-06'
   });
 
-  // New Review Form State
-  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  // Review Form
   const [reviewForm, setReviewForm] = useState({
     authorName: '',
     authorRole: '',
@@ -85,38 +124,128 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
   });
 
+  // Campaign Form
+  const [campaignForm, setCampaignForm] = useState({
+    name: '',
+    platform: 'Google Ads' as AdCampaign['platform'],
+    dailyBudget: 100,
+    targetRegion: 'GCC (UAE, Saudi Arabia)',
+  });
+
+  // New User Form
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    title: '',
+    password: '',
+    roles: ['project_manager'] as UserRole[]
+  });
+
   // Google Syncing state
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState('');
 
+  // Handle Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === 'admin123' || passcode === 'nexora2026') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('nexora_admin_auth', 'true');
-      setAuthError(false);
+    setAuthError('');
+
+    const foundUser = adminUsers.find(
+      u => u.email.toLowerCase() === loginEmail.trim().toLowerCase() && u.password === loginPassword
+    );
+
+    if (foundUser) {
+      setCurrentUser(foundUser);
+      sessionStorage.setItem('nexora_active_user', JSON.stringify(foundUser));
+      // Set default tab based on roles
+      if (foundUser.roles.includes('admin') || foundUser.roles.includes('project_manager')) {
+        setActiveTab('projects');
+      } else if (foundUser.roles.includes('marketing_manager')) {
+        setActiveTab('marketing');
+      } else if (foundUser.roles.includes('review_manager')) {
+        setActiveTab('reviews');
+      }
     } else {
-      setAuthError(true);
+      setAuthError('Invalid credentials. Please select one of the registered team members below.');
+    }
+  };
+
+  const handleQuickLogin = (user: AdminUser) => {
+    setLoginEmail(user.email);
+    setLoginPassword(user.password);
+    setCurrentUser(user);
+    sessionStorage.setItem('nexora_active_user', JSON.stringify(user));
+    if (user.roles.includes('admin') || user.roles.includes('project_manager')) {
+      setActiveTab('projects');
+    } else if (user.roles.includes('marketing_manager')) {
+      setActiveTab('marketing');
+    } else if (user.roles.includes('review_manager')) {
+      setActiveTab('reviews');
     }
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('nexora_admin_auth');
+    setCurrentUser(null);
+    sessionStorage.removeItem('nexora_active_user');
   };
 
-  // Submit Project
-  const handleCreateProject = (e: React.FormEvent) => {
+  // Helper to check user permissions
+  const hasRole = (role: UserRole): boolean => {
+    if (!currentUser) return false;
+    return currentUser.roles.includes('admin') || currentUser.roles.includes(role);
+  };
+
+  // Open Edit Project Modal
+  const handleStartEditProject = (proj: Project) => {
+    setEditingProject(proj);
+    setProjectForm({
+      titleEn: proj.title.en,
+      titleAr: proj.title.ar,
+      category: proj.category,
+      client: proj.client,
+      country: proj.country,
+      shortDescEn: proj.shortDesc.en,
+      shortDescAr: proj.shortDesc.ar,
+      fullDescEn: proj.fullDesc.en,
+      fullDescAr: proj.fullDesc.ar,
+      image: proj.image,
+      tags: proj.tags.join(', '),
+      metric1Val: proj.metrics[0]?.value || '+50%',
+      metric1LabelEn: proj.metrics[0]?.label.en || 'Performance',
+      metric1LabelAr: proj.metrics[0]?.label.ar || 'الأداء',
+      metric2Val: proj.metrics[1]?.value || '99.9%',
+      metric2LabelEn: proj.metrics[1]?.label.en || 'Uptime',
+      metric2LabelAr: proj.metrics[1]?.label.ar || 'التوفر',
+      metric3Val: proj.metrics[2]?.value || '-40%',
+      metric3LabelEn: proj.metrics[2]?.label.en || 'Efficiency',
+      metric3LabelAr: proj.metrics[2]?.label.ar || 'الكفاءة',
+      liveUrl: proj.liveUrl || '',
+      featured: proj.featured,
+      completionDate: proj.completionDate || '2026-06'
+    });
+  };
+
+  // Save Project (Add or Edit)
+  const handleSaveProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.titleEn) return;
 
-    addProject({
-      title: { en: projectForm.titleEn, ar: projectForm.titleAr || projectForm.titleEn },
+    const projectPayload = {
+      title: {
+        en: projectForm.titleEn,
+        ar: projectForm.titleAr || projectForm.titleEn
+      },
       category: projectForm.category,
-      client: projectForm.client || 'Enterprise Client',
+      client: projectForm.client || 'Enterprise Partner',
       country: projectForm.country,
-      shortDesc: { en: projectForm.shortDescEn, ar: projectForm.shortDescAr || projectForm.shortDescEn },
-      fullDesc: { en: projectForm.fullDescEn || projectForm.shortDescEn, ar: projectForm.fullDescAr || projectForm.shortDescAr || projectForm.shortDescEn },
+      shortDesc: {
+        en: projectForm.shortDescEn,
+        ar: projectForm.shortDescAr || projectForm.shortDescEn
+      },
+      fullDesc: {
+        en: projectForm.fullDescEn || projectForm.shortDescEn,
+        ar: projectForm.fullDescAr || projectForm.shortDescAr || projectForm.shortDescEn
+      },
       image: projectForm.image,
       tags: projectForm.tags.split(',').map(t => t.trim()).filter(Boolean),
       metrics: [
@@ -127,35 +256,27 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         {
           label: { en: projectForm.metric2LabelEn, ar: projectForm.metric2LabelAr },
           value: projectForm.metric2Val
+        },
+        {
+          label: { en: projectForm.metric3LabelEn, ar: projectForm.metric3LabelAr },
+          value: projectForm.metric3Val
         }
       ],
       featured: projectForm.featured,
       liveUrl: projectForm.liveUrl,
-      completionDate: new Date().toISOString().slice(0, 7)
-    });
+      completionDate: projectForm.completionDate
+    };
 
-    setShowAddProjectModal(false);
-    setProjectForm({
-      titleEn: '',
-      titleAr: '',
-      category: 'erp',
-      client: '',
-      country: 'UAE / GCC',
-      shortDescEn: '',
-      shortDescAr: '',
-      fullDescEn: '',
-      fullDescAr: '',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      tags: 'Odoo 17, Cloud, PostgreSQL, Docker',
-      metric1Val: '+50%',
-      metric1LabelEn: 'Performance',
-      metric1LabelAr: 'زيادة الأداء',
-      metric2Val: '99.9%',
-      metric2LabelEn: 'Uptime',
-      metric2LabelAr: 'نسبة التوفر',
-      liveUrl: '',
-      featured: true
-    });
+    if (editingProject) {
+      updateProject({
+        ...projectPayload,
+        id: editingProject.id
+      });
+      setEditingProject(null);
+    } else {
+      addProject(projectPayload);
+      setShowAddProjectModal(false);
+    }
   };
 
   // Submit Review
@@ -169,7 +290,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       company: reviewForm.company || 'Enterprise Partner',
       avatar: reviewForm.avatar,
       rating: reviewForm.rating,
-      content: { en: reviewForm.contentEn, ar: reviewForm.contentAr || reviewForm.contentEn },
+      content: {
+        en: reviewForm.contentEn,
+        ar: reviewForm.contentAr || reviewForm.contentEn
+      },
       date: 'Just now (Organic)',
       isGoogleReview: reviewForm.isGoogleReview,
       googleReviewUrl: reviewForm.googleReviewUrl,
@@ -177,6 +301,55 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     });
 
     setShowAddReviewModal(false);
+  };
+
+  // Submit Campaign
+  const handleCreateCampaign = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!campaignForm.name) return;
+
+    addAdCampaign({
+      name: campaignForm.name,
+      platform: campaignForm.platform,
+      status: 'active',
+      dailyBudget: Number(campaignForm.dailyBudget) || 50,
+      targetRegion: campaignForm.targetRegion || 'Global',
+      impressions: 0,
+      clicks: 0,
+      conversions: 0,
+      spent: 0
+    });
+
+    setShowAddCampaignModal(false);
+    setCampaignForm({
+      name: '',
+      platform: 'Google Ads',
+      dailyBudget: 100,
+      targetRegion: 'GCC (UAE, Saudi Arabia)'
+    });
+  };
+
+  // Submit User
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userForm.email || !userForm.name) return;
+
+    addAdminUser({
+      name: userForm.name,
+      email: userForm.email,
+      title: userForm.title || 'Team Specialist',
+      password: userForm.password || 'nexora2026!',
+      roles: userForm.roles
+    });
+
+    setShowAddUserModal(false);
+    setUserForm({
+      name: '',
+      email: '',
+      title: '',
+      password: '',
+      roles: ['project_manager']
+    });
   };
 
   // Trigger Google Sync
@@ -189,102 +362,162 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     setTimeout(() => setSyncSuccessMessage(''), 4000);
   };
 
-  // Authentication Screen
-  if (!isAuthenticated) {
+  // ==========================================
+  // 1. AUTHENTICATION LOGIN SCREEN
+  // ==========================================
+  if (!currentUser) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4 bg-dark-950">
-        <div className="w-full max-w-md glass-panel p-8 rounded-3xl border border-cyan-500/30 text-center shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-dark-900 border border-cyan-500/40 flex items-center justify-center mx-auto mb-4 text-cyan-400">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="w-full max-w-lg glass-panel p-8 sm:p-10 rounded-3xl border border-slate-200 dark:border-slate-800 text-center shadow-xl bg-white dark:bg-slate-900">
+          
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-sky-400">
             <Lock className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Nexora Admin Portal
+
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-1">
+            Nexora Command Center
           </h2>
-          <p className="text-slate-400 text-xs mb-6">
-            Authorized management access for projects, Google reviews & leads.
+          <p className="text-slate-500 dark:text-slate-400 text-xs mb-6">
+            Private Access for Management Team (Role-Based Authorization)
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3.5 text-left mb-6">
             <div>
+              <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Authorized Work Email
+              </label>
+              <input
+                type="email"
+                required
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="e.g. pm@nexora.io"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                Password
+              </label>
               <input
                 type="password"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter passcode (e.g. admin123)"
-                className="w-full px-4 py-3 rounded-xl bg-dark-900 border border-slate-700 text-white placeholder-slate-500 text-center text-sm focus:outline-none focus:border-cyan-400 transition-colors"
+                required
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
               />
             </div>
 
             {authError && (
-              <p className="text-xs text-rose-400 font-semibold">
-                Invalid passcode. Please use "admin123" or "nexora2026"
+              <p className="text-xs text-rose-500 dark:text-rose-400 font-semibold text-center">
+                {authError}
               </p>
             )}
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-dark-950 font-bold text-sm transition-all shadow-lg shadow-cyan-500/20"
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
             >
-              Authenticate & Enter
+              Sign In to Command Center
             </button>
 
             <button
               type="button"
               onClick={onBackToWebsite}
-              className="w-full py-2.5 rounded-xl bg-dark-800 text-slate-400 hover:text-white text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Return to Public Website</span>
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500">
-            Default Demo Passcode: <code className="text-cyan-400 font-mono">admin123</code>
+          {/* Quick Access Credentials Switcher */}
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-left">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 dark:text-slate-500 block mb-2">
+              Team Profiles (Click to Authenticate):
+            </span>
+            <div className="space-y-1.5">
+              {adminUsers.map(user => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => handleQuickLogin(user)}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-850 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-left transition-colors cursor-pointer group"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-sky-400">
+                      {user.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      {user.email} • Password: <code className="text-indigo-600 dark:text-sky-300">{user.password}</code>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 uppercase">
+                    {user.roles.join(', ')}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
+
         </div>
       </div>
     );
   }
 
-  // Authenticated Admin Dashboard
+  // ==========================================
+  // 2. AUTHENTICATED DASHBOARD
+  // ==========================================
   return (
-    <div className="min-h-screen bg-dark-950 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-100 transition-colors">
+      <div className="max-w-7xl mx-auto space-y-7">
         
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToWebsite}
-              className="p-2 rounded-xl bg-dark-900 border border-slate-700 text-slate-300 hover:text-white"
+              className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white cursor-pointer transition-colors"
               title="Return to Public Website"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-black text-white flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Nexora Command Center</span>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                  ADMIN LIVE
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-500/30">
+                  {currentUser.roles.map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}
                 </span>
               </h1>
-              <p className="text-xs text-slate-400">
-                Manage portfolio projects, organic Google reviews, and client inquiries.
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Logged in as <strong>{currentUser.name}</strong> ({currentUser.email})
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Toggle Theme"
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4 text-indigo-600" /> : <Sun className="w-4 h-4 text-amber-400" />}
+            </button>
+
             <button
               onClick={onBackToWebsite}
-              className="px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>View Live Website</span>
+              <span>View Website</span>
             </button>
+
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-rose-600 dark:text-rose-400 text-xs font-semibold border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
             >
               Sign Out
             </button>
@@ -293,74 +526,125 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
         {/* Sync Success Alert */}
         {syncSuccessMessage && (
-          <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn">
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn">
+            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{syncSuccessMessage}</span>
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'projects'
-                ? 'bg-cyan-500 text-dark-950 shadow-lg shadow-cyan-500/20'
-                : 'bg-dark-900 text-slate-300 hover:text-white border border-slate-800'
-            }`}
-          >
-            <FolderPlus className="w-4 h-4" />
-            <span>Projects ({projects.length})</span>
-          </button>
+        {/* Navigation Tabs (Filtered strictly by User Role) */}
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          {/* Projects: Admin or Project Manager */}
+          {hasRole('project_manager') && (
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'projects'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <FolderPlus className="w-4 h-4" />
+              <span>Projects ({projects.length})</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'reviews'
-                ? 'bg-cyan-500 text-dark-950 shadow-lg shadow-cyan-500/20'
-                : 'bg-dark-900 text-slate-300 hover:text-white border border-slate-800'
-            }`}
-          >
-            <Star className="w-4 h-4" />
-            <span>Google Reviews ({reviews.length})</span>
-          </button>
+          {/* Marketing & Ads: Admin or Marketing Manager */}
+          {hasRole('marketing_manager') && (
+            <button
+              onClick={() => setActiveTab('marketing')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'marketing'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Megaphone className="w-4 h-4" />
+              <span>Marketing & Ads ({marketingSettings?.adCampaigns?.length || 0})</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('leads')}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'leads'
-                ? 'bg-cyan-500 text-dark-950 shadow-lg shadow-cyan-500/20'
-                : 'bg-dark-900 text-slate-300 hover:text-white border border-slate-800'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>Inquiries & Leads ({inquiries.length})</span>
-          </button>
+          {/* Reviews: Admin or Review Manager */}
+          {hasRole('review_manager') && (
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'reviews'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              <span>Reviews ({reviews.length})</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-              activeTab === 'settings'
-                ? 'bg-cyan-500 text-dark-950 shadow-lg shadow-cyan-500/20'
-                : 'bg-dark-900 text-slate-300 hover:text-white border border-slate-800'
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            <span>Reputation & Settings</span>
-          </button>
+          {/* Leads: Admin, Project Manager or Marketing Manager */}
+          {(hasRole('project_manager') || hasRole('marketing_manager')) && (
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'leads'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Inquiries & Leads ({inquiries.length})</span>
+            </button>
+          )}
+
+          {/* Settings: Admin Only */}
+          {currentUser.roles.includes('admin') && (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Sliders className="w-4 h-4" />
+              <span>System Settings</span>
+            </button>
+          )}
+
+          {/* Team Roles: Admin Only */}
+          {currentUser.roles.includes('admin') && (
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'team'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Team & Roles ({adminUsers.length})</span>
+            </button>
+          )}
         </div>
 
-        {/* TAB 1: PROJECTS */}
-        {activeTab === 'projects' && (
+        {/* ==========================================
+            TAB 1: PROJECTS (Add / Edit / Delete)
+            ========================================== */}
+        {activeTab === 'projects' && hasRole('project_manager') && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Portfolio Case Studies</h2>
-                <p className="text-xs text-slate-400">Add or remove showcased client deliverables.</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Portfolio Deliverables & Client Redirects
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Add, edit descriptions, tech stacks, metrics, and live URL redirects.
+                </p>
               </div>
               <button
-                onClick={() => setShowAddProjectModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-dark-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20"
+                onClick={() => {
+                  setEditingProject(null);
+                  setShowAddProjectModal(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
               >
                 <FolderPlus className="w-4 h-4" />
                 <span>Add New Project</span>
@@ -368,50 +652,87 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </div>
 
             {/* Projects Table */}
-            <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+            <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-dark-900/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-mono text-[10px] border-b border-slate-200 dark:border-slate-800">
                     <tr>
                       <th className="px-6 py-4">Project</th>
                       <th className="px-6 py-4">Category</th>
-                      <th className="px-6 py-4">Client</th>
-                      <th className="px-6 py-4">Impact Metrics</th>
+                      <th className="px-6 py-4">Client / Region</th>
+                      <th className="px-6 py-4">Live Redirect Link</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {projects.map((proj) => (
-                      <tr key={proj.id} className="hover:bg-dark-900/50 transition-colors">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {projects.map(proj => (
+                      <tr key={proj.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <img src={proj.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                            <img
+                              src={proj.image}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
                             <div>
-                              <div className="font-bold text-white text-sm">{proj.title.en}</div>
-                              <div className="text-[11px] text-cyan-400 font-arabic">{proj.title.ar}</div>
+                              <div className="font-bold text-slate-900 dark:text-white text-sm">
+                                {proj.title.en}
+                              </div>
+                              <div className="text-[11px] text-indigo-600 dark:text-sky-400 font-arabic">
+                                {proj.title.ar}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded bg-dark-900 text-cyan-300 font-mono text-[10px] uppercase border border-slate-800">
+                          <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 font-mono text-[10px] uppercase font-bold border border-slate-200 dark:border-slate-700">
                             {proj.category}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-medium text-slate-200">{proj.client}</div>
-                          <div className="text-slate-500 text-[10px]">{proj.country}</div>
+                          <div className="font-medium text-slate-800 dark:text-slate-200">
+                            {proj.client}
+                          </div>
+                          <div className="text-slate-400 text-[10px]">
+                            {proj.country}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 font-mono text-cyan-400">
-                          {proj.metrics.map(m => m.value).join(' | ')}
+                        <td className="px-6 py-4">
+                          {proj.liveUrl ? (
+                            <a
+                              href={proj.liveUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-mono text-xs"
+                            >
+                              <span className="truncate max-w-[180px]">{proj.liveUrl}</span>
+                              <ExternalLink className="w-3 h-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-400 italic">No direct link</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => deleteProject(proj.id)}
-                            className="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 transition-colors"
-                            title="Delete Project"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleStartEditProject(proj)}
+                              className="p-2 rounded-lg bg-indigo-50 dark:bg-slate-800 hover:bg-indigo-100 text-indigo-600 dark:text-sky-400 border border-indigo-200 dark:border-slate-700 transition-colors cursor-pointer"
+                              title="Edit Project Details"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete project "${proj.title.en}"?`)) {
+                                  deleteProject(proj.id);
+                                }
+                              }}
+                              className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 transition-colors cursor-pointer"
+                              title="Delete Project"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -422,14 +743,243 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           </div>
         )}
 
-        {/* TAB 2: REVIEWS & GOOGLE SYNC */}
-        {activeTab === 'reviews' && (
-          <div className="space-y-6">
+        {/* ==========================================
+            TAB 2: MARKETING & ADS MANAGEMENT
+            ========================================== */}
+        {activeTab === 'marketing' && hasRole('marketing_manager') && (
+          <div className="space-y-8">
             
-            {/* Google Sync Banner */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 bg-gradient-to-r from-dark-900 via-dark-850 to-dark-900">
+            {/* Top Announcement Banner Controls */}
+            <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-sky-400">
+                    <Megaphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                      Website Promotional Top Banner
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Display an attention-grabbing live alert at the top of the public website.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={marketingSettings?.bannerEnabled}
+                    onChange={e => updateMarketingSettings({ bannerEnabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <span className="ml-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {marketingSettings?.bannerEnabled ? 'Active on Live Site' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-mono font-semibold uppercase text-slate-500 mb-1">
+                    Banner Announcement Text (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.bannerText?.en || ''}
+                    onChange={e =>
+                      updateMarketingSettings({
+                        bannerText: { ...marketingSettings.bannerText, en: e.target.value }
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono font-semibold uppercase text-slate-500 mb-1">
+                    Banner Announcement Text (Arabic)
+                  </label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.bannerText?.ar || ''}
+                    onChange={e =>
+                      updateMarketingSettings({
+                        bannerText: { ...marketingSettings.bannerText, ar: e.target.value }
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-arabic text-right"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ad Campaigns Dashboard */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-sky-400" />
+                    <span>Live Ad Campaigns Management</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Track Google Ads, LinkedIn B2B, and Meta campaigns for enterprise leads.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddCampaignModal(true)}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Launch New Campaign</span>
+                </button>
+              </div>
+
+              {/* Campaigns Table */}
+              <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 uppercase font-mono text-[10px] border-b border-slate-200 dark:border-slate-800">
+                      <tr>
+                        <th className="px-5 py-3.5">Campaign Name</th>
+                        <th className="px-5 py-3.5">Platform</th>
+                        <th className="px-5 py-3.5">Status</th>
+                        <th className="px-5 py-3.5">Daily Budget</th>
+                        <th className="px-5 py-3.5">Performance</th>
+                        <th className="px-5 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                      {marketingSettings?.adCampaigns?.map(camp => (
+                        <tr key={camp.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                            {camp.name}
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              Target: {camp.targetRegion}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-semibold text-indigo-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700">
+                              {camp.platform}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <button
+                              onClick={() => toggleAdCampaignStatus(camp.id)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                                camp.status === 'active'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                                  : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+                              }`}
+                            >
+                              {camp.status === 'active' ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
+                              <span>{camp.status.toUpperCase()}</span>
+                            </button>
+                          </td>
+                          <td className="px-5 py-3.5 font-mono font-bold text-slate-800 dark:text-slate-200">
+                            ${camp.dailyBudget}/day
+                          </td>
+                          <td className="px-5 py-3.5 font-mono text-[11px]">
+                            <span className="text-indigo-600 dark:text-sky-400 font-bold">{camp.clicks} clicks</span> •{' '}
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{camp.conversions} leads</span>
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <button
+                              onClick={() => deleteAdCampaign(camp.id)}
+                              className="p-1.5 rounded-md text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                              title="Delete Campaign"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* SEO & Tracking Pixels */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  SEO Meta Configuration
+                </h4>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">SEO Title</label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.seoTitle || ''}
+                    onChange={e => updateMarketingSettings({ seoTitle: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Meta Description</label>
+                  <textarea
+                    rows={2}
+                    value={marketingSettings?.seoDescription || ''}
+                    onChange={e => updateMarketingSettings({ seoDescription: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Focus Keywords</label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.focusKeywords || ''}
+                    onChange={e => updateMarketingSettings({ focusKeywords: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Marketing Tracking Pixels
+                </h4>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Google Analytics 4 (GA4) ID</label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.googleAnalyticsId || ''}
+                    onChange={e => updateMarketingSettings({ googleAnalyticsId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Meta / Facebook Pixel ID</label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.metaPixelId || ''}
+                    onChange={e => updateMarketingSettings({ metaPixelId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">LinkedIn Insight Tag ID</label>
+                  <input
+                    type="text"
+                    value={marketingSettings?.linkedInInsightId || ''}
+                    onChange={e => updateMarketingSettings({ linkedInInsightId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB 3: REVIEWS & GOOGLE SYNC
+            ========================================== */}
+        {activeTab === 'reviews' && hasRole('review_manager') && (
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 shadow-xs">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-2 shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center p-2 shrink-0 border border-slate-200 dark:border-slate-700">
                   <svg className="w-full h-full" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
                     <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
@@ -438,9 +988,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">Google Business Profile Integration</h3>
-                  <p className="text-xs text-slate-400">
-                    Live Score: <span className="text-amber-400 font-bold">{googleSettings.overallRating} ★</span> ({googleSettings.totalReviewsCount} Reviews) • Last Sync: {googleSettings.lastSyncTimestamp}
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                    Google Business Profile Reputation Sync
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Live Score: <span className="text-amber-500 font-bold">{googleSettings.overallRating} ★</span> ({googleSettings.totalReviewsCount} Reviews) • Last Sync: {googleSettings.lastSyncTimestamp}
                   </p>
                 </div>
               </div>
@@ -449,7 +1001,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 <button
                   onClick={handleTriggerGoogleSync}
                   disabled={isSyncing}
-                  className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-dark-800 hover:bg-dark-700 text-cyan-400 border border-cyan-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-indigo-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                   <span>{isSyncing ? 'Syncing with Google...' : 'Trigger Google Reviews Sync'}</span>
@@ -457,7 +1009,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
                 <button
                   onClick={() => setShowAddReviewModal(true)}
-                  className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-dark-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-cyan-500/20"
+                  className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
                   <MessageSquarePlus className="w-4 h-4" />
                   <span>Add Review</span>
@@ -467,35 +1019,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
             {/* Reviews Cards List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviews.map((rev) => (
-                <div key={rev.id} className="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+              {reviews.map(rev => (
+                <div
+                  key={rev.id}
+                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between bg-white dark:bg-slate-900 shadow-xs"
+                >
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
-                        <img src={rev.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img
+                          src={rev.avatar}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
                         <div>
-                          <div className="font-bold text-white text-sm">{rev.authorName}</div>
-                          <div className="text-[11px] text-slate-400">{rev.authorRole} • {rev.company}</div>
+                          <div className="font-bold text-slate-900 dark:text-white text-sm">
+                            {rev.authorName}
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            {rev.authorRole} • {rev.company}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-amber-400">
-                        <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="w-3.5 h-3.5 fill-amber-500" />
                         <span className="font-bold text-xs">{rev.rating}.0</span>
                       </div>
                     </div>
-                    <p className="text-slate-300 text-xs leading-relaxed italic mb-2">
+                    <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic mb-2">
                       "{rev.content.en}"
                     </p>
-                    <p className="text-cyan-300/80 text-xs font-arabic leading-relaxed">
+                    <p className="text-indigo-600 dark:text-sky-300/80 text-xs font-arabic leading-relaxed">
                       "{rev.content.ar}"
                     </p>
                   </div>
 
-                  <div className="pt-3 mt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-mono">{rev.date}</span>
+                  <div className="pt-3 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-mono">{rev.date}</span>
                     <button
                       onClick={() => deleteReview(rev.id)}
-                      className="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-xs"
+                      className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-xs cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete</span>
@@ -504,41 +1067,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               ))}
             </div>
-
           </div>
         )}
 
-        {/* TAB 3: LEADS & INQUIRIES */}
-        {activeTab === 'leads' && (
+        {/* ==========================================
+            TAB 4: LEADS & INQUIRIES
+            ========================================== */}
+        {activeTab === 'leads' && (hasRole('project_manager') || hasRole('marketing_manager')) && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-bold text-white">Client Proposal Requests & Leads</h2>
-              <p className="text-xs text-slate-400">Incoming inquiries from the website form and cost estimator.</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Client Proposals & Estimator Submissions
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Incoming leads with client-specified tech stacks and budget scopes.
+              </p>
             </div>
 
             {inquiries.length === 0 ? (
-              <div className="glass-panel p-12 text-center rounded-2xl border border-slate-800 text-slate-400 text-sm">
+              <div className="glass-panel p-12 text-center rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 text-sm bg-white dark:bg-slate-900">
                 No inquiries received yet. Leads submitted through the public website will appear here in real-time.
               </div>
             ) : (
               <div className="space-y-4">
-                {inquiries.map((inq) => (
-                  <div key={inq.id} className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                {inquiries.map(inq => (
+                  <div
+                    key={inq.id}
+                    className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 bg-white dark:bg-slate-900 shadow-xs"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
                       <div>
-                        <h3 className="text-base font-bold text-white">{inq.name}</h3>
-                        <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3 mt-0.5">
-                          <span>Email: <strong className="text-slate-200">{inq.email}</strong></span>
-                          {inq.phone && <span>Phone: <strong className="text-slate-200">{inq.phone}</strong></span>}
-                          {inq.company && <span>Company: <strong className="text-slate-200">{inq.company}</strong></span>}
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          {inq.name}
+                        </h3>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-3 mt-0.5">
+                          <span>Email: <strong className="text-slate-700 dark:text-slate-200">{inq.email}</strong></span>
+                          {inq.phone && <span>Phone: <strong className="text-slate-700 dark:text-slate-200">{inq.phone}</strong></span>}
+                          {inq.company && <span>Company: <strong className="text-slate-700 dark:text-slate-200">{inq.company}</strong></span>}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <select
                           value={inq.status}
-                          onChange={(e) => updateInquiryStatus(inq.id, e.target.value as any)}
-                          className="px-3 py-1.5 rounded-lg bg-dark-900 border border-slate-700 text-xs font-semibold text-cyan-300"
+                          onChange={e => updateInquiryStatus(inq.id, e.target.value as any)}
+                          className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-indigo-600 dark:text-sky-300"
                         >
                           <option value="new">New Lead</option>
                           <option value="contacted">Contacted</option>
@@ -547,7 +1120,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         </select>
                         <button
                           onClick={() => deleteInquiry(inq.id)}
-                          className="p-1.5 rounded-lg bg-rose-950/40 text-rose-400 hover:bg-rose-900/60"
+                          className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-500 hover:bg-rose-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -555,27 +1128,40 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      <div className="p-3 rounded-xl bg-dark-900 border border-slate-800">
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Service Requested</span>
-                        <span className="font-semibold text-white">{inq.serviceType}</span>
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Service Requested</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{inq.serviceType}</span>
                       </div>
-                      <div className="p-3 rounded-xl bg-dark-900 border border-slate-800">
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Budget Bracket</span>
-                        <span className="font-semibold text-cyan-400">{inq.budget}</span>
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Budget Bracket</span>
+                        <span className="font-semibold text-indigo-600 dark:text-sky-400">{inq.budget}</span>
                       </div>
-                      <div className="p-3 rounded-xl bg-dark-900 border border-slate-800">
-                        <span className="text-slate-500 block text-[10px] uppercase font-mono">Target Timeline</span>
-                        <span className="font-semibold text-slate-200">{inq.timeline}</span>
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Target Timeline</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{inq.timeline}</span>
                       </div>
                     </div>
 
+                    {inq.customStack && inq.customStack.length > 0 && (
+                      <div className="text-xs">
+                        <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Client Specified Tech Stacks:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {inq.customStack.map((s, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-[10px] font-mono font-semibold text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-slate-700">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {inq.message && (
-                      <p className="text-xs text-slate-300 bg-dark-900/80 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 leading-relaxed">
                         {inq.message}
                       </p>
                     )}
 
-                    <div className="text-[10px] text-slate-500 font-mono">
+                    <div className="text-[10px] text-slate-400 font-mono">
                       Received on {new Date(inq.createdAt).toLocaleString()}
                     </div>
                   </div>
@@ -585,219 +1171,333 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           </div>
         )}
 
-        {/* TAB 4: SETTINGS & RESET */}
-        {activeTab === 'settings' && (
-          <div className="glass-panel p-8 rounded-3xl border border-slate-800 space-y-8 max-w-3xl">
+        {/* ==========================================
+            TAB 5: SYSTEM SETTINGS (Admin Only)
+            ========================================== */}
+        {activeTab === 'settings' && currentUser.roles.includes('admin') && (
+          <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-7 max-w-3xl bg-white dark:bg-slate-900 shadow-xs">
             <div>
-              <h2 className="text-lg font-bold text-white mb-1">System Configuration</h2>
-              <p className="text-xs text-slate-400">Configure reputation parameters or reset demo data.</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                System & Reputation Configuration
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Update Place IDs, Google sync parameters, or restore initial demo data.
+              </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Google Maps Business Place ID
                 </label>
                 <input
                   type="text"
                   value={googleSettings.placeId}
-                  onChange={(e) => updateGoogleSettings({ placeId: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-dark-900 border border-slate-700 text-white text-xs font-mono"
+                  onChange={e => updateGoogleSettings({ placeId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Business Name on Google Maps
                 </label>
                 <input
                   type="text"
                   value={googleSettings.businessName}
-                  onChange={(e) => updateGoogleSettings({ businessName: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-dark-900 border border-slate-700 text-white text-xs"
+                  onChange={e => updateGoogleSettings({ businessName: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Google Maps Public Review Link
                 </label>
                 <input
                   type="text"
                   value={googleSettings.googleMapsUrl}
-                  onChange={(e) => updateGoogleSettings({ googleMapsUrl: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-dark-900 border border-slate-700 text-white text-xs font-mono"
+                  onChange={e => updateGoogleSettings({ googleMapsUrl: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-800">
-              <h3 className="text-sm font-bold text-white mb-2">Factory Reset</h3>
-              <p className="text-xs text-slate-400 mb-4">
-                Restore all projects, reviews, and settings back to original initial data state.
+            <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                Factory Reset
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Restore all projects, reviews, settings, and campaigns back to original seed data state.
               </p>
               <button
                 onClick={() => {
-                  if (window.confirm('Reset all projects and reviews to factory default state?')) {
+                  if (window.confirm('Reset all projects, reviews, and settings to factory default state?')) {
                     resetToDefaults();
                     alert('Data restored to initial factory defaults.');
                   }
                 }}
-                className="px-4 py-2.5 rounded-xl bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 text-xs font-bold border border-rose-800/40 flex items-center gap-2 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset to Factory Seed Data</span>
+                Reset to Factory Defaults
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB 6: TEAM & MULTI-ROLES (Admin Only)
+            ========================================== */}
+        {activeTab === 'team' && currentUser.roles.includes('admin') && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Management Team & Multi-Role Permissions
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Assign roles (Admin, Project Manager, Marketing Manager, Review Manager) to team users.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddUserModal(true)}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Team Member</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {adminUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 bg-white dark:bg-slate-900 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                        alt=""
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</h4>
+                        <div className="text-xs text-slate-400">{user.title}</div>
+                        <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1.5">
+                      Assigned Roles (Multi-Role Support):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(['admin', 'project_manager', 'marketing_manager', 'review_manager'] as UserRole[]).map(role => {
+                        const hasThisRole = user.roles.includes(role);
+                        return (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => {
+                              if (user.id === 'usr-admin' && role === 'admin') return; // Prevent lock out
+                              const updatedRoles = hasThisRole
+                                ? user.roles.filter(r => r !== role)
+                                : [...user.roles, role];
+                              updateAdminUser({ ...user, roles: updatedRoles });
+                            }}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                              hasThisRole
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {role.toUpperCase().replace('_', ' ')}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
       </div>
 
-      {/* Modal: Add Project */}
-      {showAddProjectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto glass-panel rounded-3xl border border-cyan-500/40 p-6 sm:p-8 bg-dark-950 shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-4">Add New Portfolio Project</h2>
+      {/* ==========================================
+          MODAL 1: ADD OR EDIT PROJECT
+          ========================================== */}
+      {(showAddProjectModal || editingProject) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => {
+                setShowAddProjectModal(false);
+                setEditingProject(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              {editingProject ? 'Edit Project Deliverable' : 'Add New Portfolio Project'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+              Update client case study, tech stack tags, and direct demo redirect link.
+            </p>
+
+            <form onSubmit={handleSaveProject} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Project Title (English) *</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Project Title (English)</label>
                   <input
                     type="text"
                     required
                     value={projectForm.titleEn}
-                    onChange={(e) => setProjectForm({ ...projectForm, titleEn: e.target.value })}
-                    placeholder="e.g. Cloud Logistics Kubernetes Cluster"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, titleEn: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Project Title (Arabic)</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Project Title (Arabic)</label>
                   <input
                     type="text"
                     value={projectForm.titleAr}
-                    onChange={(e) => setProjectForm({ ...projectForm, titleAr: e.target.value })}
-                    placeholder="مثال: بنية سحابية لإدارة الخدمات اللوجستية"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, titleAr: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-arabic text-right"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Category</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
                   <select
                     value={projectForm.category}
-                    onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, category: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   >
-                    <option value="erp">Odoo & ERP</option>
-                    <option value="cloud">Cloud & Servers</option>
-                    <option value="mobile">Mobile Apps (iOS & Android)</option>
-                    <option value="web">Custom Web Platform</option>
-                    <option value="wordpress">WordPress & CMS</option>
+                    <option value="erp">Custom ERP (.NET / MSSQL)</option>
+                    <option value="web">Web Portals & Apps</option>
+                    <option value="mobile">Mobile (iOS / Android / Flutter)</option>
+                    <option value="ai">AI Integrations & LLMs</option>
+                    <option value="cloud">Cloud & DevOps</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Client Name</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
                   <input
                     type="text"
                     value={projectForm.client}
-                    onChange={(e) => setProjectForm({ ...projectForm, client: e.target.value })}
-                    placeholder="e.g. PetroTech Solutions"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, client: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Country / Region</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Country / Region</label>
                   <input
                     type="text"
                     value={projectForm.country}
-                    onChange={(e) => setProjectForm({ ...projectForm, country: e.target.value })}
-                    placeholder="e.g. UAE / Oman"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, country: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
+              {/* Direct Project Redirect Link */}
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Short Summary (English)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Live Project Redirect URL (Opens on "Live Demo" Click)
+                </label>
                 <input
-                  type="text"
-                  value={projectForm.shortDescEn}
-                  onChange={(e) => setProjectForm({ ...projectForm, shortDescEn: e.target.value })}
-                  placeholder="A one-sentence impact summary"
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                  type="url"
+                  placeholder="https://client-demo.nexora.io"
+                  value={projectForm.liveUrl}
+                  onChange={e => setProjectForm({ ...projectForm, liveUrl: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">In-Depth Case Study (English)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Short Description (English)</label>
+                <textarea
+                  rows={2}
+                  value={projectForm.shortDescEn}
+                  onChange={e => setProjectForm({ ...projectForm, shortDescEn: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Technical Description (English)</label>
                 <textarea
                   rows={3}
                   value={projectForm.fullDescEn}
-                  onChange={(e) => setProjectForm({ ...projectForm, fullDescEn: e.target.value })}
-                  placeholder="Architectural challenge, implementation details, and business outcome..."
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                  onChange={e => setProjectForm({ ...projectForm, fullDescEn: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={projectForm.image}
-                  onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">Tags (Comma-separated)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tech Stack Tags (Comma separated)</label>
                 <input
                   type="text"
                   value={projectForm.tags}
-                  onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                  onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Metric 1 (e.g. +65% Speed)</label>
+                  <label className="block font-semibold text-slate-500 mb-1">Metric 1 Value</label>
                   <input
                     type="text"
                     value={projectForm.metric1Val}
-                    onChange={(e) => setProjectForm({ ...projectForm, metric1Val: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, metric1Val: e.target.value })}
+                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Metric 2 (e.g. 99.99% Uptime)</label>
+                  <label className="block font-semibold text-slate-500 mb-1">Metric 2 Value</label>
                   <input
                     type="text"
                     value={projectForm.metric2Val}
-                    onChange={(e) => setProjectForm({ ...projectForm, metric2Val: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    onChange={e => setProjectForm({ ...projectForm, metric2Val: e.target.value })}
+                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-500 mb-1">Metric 3 Value</label>
+                  <input
+                    type="text"
+                    value={projectForm.metric3Val}
+                    onChange={e => setProjectForm({ ...projectForm, metric3Val: e.target.value })}
+                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowAddProjectModal(false)}
-                  className="px-4 py-2 rounded-lg bg-dark-800 text-slate-300"
+                  onClick={() => {
+                    setShowAddProjectModal(false);
+                    setEditingProject(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-500 text-dark-950 font-bold"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
                 >
-                  Save & Publish to Portfolio
+                  {editingProject ? 'Save Project Changes' : 'Create Project'}
                 </button>
               </div>
             </form>
@@ -805,110 +1505,260 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         </div>
       )}
 
-      {/* Modal: Add Review */}
-      {showAddReviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="relative w-full max-w-lg glass-panel rounded-3xl border border-cyan-500/40 p-6 sm:p-8 bg-dark-950 shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-4">Add Client Review</h2>
+      {/* ==========================================
+          MODAL 2: ADD AD CAMPAIGN
+          ========================================== */}
+      {showAddCampaignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setShowAddCampaignModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <form onSubmit={handleCreateReview} className="space-y-4 text-xs">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Launch New Ad Campaign
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+              Create a paid marketing campaign across search or social channels.
+            </p>
+
+            <form onSubmit={handleCreateCampaign} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Reviewer Name *</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Campaign Name</label>
                 <input
                   type="text"
                   required
-                  value={reviewForm.authorName}
-                  onChange={(e) => setReviewForm({ ...reviewForm, authorName: e.target.value })}
-                  placeholder="e.g. Michael Thorne"
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                  placeholder="e.g. Google Ads: Custom Web ERP"
+                  value={campaignForm.name}
+                  onChange={e => setCampaignForm({ ...campaignForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Ad Platform</label>
+                <select
+                  value={campaignForm.platform}
+                  onChange={e => setCampaignForm({ ...campaignForm, platform: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                >
+                  <option value="Google Ads">Google Ads</option>
+                  <option value="LinkedIn B2B">LinkedIn B2B Ads</option>
+                  <option value="Meta / Facebook">Meta / Facebook</option>
+                  <option value="X / Twitter">X / Twitter</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Role</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Daily Budget ($)</label>
                   <input
-                    type="text"
-                    value={reviewForm.authorRole}
-                    onChange={(e) => setReviewForm({ ...reviewForm, authorRole: e.target.value })}
-                    placeholder="e.g. VP of Infrastructure"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    type="number"
+                    min="10"
+                    value={campaignForm.dailyBudget}
+                    onChange={e => setCampaignForm({ ...campaignForm, dailyBudget: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Company</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Target Region</label>
                   <input
                     type="text"
-                    value={reviewForm.company}
-                    onChange={(e) => setReviewForm({ ...reviewForm, company: e.target.value })}
-                    placeholder="e.g. Apex Global"
-                    className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
+                    value={campaignForm.targetRegion}
+                    onChange={e => setCampaignForm({ ...campaignForm, targetRegion: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">Star Rating (1 - 5)</label>
-                <select
-                  value={reviewForm.rating}
-                  onChange={(e) => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
-                >
-                  <option value={5}>5 Stars (★★★★★)</option>
-                  <option value={4}>4 Stars (★★★★☆)</option>
-                  <option value={3}>3 Stars (★★★☆☆)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">Review Content (English)</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={reviewForm.contentEn}
-                  onChange={(e) => setReviewForm({ ...reviewForm, contentEn: e.target.value })}
-                  placeholder="Their engineering team delivered our system flawlessly..."
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">Review Content (Arabic)</label>
-                <textarea
-                  rows={2}
-                  value={reviewForm.contentAr}
-                  onChange={(e) => setReviewForm({ ...reviewForm, contentAr: e.target.value })}
-                  placeholder="فريق هندسي متميز أنجز مشروعنا بأعلى دقة..."
-                  className="w-full px-3 py-2 rounded-lg bg-dark-900 border border-slate-700 text-white font-arabic"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isGoogleReview"
-                  checked={reviewForm.isGoogleReview}
-                  onChange={(e) => setReviewForm({ ...reviewForm, isGoogleReview: e.target.checked })}
-                  className="rounded text-cyan-500"
-                />
-                <label htmlFor="isGoogleReview" className="text-slate-300">
-                  Mark as Verified Google Business Review
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddReviewModal(false)}
-                  className="px-4 py-2 rounded-lg bg-dark-800 text-slate-300"
+                  onClick={() => setShowAddCampaignModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-500 text-dark-950 font-bold"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
                 >
-                  Publish Review
+                  Launch Campaign
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL 3: ADD REVIEW
+          ========================================== */}
+      {showAddReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setShowAddReviewModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Add Verified Review
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Add client feedback to be displayed on the public website and review slider.
+            </p>
+
+            <form onSubmit={handleCreateReview} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Author Name</label>
+                <input
+                  type="text"
+                  required
+                  value={reviewForm.authorName}
+                  onChange={e => setReviewForm({ ...reviewForm, authorName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Role</label>
+                  <input
+                    type="text"
+                    value={reviewForm.authorRole}
+                    onChange={e => setReviewForm({ ...reviewForm, authorRole: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Company</label>
+                  <input
+                    type="text"
+                    value={reviewForm.company}
+                    onChange={e => setReviewForm({ ...reviewForm, company: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review (English)</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={reviewForm.contentEn}
+                  onChange={e => setReviewForm({ ...reviewForm, contentEn: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddReviewModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
+                >
+                  Save Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL 4: ADD TEAM MEMBER
+          ========================================== */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setShowAddUserModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Add Management Team Member
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Create an account with role-based access for your software house.
+            </p>
+
+            <form onSubmit={handleCreateUser} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={userForm.name}
+                  onChange={e => setUserForm({ ...userForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Work Email</label>
+                <input
+                  type="email"
+                  required
+                  value={userForm.email}
+                  onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={userForm.password}
+                  onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Initial Role</label>
+                <select
+                  value={userForm.roles[0]}
+                  onChange={e => setUserForm({ ...userForm, roles: [e.target.value as UserRole] })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                >
+                  <option value="project_manager">Project Manager</option>
+                  <option value="marketing_manager">Marketing Manager</option>
+                  <option value="review_manager">Review Manager</option>
+                  <option value="admin">Administrator (All Access)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
+                >
+                  Add Team Member
                 </button>
               </div>
             </form>

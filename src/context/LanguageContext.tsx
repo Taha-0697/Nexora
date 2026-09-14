@@ -66,11 +66,11 @@ const translations: Record<string, { en: string; ar: string }> = {
     ar: 'استعرض نماذج حية من أنظمة الـ ERP، البنى السحابية وتطبيقات الجوال التي تم إنجازها لعملائنا.'
   },
   'portfolio.all': { en: 'All Systems', ar: 'جميع الأنظمة' },
-  'portfolio.erp': { en: 'Odoo & ERPs', ar: 'أودو و ERP' },
+  'portfolio.web': { en: 'Web Applications', ar: 'تطبيقات الويب' },
   'portfolio.cloud': { en: 'Cloud & Servers', ar: 'السيرفرات والسحابة' },
   'portfolio.mobile': { en: 'iOS & Android', ar: 'تطبيقات الجوال' },
-  'portfolio.web': { en: 'Web Applications', ar: 'تطبيقات الويب' },
   'portfolio.wordpress': { en: 'WordPress & CMS', ar: 'ووردبريس' },
+  'portfolio.erp': { en: 'Odoo & ERPs', ar: 'أودو و ERP' },
   'portfolio.viewDetails': { en: 'View Case Study', ar: 'تفاصيل دراسة الحالة' },
   'portfolio.client': { en: 'Client', ar: 'العميل' },
   'portfolio.metrics': { en: 'Key Impact Metrics', ar: 'مؤشرات الأثر والأداء' },

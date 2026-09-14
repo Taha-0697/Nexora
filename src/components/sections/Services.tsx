@@ -60,11 +60,11 @@ export const Services: React.FC<ServicesProps> = ({ onSelectService }) => {
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
           {[
             { id: 'all', label: t('portfolio.all') },
-            { id: 'erp', label: t('portfolio.erp') },
-            { id: 'cloud', label: t('portfolio.cloud') },
-            { id: 'mobile', label: t('portfolio.mobile') },
+            { id: 'erp', label: language === 'ar' ? 'أنظمة ERP مخصصة' : 'Custom ERP' },
             { id: 'web', label: t('portfolio.web') },
-            { id: 'wordpress', label: t('portfolio.wordpress') },
+            { id: 'mobile', label: t('portfolio.mobile') },
+            { id: 'ai', label: language === 'ar' ? 'ذكاء اصطناعي (AI)' : 'AI Integrations' },
+            { id: 'cloud', label: t('portfolio.cloud') },
           ].map((tab) => (
             <button
               key={tab.id}

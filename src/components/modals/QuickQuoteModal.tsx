@@ -31,7 +31,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
     email: '',
     phone: '',
     company: '',
-    serviceType: 'Enterprise Odoo & Custom ERPs',
+    serviceType: 'Custom Web ERP & Enterprise Portals',
     budget: '$15,000 - $35,000',
     timeline: '1 - 2 Months',
     message: '',
@@ -44,7 +44,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
     if (prefillScope) {
       const defaultService = prefillScope.serviceName 
         || (prefillScope.services && prefillScope.services.join(', '))
-        || 'Enterprise Odoo & Custom ERPs';
+        || 'Custom Web ERP & Enterprise Portals';
 
       const stackText = prefillScope.customStack && prefillScope.customStack.length > 0
         ? `\nSpecified Tech Stack: ${prefillScope.customStack.join(', ')}`

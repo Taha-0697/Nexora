@@ -22,12 +22,37 @@ const MainApp: React.FC = () => {
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [quotePrefill, setQuotePrefill] = useState<any>(null);
 
-  // Check URL hash for direct #admin access
+  // Hidden Route Handling: Check URL path or hash for /adminportal, #adminportal, #admin
   useEffect(() => {
-    if (window.location.hash === '#admin') {
-      setCurrentView('admin');
-    }
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/adminportal' || hash === '#adminportal' || hash === '#admin') {
+        setCurrentView('admin');
+      } else {
+        setCurrentView('website');
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    window.addEventListener('hashchange', checkAdminRoute);
+
+    return () => {
+      window.removeEventListener('popstate', checkAdminRoute);
+      window.removeEventListener('hashchange', checkAdminRoute);
+    };
   }, []);
+
+  const handleReturnToWebsite = () => {
+    setCurrentView('website');
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+    if (window.location.pathname === '/adminportal') {
+      history.replaceState(null, '', '/');
+    }
+  };
 
   const handleOpenQuoteWithService = (serviceName: string) => {
     setQuotePrefill({ serviceName });
@@ -63,7 +88,7 @@ const MainApp: React.FC = () => {
             <Contact />
           </main>
 
-          <Footer onOpenAdmin={() => setCurrentView('admin')} />
+          <Footer />
 
           <QuickQuoteModal
             isOpen={isQuoteModalOpen}
@@ -72,7 +97,7 @@ const MainApp: React.FC = () => {
           />
         </>
       ) : (
-        <AdminPortal onBackToWebsite={() => setCurrentView('website')} />
+        <AdminPortal onBackToWebsite={handleReturnToWebsite} />
       )}
 
     </div>
