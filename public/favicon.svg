@@ -1,0 +1,13 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="24,3 42,13.5 42,34.5 24,45 6,34.5 6,13.5" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="#0f172a"/>
+  <path d="M14 34V14L20 17.5V37.5L14 34Z" fill="#38bdf8"/>
+  <path d="M20 17.5L28 30.5V36L20 23V17.5Z" fill="#818cf8"/>
+  <path d="M28 10.5L34 14V34L28 30.5V10.5Z" fill="#2dd4bf"/>
+  <circle cx="24" cy="24" r="2.5" fill="#ffffff"/>
+  <circle cx="24" cy="3" r="2" fill="#38bdf8"/>
+  <circle cx="42" cy="13.5" r="2" fill="#818cf8"/>
+  <circle cx="42" cy="34.5" r="2" fill="#2dd4bf"/>
+  <circle cx="24" cy="45" r="2" fill="#38bdf8"/>
+  <circle cx="6" cy="34.5" r="2" fill="#818cf8"/>
+  <circle cx="6" cy="13.5" r="2" fill="#2dd4bf"/>
+</svg>

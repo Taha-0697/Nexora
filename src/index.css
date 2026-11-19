@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #F8FAFC;
+    color: #475569;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark body {
+    background-color: #060913;
+    color: #94A3B8;
+  }
+
+  /* Typography Hierarchy */
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.025em;
+    color: #0F172A;
+  }
+
+  html.dark h1, 
+  html.dark h2, 
+  html.dark h3, 
+  html.dark h4, 
+  html.dark .font-heading {
+    color: #F8FAFC;
+  }
+
+  html[dir="rtl"] h1, 
+  html[dir="rtl"] h2, 
+  html[dir="rtl"] h3, 
+  html[dir="rtl"] h4,
+  .font-arabic h1,
+  .font-arabic h2,
+  .font-arabic h3,
+  .font-arabic h4 {
+    font-family: 'Cairo', sans-serif;
+    letter-spacing: normal;
+  }
+}
+
+/* Dual-Theme Container & Card Utilities */
+.glass-panel {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+}
+
+html.dark .glass-panel {
+  background: #0E1526;
+  border: 1px solid #1E293B;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  background: #FFFFFF;
+  border-color: #1D4ED8;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -10px rgba(29, 78, 216, 0.12);
+}
+
+html.dark .glass-panel-hover:hover {
+  background: #141E33;
+  border-color: #2563EB;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -10px rgba(37, 99, 235, 0.22);
+}
+
+/* High-Conversion Primary & Secondary Buttons */
+.btn-primary-cta {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(29, 78, 216, 0.25);
+}
+.btn-primary-cta:hover {
+  background-color: #1E40AF;
+  box-shadow: 0 6px 20px 0 rgba(29, 78, 216, 0.35);
+  transform: translateY(-1px);
+}
+html.dark .btn-primary-cta {
+  background-color: #2563EB;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
+}
+html.dark .btn-primary-cta:hover {
+  background-color: #3B82F6;
+  box-shadow: 0 6px 22px 0 rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-secondary-outline {
+  background-color: transparent;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-secondary-outline:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+  border-color: #94A3B8;
+}
+html.dark .btn-secondary-outline {
+  color: #CBD5E1;
+  border: 1px solid #334155;
+}
+html.dark .btn-secondary-outline:hover {
+  background-color: #1E293B;
+  color: #F8FAFC;
+  border-color: #475569;
+}
+
+/* Gentle, Elegant Text Gradients */
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #1e293b 0%, #2563eb 50%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .text-gradient-cyan {
+  background: linear-gradient(135deg, #f8fafc 0%, #818cf8 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .text-gradient-purple {
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom Scrollbar for Light & Dark */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
+}
+
+/* RTL Styles */
+[dir="rtl"] {
+  font-family: 'Cairo', system-ui, sans-serif;
+}
+
+/* ─── Global Overflow Guards ─────────────────────────────────────────── */
+/* Prevent any text, badge, or metric from bleeding outside its container */
+.glass-panel,
+.glass-panel * {
+  min-width: 0;
+}
+
+/* Force long technical strings (tech stack labels, currency figures) to wrap */
+.font-mono {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Badge, pill, and tag containers should never cause horizontal scroll */
+.flex-wrap {
+  overflow: hidden visible;
+}

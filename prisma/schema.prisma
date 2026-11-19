@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  titleEn       String
+  titleAr       String
+  category      String   // ERP, WEB, MOBILE, AI, CLOUD
+  clientName    String
+  region        String
+  imageUrl      String
+  hasLiveDemo   Boolean  @default(false)
+  liveDemoUrl   String?
+  techStack     String[] // Array of technologies
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  clientName    String
+  role          String
+  company       String
+  location      String
+  rating        Int      @default(5)
+  reviewText    String
+  hasVideo      Boolean  @default(false)
+  videoUrl      String?
+  verified      Boolean  @default(true)
+  featured      Boolean  @default(false)
+  techCategory  String?  @default("general") // 'dotnet', 'odoo', 'general'
+  createdAt     DateTime @default(now())
+}
+
+model TeamMember {
+  id          String   @id @default(uuid())
+  name        String
+  role        String
+  bio         String?
+  linkedinUrl String
+  avatarUrl   String?
+  displayOrder Int     @default(0)
+}
