@@ -7,12 +7,8 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
-<<<<<<< HEAD
     "module": "esnext",
     "moduleResolution": "bundler",
-=======
-    "module": "nodenext",
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

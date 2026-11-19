@@ -9,18 +9,12 @@ import {
   Building2,
   Sparkles,
   ShieldCheck,
-<<<<<<< HEAD
   Cpu,
   Loader2,
   AlertCircle
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { sendContactEmail, isValidEmail } from '../../services/emailService'
-=======
-  Cpu
-} from 'lucide-react'
-import confetti from 'canvas-confetti'
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
 interface ContactProps {
   initialService?: string
@@ -43,32 +37,21 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
   })
 
   const [submitted, setSubmitted] = useState(false)
-<<<<<<< HEAD
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   const quickStacks = [
     'React / Next.js',
     'Custom ERP',
     '.NET Core',
     'Web Apps',
-<<<<<<< HEAD
     'REST APIs',
-=======
-    'Web APis',
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     'Kotlin / Java',
     'Flutter App',
     'Node.js',
     'Native iOS / Android',
     'Python FastAPI',
-<<<<<<< HEAD
     'Odoo',
-=======
-    'Odoo 17',
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     'PostgreSQL',
     'AWS / Kubernetes',
     'Custom Python ERP',
@@ -87,7 +70,6 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
     })
   }
 
-<<<<<<< HEAD
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError(null)
@@ -182,35 +164,6 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
     } finally {
       setIsSubmitting(false)
     }
-=======
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.name || !formData.email) return
-
-    addInquiry({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      company: formData.company,
-      serviceType: formData.serviceType,
-      budget: formData.budget,
-      timeline: formData.timeline,
-      message: formData.message,
-      customStack: formData.selectedStacks
-    })
-
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.6 }
-      })
-    } catch (err) {
-      // ignore
-    }
-
-    setSubmitted(true)
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   }
 
   return (
@@ -440,13 +393,8 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
                       }
                       className='w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 dark:focus:border-sky-400 transition-colors'
                     >
-<<<<<<< HEAD
                       <option value='Custom ERP & Enterprise Odoo'>
                         Custom ERP & Enterprise Odoo
-=======
-                      <option value='Custom ERP & Enterprise Odoo 17'>
-                        Custom ERP & Enterprise Odoo 17
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                       </option>
                       <option value='Custom Enterprise Web Portals'>
                         Custom Enterprise Web Portals
@@ -567,7 +515,6 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
                     />
                   </div>
 
-<<<<<<< HEAD
                   {/* Inline Error Alert */}
                   {submitError && (
                     <div className='p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300 animate-fadeIn'>
@@ -601,15 +548,6 @@ export const Contact: React.FC<ContactProps> = ({ initialService = '' }) => {
                         <Send className='w-4 h-4' />
                       </>
                     )}
-=======
-                  {/* Submit Button */}
-                  <button
-                    type='submit'
-                    className='w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer'
-                  >
-                    <span>{t('contact.send')}</span>
-                    <Send className='w-4 h-4' />
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   </button>
                 </form>
               )}

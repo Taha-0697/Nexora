@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 import dotenv from 'dotenv';
@@ -272,12 +271,3 @@ function apiMiddlewarePlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), apiMiddlewarePlugin()],
 });
-=======
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-})
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e

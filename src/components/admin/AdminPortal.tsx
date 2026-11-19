@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useTheme } from '../../context/ThemeContext';
-<<<<<<< HEAD
 import type { ServiceCategory, Project, Review, UserRole, AdminUser, AdCampaign } from '../../types';
 import { OmnichannelMarketingHub } from './OmnichannelMarketingHub';
-=======
-import type { ServiceCategory, Project, UserRole, AdminUser, AdCampaign } from '../../types';
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 import {
   Lock,
   FolderPlus,
@@ -24,19 +20,10 @@ import {
   Moon,
   Users,
   Megaphone,
-<<<<<<< HEAD
   ExternalLink,
   Plus,
   X,
   Video
-=======
-  BarChart3,
-  ExternalLink,
-  Plus,
-  X,
-  Play,
-  Pause
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 } from 'lucide-react';
 
 interface AdminPortalProps {
@@ -52,10 +39,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     deleteProject,
     reviews,
     addReview,
-<<<<<<< HEAD
     updateReview,
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     deleteReview,
     syncGoogleReviews,
     inquiries,
@@ -69,10 +53,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     marketingSettings,
     updateMarketingSettings,
     addAdCampaign,
-<<<<<<< HEAD
     updateAdCampaign,
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     deleteAdCampaign,
     toggleAdCampaignStatus,
     resetToDefaults
@@ -101,10 +82,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
-<<<<<<< HEAD
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   const [showAddCampaignModal, setShowAddCampaignModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
 
@@ -131,40 +109,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     metric3LabelEn: 'Time Saved',
     metric3LabelAr: 'توفير الوقت',
     liveUrl: 'https://demo-portal.nexora.io',
-<<<<<<< HEAD
     hasLiveDemo: true,
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     featured: true,
     completionDate: '2026-06'
   });
 
-<<<<<<< HEAD
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [projectSubmitError, setProjectSubmitError] = useState('');
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   // Review Form
   const [reviewForm, setReviewForm] = useState({
     authorName: '',
     authorRole: '',
     company: '',
-<<<<<<< HEAD
     location: 'Dubai, UAE',
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     rating: 5,
     contentEn: '',
     contentAr: '',
-<<<<<<< HEAD
     hasVideo: false,
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-42994-large.mp4',
     featured: false,
     techCategory: 'dotnet' as 'dotnet' | 'odoo' | 'general',
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     isGoogleReview: true,
     googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
   });
@@ -240,7 +206,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     return currentUser.roles.includes('admin') || currentUser.roles.includes(role);
   };
 
-<<<<<<< HEAD
   // Helper to verify if active tab is accessible
   const isTabAuthorized = (tab: 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team'): boolean => {
     if (!currentUser) return false;
@@ -298,39 +263,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       liveUrl: proj.liveDemoUrl || proj.liveUrl || '',
       hasLiveDemo: proj.hasLiveDemo !== undefined ? proj.hasLiveDemo : Boolean(proj.liveUrl || proj.liveDemoUrl),
       featured: proj.featured !== undefined ? proj.featured : true,
-=======
-  // Open Edit Project Modal
-  const handleStartEditProject = (proj: Project) => {
-    setEditingProject(proj);
-    setProjectForm({
-      titleEn: proj.title.en,
-      titleAr: proj.title.ar,
-      category: proj.category,
-      client: proj.client,
-      country: proj.country,
-      shortDescEn: proj.shortDesc.en,
-      shortDescAr: proj.shortDesc.ar,
-      fullDescEn: proj.fullDesc.en,
-      fullDescAr: proj.fullDesc.ar,
-      image: proj.image,
-      tags: proj.tags.join(', '),
-      metric1Val: proj.metrics[0]?.value || '+50%',
-      metric1LabelEn: proj.metrics[0]?.label.en || 'Performance',
-      metric1LabelAr: proj.metrics[0]?.label.ar || 'الأداء',
-      metric2Val: proj.metrics[1]?.value || '99.9%',
-      metric2LabelEn: proj.metrics[1]?.label.en || 'Uptime',
-      metric2LabelAr: proj.metrics[1]?.label.ar || 'التوفر',
-      metric3Val: proj.metrics[2]?.value || '-40%',
-      metric3LabelEn: proj.metrics[2]?.label.en || 'Efficiency',
-      metric3LabelAr: proj.metrics[2]?.label.ar || 'الكفاءة',
-      liveUrl: proj.liveUrl || '',
-      featured: proj.featured,
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       completionDate: proj.completionDate || '2026-06'
     });
   };
 
-<<<<<<< HEAD
   // Save Project (Add or Edit) - Wired to POST /api/projects
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -351,19 +287,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       liveDemoUrl: projectForm.liveUrl || null,
       techStack: tagsArray,
       // Compatibility fields for immediate UI updates
-=======
-  // Save Project (Add or Edit)
-  const handleSaveProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!projectForm.titleEn) return;
-
-    const projectPayload = {
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       title: {
         en: projectForm.titleEn,
         ar: projectForm.titleAr || projectForm.titleEn
       },
-<<<<<<< HEAD
       client: projectForm.client || 'Enterprise Partner',
       country: projectForm.country || 'UAE / GCC',
       image: projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
@@ -376,21 +303,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         ar: projectForm.fullDescAr || projectForm.shortDescAr || `منظومة رقمية متكاملة تم تطويرها لصالح ${projectForm.client || 'الشركاء'}.`
       },
       tags: tagsArray,
-=======
-      category: projectForm.category,
-      client: projectForm.client || 'Enterprise Partner',
-      country: projectForm.country,
-      shortDesc: {
-        en: projectForm.shortDescEn,
-        ar: projectForm.shortDescAr || projectForm.shortDescEn
-      },
-      fullDesc: {
-        en: projectForm.fullDescEn || projectForm.shortDescEn,
-        ar: projectForm.fullDescAr || projectForm.shortDescAr || projectForm.shortDescEn
-      },
-      image: projectForm.image,
-      tags: projectForm.tags.split(',').map(t => t.trim()).filter(Boolean),
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       metrics: [
         {
           label: { en: projectForm.metric1LabelEn, ar: projectForm.metric1LabelAr },
@@ -410,7 +322,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       completionDate: projectForm.completionDate
     };
 
-<<<<<<< HEAD
     try {
       if (editingProject) {
         updateProject({
@@ -515,41 +426,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     }
 
     setEditingReview(null);
-=======
-    if (editingProject) {
-      updateProject({
-        ...projectPayload,
-        id: editingProject.id
-      });
-      setEditingProject(null);
-    } else {
-      addProject(projectPayload);
-      setShowAddProjectModal(false);
-    }
-  };
-
-  // Submit Review
-  const handleCreateReview = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewForm.authorName) return;
-
-    addReview({
-      authorName: reviewForm.authorName,
-      authorRole: reviewForm.authorRole || 'Managing Director',
-      company: reviewForm.company || 'Enterprise Partner',
-      avatar: reviewForm.avatar,
-      rating: reviewForm.rating,
-      content: {
-        en: reviewForm.contentEn,
-        ar: reviewForm.contentAr || reviewForm.contentEn
-      },
-      date: 'Just now (Organic)',
-      isGoogleReview: reviewForm.isGoogleReview,
-      googleReviewUrl: reviewForm.googleReviewUrl,
-      verified: true
-    });
-
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     setShowAddReviewModal(false);
   };
 
@@ -915,7 +791,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-<<<<<<< HEAD
                     {projects.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 text-xs">
@@ -1010,79 +885,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         );
                       })
                     )}
-=======
-                    {projects.map(proj => (
-                      <tr key={proj.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={proj.image}
-                              alt=""
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                            <div>
-                              <div className="font-bold text-slate-900 dark:text-white text-sm">
-                                {proj.title.en}
-                              </div>
-                              <div className="text-[11px] text-indigo-600 dark:text-sky-400 font-arabic">
-                                {proj.title.ar}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 font-mono text-[10px] uppercase font-bold border border-slate-200 dark:border-slate-700">
-                            {proj.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-slate-800 dark:text-slate-200">
-                            {proj.client}
-                          </div>
-                          <div className="text-slate-400 text-[10px]">
-                            {proj.country}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {proj.liveUrl ? (
-                            <a
-                              href={proj.liveUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-mono text-xs"
-                            >
-                              <span className="truncate max-w-[180px]">{proj.liveUrl}</span>
-                              <ExternalLink className="w-3 h-3 shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 italic">No direct link</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleStartEditProject(proj)}
-                              className="p-2 rounded-lg bg-indigo-50 dark:bg-slate-800 hover:bg-indigo-100 text-indigo-600 dark:text-sky-400 border border-indigo-200 dark:border-slate-700 transition-colors cursor-pointer"
-                              title="Edit Project Details"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Delete project "${proj.title.en}"?`)) {
-                                  deleteProject(proj.id);
-                                }
-                              }}
-                              className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 transition-colors cursor-pointer"
-                              title="Delete Project"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   </tbody>
                 </table>
               </div>
@@ -1091,7 +893,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         )}
 
         {/* ==========================================
-<<<<<<< HEAD
             TAB 2: MARKETING & ADS MANAGEMENT (Omnichannel Hub)
             ========================================== */}
         {activeTab === 'marketing' && hasRole('marketing_manager') && (
@@ -1104,234 +905,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             toggleAdCampaignStatus={toggleAdCampaignStatus}
             canManage={hasRole('marketing_manager')}
           />
-=======
-            TAB 2: MARKETING & ADS MANAGEMENT
-            ========================================== */}
-        {activeTab === 'marketing' && hasRole('marketing_manager') && (
-          <div className="space-y-8">
-            
-            {/* Top Announcement Banner Controls */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-sky-400">
-                    <Megaphone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                      Website Promotional Top Banner
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Display an attention-grabbing live alert at the top of the public website.
-                    </p>
-                  </div>
-                </div>
-
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={marketingSettings?.bannerEnabled}
-                    onChange={e => updateMarketingSettings({ bannerEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  <span className="ml-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {marketingSettings?.bannerEnabled ? 'Active on Live Site' : 'Disabled'}
-                  </span>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-mono font-semibold uppercase text-slate-500 mb-1">
-                    Banner Announcement Text (English)
-                  </label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.bannerText?.en || ''}
-                    onChange={e =>
-                      updateMarketingSettings({
-                        bannerText: { ...marketingSettings.bannerText, en: e.target.value }
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono font-semibold uppercase text-slate-500 mb-1">
-                    Banner Announcement Text (Arabic)
-                  </label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.bannerText?.ar || ''}
-                    onChange={e =>
-                      updateMarketingSettings({
-                        bannerText: { ...marketingSettings.bannerText, ar: e.target.value }
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-arabic text-right"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Ad Campaigns Dashboard */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-sky-400" />
-                    <span>Live Ad Campaigns Management</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Track Google Ads, LinkedIn B2B, and Meta campaigns for enterprise leads.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddCampaignModal(true)}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Launch New Campaign</span>
-                </button>
-              </div>
-
-              {/* Campaigns Table */}
-              <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 uppercase font-mono text-[10px] border-b border-slate-200 dark:border-slate-800">
-                      <tr>
-                        <th className="px-5 py-3.5">Campaign Name</th>
-                        <th className="px-5 py-3.5">Platform</th>
-                        <th className="px-5 py-3.5">Status</th>
-                        <th className="px-5 py-3.5">Daily Budget</th>
-                        <th className="px-5 py-3.5">Performance</th>
-                        <th className="px-5 py-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                      {marketingSettings?.adCampaigns?.map(camp => (
-                        <tr key={camp.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                            {camp.name}
-                            <div className="text-[10px] text-slate-400 font-normal">
-                              Target: {camp.targetRegion}
-                            </div>
-                          </td>
-                          <td className="px-5 py-3.5">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-[10px] font-semibold text-indigo-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700">
-                              {camp.platform}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3.5">
-                            <button
-                              onClick={() => toggleAdCampaignStatus(camp.id)}
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                                camp.status === 'active'
-                                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
-                                  : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-                              }`}
-                            >
-                              {camp.status === 'active' ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
-                              <span>{camp.status.toUpperCase()}</span>
-                            </button>
-                          </td>
-                          <td className="px-5 py-3.5 font-mono font-bold text-slate-800 dark:text-slate-200">
-                            ${camp.dailyBudget}/day
-                          </td>
-                          <td className="px-5 py-3.5 font-mono text-[11px]">
-                            <span className="text-indigo-600 dark:text-sky-400 font-bold">{camp.clicks} clicks</span> •{' '}
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{camp.conversions} leads</span>
-                          </td>
-                          <td className="px-5 py-3.5 text-right">
-                            <button
-                              onClick={() => deleteAdCampaign(camp.id)}
-                              className="p-1.5 rounded-md text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                              title="Delete Campaign"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* SEO & Tracking Pixels */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3">
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                  SEO Meta Configuration
-                </h4>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">SEO Title</label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.seoTitle || ''}
-                    onChange={e => updateMarketingSettings({ seoTitle: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Meta Description</label>
-                  <textarea
-                    rows={2}
-                    value={marketingSettings?.seoDescription || ''}
-                    onChange={e => updateMarketingSettings({ seoDescription: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Focus Keywords</label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.focusKeywords || ''}
-                    onChange={e => updateMarketingSettings({ focusKeywords: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-3">
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                  Marketing Tracking Pixels
-                </h4>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Google Analytics 4 (GA4) ID</label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.googleAnalyticsId || ''}
-                    onChange={e => updateMarketingSettings({ googleAnalyticsId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Meta / Facebook Pixel ID</label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.metaPixelId || ''}
-                    onChange={e => updateMarketingSettings({ metaPixelId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">LinkedIn Insight Tag ID</label>
-                  <input
-                    type="text"
-                    value={marketingSettings?.linkedInInsightId || ''}
-                    onChange={e => updateMarketingSettings({ linkedInInsightId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-          </div>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         )}
 
         {/* ==========================================
@@ -1395,7 +968,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
-<<<<<<< HEAD
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-900 dark:text-white text-sm">
                               {rev.authorName}
@@ -1410,17 +982,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                                 .NET
                               </span>
                             ) : null}
-=======
-                          <div className="font-bold text-slate-900 dark:text-white text-sm">
-                            {rev.authorName}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                           </div>
                           <div className="text-[11px] text-slate-400">
                             {rev.authorRole} • {rev.company}
                           </div>
                         </div>
                       </div>
-<<<<<<< HEAD
 
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex items-center gap-1 text-amber-500">
@@ -1435,13 +1002,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       </div>
                     </div>
 
-=======
-                      <div className="flex items-center gap-1 text-amber-500">
-                        <Star className="w-3.5 h-3.5 fill-amber-500" />
-                        <span className="font-bold text-xs">{rev.rating}.0</span>
-                      </div>
-                    </div>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                     <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic mb-2">
                       "{rev.content.en}"
                     </p>
@@ -1451,7 +1011,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   </div>
 
                   <div className="pt-3 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
-<<<<<<< HEAD
                     <div className="flex items-center gap-2">
                       {/* Featured Spotlight Toggle Button */}
                       <button
@@ -1486,16 +1045,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         <span>Delete</span>
                       </button>
                     </div>
-=======
-                    <span className="text-slate-400 font-mono">{rev.date}</span>
-                    <button
-                      onClick={() => deleteReview(rev.id)}
-                      className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-xs cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   </div>
                 </div>
               ))}
@@ -1758,7 +1307,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           </div>
         )}
 
-<<<<<<< HEAD
         {/* ==========================================
             UNAUTHORIZED ROLE RESTRICTION GUARD
             ========================================== */}
@@ -1787,8 +1335,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           </div>
         )}
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       </div>
 
       {/* ==========================================
@@ -1872,7 +1418,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               </div>
 
-<<<<<<< HEAD
               {/* Image URL */}
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -1905,15 +1450,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
                 <input
                   type="url"
-=======
-              {/* Direct Project Redirect Link */}
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Live Project Redirect URL (Opens on "Live Demo" Click)
-                </label>
-                <input
-                  type="url"
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   placeholder="https://client-demo.nexora.io"
                   value={projectForm.liveUrl}
                   onChange={e => setProjectForm({ ...projectForm, liveUrl: e.target.value })}
@@ -1981,15 +1517,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               </div>
 
-<<<<<<< HEAD
               {projectSubmitError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
                   {projectSubmitError}
                 </div>
               )}
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -2003,16 +1536,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </button>
                 <button
                   type="submit"
-<<<<<<< HEAD
                   disabled={isSavingProject}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer"
                 >
                   {isSavingProject ? 'Saving to Database...' : editingProject ? 'Save Project Changes' : 'Create Project'}
-=======
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
-                >
-                  {editingProject ? 'Save Project Changes' : 'Create Project'}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 </button>
               </div>
             </form>
@@ -2116,30 +1643,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
             <button
-<<<<<<< HEAD
               onClick={() => { setEditingReview(null); setShowAddReviewModal(false); }}
-=======
-              onClick={() => setShowAddReviewModal(false)}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               className="absolute top-5 right-5 p-2 rounded-full text-slate-400 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
-<<<<<<< HEAD
               {editingReview ? 'Edit Review' : 'Add Verified Review'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
               {editingReview 
                 ? 'Update client feedback, toggle featured spotlight, or adjust category.' 
                 : 'Add client feedback to be displayed on the public website and carousel.'}
-=======
-              Add Verified Review
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Add client feedback to be displayed on the public website and review slider.
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             </p>
 
             <form onSubmit={handleCreateReview} className="space-y-3 text-xs">
@@ -2175,7 +1691,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               </div>
 
-<<<<<<< HEAD
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Location</label>
@@ -2261,8 +1776,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 )}
               </div>
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review (English)</label>
                 <textarea
@@ -2277,11 +1790,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
-<<<<<<< HEAD
                   onClick={() => { setEditingReview(null); setShowAddReviewModal(false); }}
-=======
-                  onClick={() => setShowAddReviewModal(false)}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
                 >
                   Cancel
@@ -2290,11 +1799,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
                 >
-<<<<<<< HEAD
                   {editingReview ? 'Update Review' : 'Save Review'}
-=======
-                  Save Review
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 </button>
               </div>
             </form>

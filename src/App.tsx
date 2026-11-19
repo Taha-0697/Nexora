@@ -2,26 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { DataProvider } from './context/DataContext';
-<<<<<<< HEAD
 import { Navbar, type AppView } from './components/layout/Navbar';
-=======
-import { Navbar } from './components/layout/Navbar';
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 import { Hero } from './components/sections/Hero';
 import { Services } from './components/sections/Services';
 import { Estimator } from './components/sections/Estimator';
 import { Portfolio } from './components/sections/Portfolio';
 import { TechStack } from './components/sections/TechStack';
-<<<<<<< HEAD
 import { WhyChooseUs } from './components/sections/WhyChooseUs';
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 import { GoogleReviewsSection } from './components/sections/GoogleReviewsSection';
 import { Contact } from './components/sections/Contact';
 import { Footer } from './components/layout/Footer';
 import { QuickQuoteModal } from './components/modals/QuickQuoteModal';
 import { AdminPortal } from './components/admin/AdminPortal';
-<<<<<<< HEAD
 import { CustomDotNetErpPage } from './components/pages/CustomDotNetErpPage';
 import { OdooEnterprisePage } from './components/pages/OdooEnterprisePage';
 import { AiAndCloudPage } from './components/pages/AiAndCloudPage';
@@ -29,18 +21,11 @@ import { AiAndCloudPage } from './components/pages/AiAndCloudPage';
 const MainApp: React.FC = () => {
   const { language } = useLanguage();
   const [currentView, setCurrentView] = useState<AppView>('website');
-=======
-
-const MainApp: React.FC = () => {
-  const { language } = useLanguage();
-  const [currentView, setCurrentView] = useState<'website' | 'admin'>('website');
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   // Modal State
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [quotePrefill, setQuotePrefill] = useState<any>(null);
 
-<<<<<<< HEAD
   // Synchronize route with URL pathname & hash
   useEffect(() => {
     const syncRouteFromUrl = () => {
@@ -69,21 +54,11 @@ const MainApp: React.FC = () => {
         hash === '#services/ai-and-cloud'
       ) {
         setCurrentView('service-ai-and-cloud');
-=======
-  // Hidden Route Handling: Check URL path or hash for /adminportal, #adminportal, #admin
-  useEffect(() => {
-    const checkAdminRoute = () => {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      if (path === '/adminportal' || hash === '#adminportal' || hash === '#admin') {
-        setCurrentView('admin');
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       } else {
         setCurrentView('website');
       }
     };
 
-<<<<<<< HEAD
     syncRouteFromUrl();
     window.addEventListener('popstate', syncRouteFromUrl);
     window.addEventListener('hashchange', syncRouteFromUrl);
@@ -149,26 +124,6 @@ const MainApp: React.FC = () => {
 
   const handleReturnToWebsite = () => {
     handleNavigate('website');
-=======
-    checkAdminRoute();
-    window.addEventListener('popstate', checkAdminRoute);
-    window.addEventListener('hashchange', checkAdminRoute);
-
-    return () => {
-      window.removeEventListener('popstate', checkAdminRoute);
-      window.removeEventListener('hashchange', checkAdminRoute);
-    };
-  }, []);
-
-  const handleReturnToWebsite = () => {
-    setCurrentView('website');
-    if (window.location.hash) {
-      history.replaceState(null, '', window.location.pathname);
-    }
-    if (window.location.pathname === '/adminportal') {
-      history.replaceState(null, '', '/');
-    }
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   };
 
   const handleOpenQuoteWithService = (serviceName: string) => {
@@ -181,7 +136,6 @@ const MainApp: React.FC = () => {
     setIsQuoteModalOpen(true);
   };
 
-<<<<<<< HEAD
   const handleNavigateToEstimator = () => {
     handleNavigate('website', 'estimator');
   };
@@ -200,16 +154,6 @@ const MainApp: React.FC = () => {
             currentView={currentView}
             setCurrentView={setCurrentView}
             onNavigate={handleNavigate}
-=======
-  return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:bg-sky-500/30 dark:selection:text-sky-200 transition-colors duration-300 ${language === 'ar' ? 'font-arabic' : ''}`}>
-      
-      {currentView === 'website' ? (
-        <>
-          <Navbar 
-            currentView={currentView}
-            setCurrentView={setCurrentView}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             onOpenQuote={() => {
               setQuotePrefill(null);
               setIsQuoteModalOpen(true);
@@ -217,7 +161,6 @@ const MainApp: React.FC = () => {
           />
 
           <main>
-<<<<<<< HEAD
             {currentView === 'website' && (
               <>
                 <Hero onOpenQuote={() => setIsQuoteModalOpen(true)} />
@@ -263,18 +206,6 @@ const MainApp: React.FC = () => {
           </main>
 
           <Footer onNavigate={handleNavigate} />
-=======
-            <Hero onOpenQuote={() => setIsQuoteModalOpen(true)} />
-            <Services onSelectService={handleOpenQuoteWithService} />
-            <Estimator onRequestProposalWithScope={handleOpenQuoteWithScope} />
-            <Portfolio />
-            <TechStack />
-            <GoogleReviewsSection />
-            <Contact />
-          </main>
-
-          <Footer />
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
           <QuickQuoteModal
             isOpen={isQuoteModalOpen}
@@ -282,14 +213,7 @@ const MainApp: React.FC = () => {
             prefillScope={quotePrefill}
           />
         </>
-<<<<<<< HEAD
       )}
-=======
-      ) : (
-        <AdminPortal onBackToWebsite={handleReturnToWebsite} />
-      )}
-
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     </div>
   );
 };

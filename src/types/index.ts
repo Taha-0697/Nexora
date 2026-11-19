@@ -41,10 +41,7 @@ export interface Review {
   authorName: string;
   authorRole: string;
   company: string;
-<<<<<<< HEAD
   location?: string;
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   avatar: string;
   rating: number; // 1 - 5
   content: LocalizedString;
@@ -52,7 +49,6 @@ export interface Review {
   isGoogleReview: boolean;
   googleReviewUrl?: string;
   verified: boolean;
-<<<<<<< HEAD
   hasVideo?: boolean;
   videoUrl?: string | null;
   featured?: boolean;
@@ -67,8 +63,6 @@ export interface TeamMember {
   linkedinUrl: string;
   avatarUrl?: string | null;
   displayOrder?: number;
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 }
 
 export interface Inquiry {
@@ -129,7 +123,6 @@ export interface AdminUser {
 }
 
 // Marketing & Ads Types
-<<<<<<< HEAD
 export type MarketingPlatform =
   | 'Google Ads'
   | 'Meta Ads'
@@ -143,12 +136,6 @@ export interface AdCampaign {
   id: string;
   name: string;
   platform: MarketingPlatform | string;
-=======
-export interface AdCampaign {
-  id: string;
-  name: string;
-  platform: 'Google Ads' | 'Meta / Facebook' | 'LinkedIn B2B' | 'X / Twitter';
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   status: 'active' | 'paused' | 'draft';
   dailyBudget: number; // in USD
   targetRegion: string;
@@ -158,7 +145,6 @@ export interface AdCampaign {
   spent: number;
 }
 
-<<<<<<< HEAD
 export interface PlatformAccountConnection {
   id: string;
   platform: 'Google Ads' | 'Meta Ads' | 'LinkedIn' | 'X';
@@ -185,8 +171,6 @@ export interface SocialAdPost {
   createdAt: string;
 }
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 export interface MarketingSettings {
   bannerEnabled: boolean;
   bannerText: LocalizedString;

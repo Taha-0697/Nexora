@@ -1,13 +1,8 @@
-<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from 'react';
-=======
-import React, { useState } from 'react';
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 import { useLanguage } from '../../context/LanguageContext';
 import { useData } from '../../context/DataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { NexoraLogo } from '../common/NexoraLogo';
-<<<<<<< HEAD
 import {
   Menu,
   X,
@@ -38,42 +33,28 @@ interface NavbarProps {
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
   onNavigate?: (view: AppView, targetSection?: string) => void;
-=======
-import { Menu, X, Star, Globe, ArrowUpRight, Sun, Moon, Megaphone } from 'lucide-react';
-
-interface NavbarProps {
-  currentView: 'website' | 'admin';
-  setCurrentView: (view: 'website' | 'admin') => void;
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   onOpenQuote: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   setCurrentView,
-<<<<<<< HEAD
   onNavigate,
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   onOpenQuote,
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { googleSettings, marketingSettings } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-<<<<<<< HEAD
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'ar' : 'en');
   };
 
-<<<<<<< HEAD
   const handleNavigate = (view: AppView, targetSection?: string) => {
     setServicesDropdownOpen(false);
     setMobileMenuOpen(false);
@@ -118,29 +99,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     dropdownTimeoutRef.current = setTimeout(() => {
       setServicesDropdownOpen(false);
     }, 200);
-=======
-  const scrollToSection = (id: string) => {
-    if (currentView !== 'website') {
-      setCurrentView('website');
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        element?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
-      const element = document.getElementById(id);
-      element?.scrollIntoView({ behavior: 'smooth' });
-    }
-    setMobileMenuOpen(false);
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   };
 
   return (
     <>
-<<<<<<< HEAD
       {/* Top Marketing Announcement Banner */}
-=======
-      {/* Top Marketing Announcement Banner (Controlled by Marketing Manager in Admin) */}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       {marketingSettings?.bannerEnabled && (
         <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-indigo-800 text-white text-xs py-2 px-4 text-center font-medium shadow-xs transition-colors flex items-center justify-center gap-2">
           <Megaphone className="w-3.5 h-3.5 shrink-0 animate-pulse text-sky-200" />
@@ -160,21 +123,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       )}
 
       {/* Main Sticky Navigation Bar */}
-<<<<<<< HEAD
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 dark:bg-[#060913]/90 border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-300 shadow-xs dark:shadow-none">
-=======
-      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-300 shadow-xs dark:shadow-none">
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
             {/* Logo Brand */}
             <div
-<<<<<<< HEAD
               onClick={() => handleNavigate('website')}
-=======
-              onClick={() => { setCurrentView('website'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               className="cursor-pointer group"
             >
               <NexoraLogo size="sm" />
@@ -182,7 +137,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Desktop Navigation Links */}
             <nav className="hidden lg:flex items-center gap-7">
-<<<<<<< HEAD
               {/* Interactive Services Dropdown */}
               <div
                 ref={dropdownRef}
@@ -362,14 +316,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
 
-=======
-              <button
-                onClick={() => scrollToSection('services')}
-                className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-              >
-                {t('nav.services')}
-              </button>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <button
                 onClick={() => scrollToSection('portfolio')}
                 className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
@@ -389,15 +335,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {t('nav.techStack')}
               </button>
               <button
-<<<<<<< HEAD
                 onClick={() => scrollToSection('why-us')}
                 className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
               >
                 {language === 'ar' ? 'لماذا نيكسورا؟' : 'Why Nexora'}
               </button>
               <button
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 onClick={() => scrollToSection('reviews')}
                 className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
               >
@@ -435,10 +378,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-slate-500 dark:text-slate-400 text-[11px]">({googleSettings.totalReviewsCount})</span>
               </a>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               {/* Dark / Light Theme Switcher */}
               <button
                 onClick={toggleTheme}
@@ -466,11 +405,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Main Proposal CTA */}
               <button
                 onClick={onOpenQuote}
-<<<<<<< HEAD
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary-cta text-white font-bold text-xs tracking-wide shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/35 transition-all active:scale-95 cursor-pointer"
-=======
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs tracking-wide shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/35 transition-all active:scale-95 cursor-pointer"
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               >
                 <span>{t('nav.quote')}</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -510,7 +445,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-<<<<<<< HEAD
         {/* Mobile Drawer Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white dark:bg-[#060913] border-b border-slate-200 dark:border-slate-800 px-4 pt-2 pb-6 space-y-3 shadow-xl max-h-[80vh] overflow-y-auto">
@@ -557,17 +491,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-=======
-        {/* Mobile Drawer Menu (No Public Admin Link) */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-2 pb-6 space-y-3 shadow-xl">
-            <button
-              onClick={() => scrollToSection('services')}
-              className="block w-full text-left py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
-            >
-              {t('nav.services')}
-            </button>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             <button
               onClick={() => scrollToSection('portfolio')}
               className="block w-full text-left py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
@@ -587,15 +510,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               {t('nav.techStack')}
             </button>
             <button
-<<<<<<< HEAD
               onClick={() => scrollToSection('why-us')}
               className="block w-full text-left py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
             >
               {language === 'ar' ? 'لماذا نيكسورا؟' : 'Why Nexora'}
             </button>
             <button
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               onClick={() => scrollToSection('reviews')}
               className="block w-full text-left py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
             >
@@ -614,11 +534,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   onOpenQuote();
                 }}
-<<<<<<< HEAD
                 className="w-full py-3 rounded-xl btn-primary-cta text-white font-bold text-sm text-center shadow-md shadow-indigo-600/25"
-=======
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm text-center shadow-md shadow-indigo-600/25"
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               >
                 {t('nav.quote')}
               </button>

@@ -22,7 +22,6 @@ export default {
           950: '#1e1b4b',
         },
         dark: {
-<<<<<<< HEAD
           950: '#060913', // Deep Obsidian Navy (Night Mode Main Background)
           900: '#0E1526', // Elevated Card & Container Surface
           850: '#141E33',
@@ -49,15 +48,6 @@ export default {
           lightHeading: '#0F172A',
           lightBody: '#475569',
         },
-=======
-          950: '#0b0f19', // Soft midnight navy/slate (reduces eye strain)
-          900: '#0f172a', // Slate 900
-          850: '#141e33',
-          800: '#1e293b', // Slate 800
-          700: '#334155', // Slate 700
-          600: '#475569', // Slate 600
-        },
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         cyan: {
           400: '#38bdf8', // Soft sky blue
           500: '#0ea5e9',
@@ -66,11 +56,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-<<<<<<< HEAD
         heading: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         arabic: ['Cairo', 'sans-serif'],
       },
       animation: {

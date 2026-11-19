@@ -12,7 +12,6 @@ import {
 
 export const TechStack: React.FC = () => {
   const { language, t } = useLanguage();
-<<<<<<< HEAD
   const [selectedTabs, setSelectedTabs] = useState<string[]>(['dotnet-erp']);
   const [extraCategories, setExtraCategories] = useState<any[]>([]);
   const [newCatName, setNewCatName] = useState('');
@@ -25,19 +24,6 @@ export const TechStack: React.FC = () => {
       items: [
         { name: '.NET Core Web API', role: 'High-Throughput C# Microservice Endpoints & Domain Business Logic', badge: '.NET Core' },
         { name: 'Microsoft SQL Server (MSSQL)', role: 'Enterprise ACID Transactions, High-Concurrency Indexing', badge: 'MSSQL DB' },
-=======
-  const [selectedTabs, setSelectedTabs] = useState<string[]>(['erp']);
-  const [extraCategories, setExtraCategories] = useState<any[]>([]);
-  const [newCatName, setNewCatName] = useState('');
-  const categories = [
-    {
-      id: 'erp',
-      name: { en: 'Custom ERP (.NET & MSSQL)', ar: 'أنظمة ERP مخصصة (.NET & MSSQL)' },
-      icon: <Database className="w-4 h-4" />,
-      items: [
-        { name: '.NET Core Web API', role: 'High-Throughput C# Microservice Endpoints & Business Logic', badge: 'High Velocity' },
-        { name: 'Microsoft SQL Server (MSSQL)', role: 'Enterprise ACID Transactions, High-Concurrency Indexing', badge: 'Primary DB' },
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         { name: 'React 19 & Next.js 15', role: 'Reactive Administrative Portals & SSR Executive Dashboards', badge: 'Frontend' },
         { name: 'REST & GraphQL APIs', role: 'Seamless Integration with Banks, Customs & Logistics Partners', badge: 'Integrations' },
         { name: 'Redis In-Memory Cache', role: 'Sub-Millisecond Query Response & Session Storage', badge: 'In-Memory' },
@@ -45,7 +31,6 @@ export const TechStack: React.FC = () => {
       ]
     },
     {
-<<<<<<< HEAD
       id: 'odoo-erp',
       name: { en: 'Odoo Enterprise & Python', ar: 'أنظمة Odoo Enterprise و بايثون' },
       icon: <Terminal className="w-4 h-4" />,
@@ -59,8 +44,6 @@ export const TechStack: React.FC = () => {
       ]
     },
     {
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       id: 'web',
       name: { en: 'Custom Web Portals & SaaS', ar: 'بوابات الويب المخصصة ومنصات SaaS' },
       icon: <Globe className="w-4 h-4" />,
@@ -151,7 +134,6 @@ export const TechStack: React.FC = () => {
               : 'Our battle-tested stack focuses on custom engineered architectures: .NET Core Web APIs, Next.js, React, Node.js, MSSQL databases, native Swift & Kotlin apps, Flutter, AI integrations, and bespoke enterprise systems.'}
           </p>
         </div>
-<<<<<<< HEAD
         {/* Optional Admin/Dev Category Management (Hidden by default for pristine client view) */}
         {showAdminControls && (
           <div className="flex items-center gap-2 mb-6 justify-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs max-w-md mx-auto">
@@ -182,34 +164,6 @@ export const TechStack: React.FC = () => {
             </button>
           </div>
         )}
-=======
-        {/* Add New Category Form */}
-        <div className="flex items-center gap-2 mb-6 justify-center">
-          <input
-            type="text"
-            placeholder="New category name"
-            value={newCatName}
-            onChange={(e) => setNewCatName(e.target.value)}
-            className="px-3 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <button
-            onClick={() => {
-              const name = newCatName.trim();
-              if (!name) return;
-              const id = name.toLowerCase().replace(/\s+/g, '-');
-              const newCat = {
-                id,
-                name: { en: name, ar: '' },
-                icon: <Terminal className="w-4 h-4" />,
-                items: []
-              };
-              setExtraCategories([...extraCategories, newCat]);
-              setNewCatName('');
-            }}
-            className="px-4 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-          >Add Category</button>
-        </div>
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         {/* Tab Switcher */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
           {[...categories, ...extraCategories].map((cat) => (
@@ -253,7 +207,6 @@ export const TechStack: React.FC = () => {
           ))}
         </div>
 
-<<<<<<< HEAD
         {/* Subtle Category Customization Toggle (Dev/Admin) */}
         <div className="mt-8 text-center">
           <button
@@ -265,8 +218,6 @@ export const TechStack: React.FC = () => {
           </button>
         </div>
 
-=======
->>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       </div>
     </section>
   );
