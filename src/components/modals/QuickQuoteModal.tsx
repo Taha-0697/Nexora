@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useData } from '../../context/DataContext';
+<<<<<<< HEAD
 import {
   X,
   Send,
@@ -13,6 +14,10 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sendCostEstimateEmail, isValidEmail } from '../../services/emailService';
+=======
+import { X, Send, CheckCircle2, ShieldCheck, Sparkles, Cpu } from 'lucide-react';
+import confetti from 'canvas-confetti';
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
 interface QuickQuoteModalProps {
   isOpen: boolean;
@@ -49,8 +54,11 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
   });
 
   const [submitted, setSubmitted] = useState(false);
+<<<<<<< HEAD
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   useEffect(() => {
     if (prefillScope) {
@@ -77,6 +85,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
 
   if (!isOpen) return null;
 
+<<<<<<< HEAD
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -174,6 +183,35 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+=======
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) return;
+
+    addInquiry({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      company: formData.company,
+      serviceType: formData.serviceType,
+      budget: formData.budget,
+      timeline: formData.timeline,
+      message: formData.message,
+      customStack: formData.customStack,
+    });
+
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 80,
+        origin: { y: 0.5 }
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    setSubmitted(true);
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   };
 
   return (
@@ -338,6 +376,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                 />
               </div>
 
+<<<<<<< HEAD
               {/* Inline Error Alert */}
               {submitError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300 animate-fadeIn">
@@ -371,6 +410,15 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                       <Send className="w-3.5 h-3.5" />
                     </>
                   )}
+=======
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-black text-xs tracking-wide shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Submit Inquiry to Nexora Architects</span>
+                  <Send className="w-3.5 h-3.5" />
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 </button>
               </div>
 

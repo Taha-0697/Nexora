@@ -10,10 +10,15 @@ import {
   ShieldCheck,
   Cpu,
   Globe2,
+<<<<<<< HEAD
   ChevronDown,
   ChevronUp,
   SlidersHorizontal,
   ServerCog
+=======
+
+  ChevronDown
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -86,6 +91,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
   // Support SLA
   const [supportTier, setSupportTier] = useState<'none' | 'standard' | 'mission-critical'>('mission-critical');
 
+<<<<<<< HEAD
   // Primary Architecture Selector
   const PRIMARY_ARCHITECTURES = [
     {
@@ -157,10 +163,14 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
   const [showAdvancedCustomization, setShowAdvancedCustomization] = useState<boolean>(false);
 
   // Client Custom Tech Stack Specifications
+=======
+  // Client Custom Tech Stack Specifications (Giving preference to customized architectures)
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   const [selectedStackSpecs, setSelectedStackSpecs] = useState<string[]>([
     '.NET Core Web API',
     'Next.js / React',
     'MS SQL Server (MSSQL)',
+<<<<<<< HEAD
     'Redis In-Memory Cache',
     'REST API Integrations'
   ]);
@@ -190,6 +200,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     }
   };
 
+=======
+    'REST API Integrations'
+  ]);
+
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   // 1. Auto-detect currency by browser locale and IP
   useEffect(() => {
     try {
@@ -243,18 +258,27 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
 
   const techStackOptions = [
     { id: 'dotnet-api', label: '.NET Core Web API', category: 'Backend' },
+<<<<<<< HEAD
     { id: 'odoo-python', label: 'Odoo Enterprise & Python Bridges', category: 'ERP' },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     { id: 'react-next', label: 'Next.js / React', category: 'Frontend' },
     { id: 'nodejs', label: 'Node.js / NestJS', category: 'Backend' },
     { id: 'mssql', label: 'MS SQL Server (MSSQL)', category: 'Database' },
     { id: 'sql-db', label: 'PostgreSQL / SQL', category: 'Database' },
+<<<<<<< HEAD
     { id: 'pg-mssql-sync', label: 'PostgreSQL Data Synchronization', category: 'Database' },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     { id: 'rest-apis', label: 'REST API Integrations', category: 'Backend' },
     { id: 'swift-ios', label: 'Native iOS (Swift & SwiftUI)', category: 'Mobile' },
     { id: 'kotlin-android', label: 'Native Android (Kotlin)', category: 'Mobile' },
     { id: 'flutter', label: 'Flutter Cross-Platform', category: 'Mobile' },
     { id: 'ai-integrations', label: 'AI & LLM Integrations', category: 'AI' },
+<<<<<<< HEAD
     { id: 'python-ai', label: 'Python AI Engine & Bridges', category: 'AI' },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     { id: 'redis', label: 'Redis In-Memory Cache', category: 'Database' },
     { id: 'aws', label: 'AWS Cloud Infrastructure', category: 'Cloud' },
     { id: 'azure', label: 'Microsoft Azure Cloud', category: 'Cloud' },
@@ -269,14 +293,18 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         en: 'Custom Web ERP (.NET Core, Next.js & MSSQL Database)',
         ar: 'نظام ERP سحابي مخصص بالكامل (.NET Core و Next.js و MSSQL)'
       },
+<<<<<<< HEAD
       subtitle: {
         en: '100% bespoke architecture, zero per-seat licensing, full IP ownership',
         ar: 'بنية برمجية مخصصة 100%، بدون رسوم تراخيص، ملكية فكرية كاملة'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 9500,
       baseWeeks: 7,
     },
     {
+<<<<<<< HEAD
       id: 'odoo-enterprise',
       title: {
         en: 'Odoo Enterprise Customization & Python Bridges',
@@ -290,15 +318,20 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
       baseWeeks: 6,
     },
     {
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       id: 'custom-web',
       title: {
         en: 'Custom Enterprise Web Portal & REST API Ecosystem',
         ar: 'بوابة إلكترونية مؤسسية مخصصة ومنظومة REST API متكاملة'
       },
+<<<<<<< HEAD
       subtitle: {
         en: 'High-speed Next.js portals, secure user authentication & microservices',
         ar: 'بوابات Next.js فائقة السرعة مع مصادقة أمنية متقدمة وخدمات مصغرة'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 6500,
       baseWeeks: 5,
     },
@@ -308,10 +341,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         en: 'Custom Mobile App (iOS Swift, Android Kotlin or Flutter)',
         ar: 'تطبيق جوال مخصص (iOS Swift أو Android Kotlin أو Flutter)'
       },
+<<<<<<< HEAD
       subtitle: {
         en: 'Native 60FPS mobile experiences with biometric security & offline sync',
         ar: 'تطبيقات جوال أصيلة بسرعة 60 إطاراً في الثانية مع حماية بيومترية'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 7500,
       baseWeeks: 6,
     },
@@ -321,10 +357,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         en: 'Enterprise AI Integrations, Custom RAG & Autonomous Agents',
         ar: 'تكاملات الذكاء الاصطناعي (AI) والبحث الدلالي RAG والوكلاء الأذكياء'
       },
+<<<<<<< HEAD
       subtitle: {
         en: 'Private domain LLMs, semantic vector search & business automation',
         ar: 'نماذج لغوية خاصة، بحث دلالي موجه، وأتمتة ذكية لمهام العمل'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 5500,
       baseWeeks: 4,
     },
@@ -334,10 +373,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         en: '24/7 Cloud Architecture & DevOps Operations (AWS / K8s)',
         ar: 'هندسة السيرفرات السحابية وإدارة DevOps المتقدمة 24/7'
       },
+<<<<<<< HEAD
       subtitle: {
         en: '99.99% SLA uptime, automated CI/CD pipelines & container orchestration',
         ar: 'استقرار تشغيلي 99.99%، خطوط نشر مؤتمتة وإدارة حاويات سحابية'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 4000,
       baseWeeks: 3,
     },
@@ -347,10 +389,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         en: 'Custom ERP Modernization & Enterprise System Integration',
         ar: 'تحديث وتطوير أنظمة الـ ERP والتكاملات البرمجية المؤسسية'
       },
+<<<<<<< HEAD
       subtitle: {
         en: 'Legacy DB migration, CDC data streaming & zero-downtime upgrades',
         ar: 'ترحيل قواعد البيانات القديمة ومزامنة البيانات اللحظية بدون انقطاع'
       },
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       baseCost: 5000,
       baseWeeks: 4,
     },
@@ -448,7 +493,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
   };
 
   return (
+<<<<<<< HEAD
     <section id="estimator" className="py-20 relative overflow-hidden bg-slate-50 dark:bg-[#060913] transition-colors">
+=======
+    <section id="estimator" className="py-20 relative overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -474,7 +523,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
           <div className="lg:col-span-7 space-y-7">
 
             {/* Step 1: Select Services */}
+<<<<<<< HEAD
             <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
+=======
+            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-xs">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">1</span>
                 <span>{t('estimator.stepServices')}</span>
@@ -487,11 +540,16 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                     <div
                       key={svc.id}
                       onClick={() => toggleService(svc.id)}
+<<<<<<< HEAD
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between min-w-0 ${isChecked
+=======
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${isChecked
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                           ? 'bg-indigo-50/70 dark:bg-slate-800 border-indigo-500/70 dark:border-indigo-500/60 shadow-2xs'
                           : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                     >
+<<<<<<< HEAD
                       <div className="flex items-start gap-3 min-w-0">
                         {isChecked ? (
                           <CheckSquare className="w-5 h-5 text-indigo-600 dark:text-sky-400 shrink-0 mt-0.5" />
@@ -508,6 +566,17 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                             </span>
                           )}
                         </div>
+=======
+                      <div className="flex items-center gap-3">
+                        {isChecked ? (
+                          <CheckSquare className="w-5 h-5 text-indigo-600 dark:text-sky-400 shrink-0" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400 dark:text-slate-600 shrink-0" />
+                        )}
+                        <span className={`text-sm ${isChecked ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-700 dark:text-slate-300 font-medium'}`}>
+                          {svc.title[language]}
+                        </span>
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                       </div>
                     </div>
                   );
@@ -516,7 +585,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
             </div>
 
             {/* Step 2: Project Scale & Complexity */}
+<<<<<<< HEAD
             <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
+=======
+            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-xs">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">2</span>
                 <span>{t('estimator.stepScale')}</span>
@@ -537,7 +610,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                   {
                     id: 'enterprise',
                     title: { en: 'Enterprise Grade', ar: 'مؤسسات كبرى ودولية' },
+<<<<<<< HEAD
                     desc: { en: 'Multi-region, strict RBAC, 99.99% SLA', ar: 'تعدد الفروع والمناطق وامتثال أمني' }
+=======
+                    desc: { en: 'Multi-region, strict RBAC, 99.999% SLA', ar: 'تعدد الفروع والمناطق وامتثال أمني' }
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   },
                 ].map((scale) => (
                   <div
@@ -560,7 +637,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
             </div>
 
             {/* Step 3: Cloud & SLA Support Tier */}
+<<<<<<< HEAD
             <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
+=======
+            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-xs">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">3</span>
                 <span>{t('estimator.stepSLA')}</span>
@@ -603,6 +684,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               </div>
             </div>
 
+<<<<<<< HEAD
             {/* Step 4: Primary Architecture Selector & Stack (Phase 3) */}
             <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
               <div className="flex items-center justify-between mb-3">
@@ -612,10 +694,22 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                 </h3>
                 <span className="text-[11px] font-mono text-indigo-600 dark:text-sky-400 font-bold">
                   {selectedStackSpecs.length} {language === 'ar' ? 'تقنيات مهيأة' : 'Tech Components Configured'}
+=======
+            {/* Step 4: Client Stack Specifications */}
+            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">4</span>
+                  <span>{language === 'ar' ? 'تخصيص التقنيات والمواصفات البرمجية' : 'Custom Tech Stack Specifications'}</span>
+                </h3>
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-sky-400 font-bold">
+                  {selectedStackSpecs.length} {language === 'ar' ? 'محددة' : 'Selected'}
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
                 {language === 'ar'
+<<<<<<< HEAD
                   ? 'اختر البنية المعمارية الأساسية لتهيئة منظومة التقنيات المناسبة تلقائياً، مع إمكانية التخصيص الدقيق للخبراء التقنيين:'
                   : 'Select your core architectural pattern to auto-configure optimal tech components, with advanced custom tuning:'}
               </p>
@@ -727,17 +821,50 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                   </div>
                 )}
               </div>
+=======
+                  ? 'اختر أطر العمل وقواعد البيانات لتخصيص البنية المعمارية لمشروعك:'
+                  : 'Specify your preferred frameworks, databases, and APIs for our bespoke architecture:'}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {techStackOptions.map((stack) => {
+                  const isSelected = selectedStackSpecs.includes(stack.label);
+                  return (
+                    <button
+                      type="button"
+                      key={stack.id}
+                      onClick={() => toggleStackSpec(stack.label)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${isSelected
+                          ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/60'
+                        }`}
+                    >
+                      <Cpu className="w-3 h-3" />
+                      <span>{stack.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             </div>
 
           </div>
 
           {/* Results Summary Card: Right 5 cols */}
           <div className="lg:col-span-5 sticky top-28">
+<<<<<<< HEAD
             <div className="glass-panel p-7 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-500/40 shadow-xl relative overflow-hidden bg-white dark:bg-[#0E1526]">
               <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo-500/10 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
 
               {/* Geo-Location Currency Bar */}
               <div className="mb-6 p-3 rounded-2xl bg-slate-50 dark:bg-[#131C31] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-3">
+=======
+            <div className="glass-panel p-7 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-500/40 shadow-xl relative overflow-hidden bg-white dark:bg-slate-900">
+              <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo-500/10 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Geo-Location Currency Bar */}
+              <div className="mb-6 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 <div className="flex items-center gap-2">
                   <Globe2 className="w-4 h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
                   <div className="text-xs">
@@ -755,7 +882,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                   <select
                     value={selectedCurrency}
                     onChange={(e) => setSelectedCurrency(e.target.value)}
+<<<<<<< HEAD
                     className="pl-2.5 pr-7 py-1.5 rounded-xl bg-white dark:bg-[#0E1526] border border-slate-200 dark:border-[#1E293B] text-xs font-mono font-bold text-indigo-600 dark:text-sky-300 focus:outline-none cursor-pointer appearance-none"
+=======
+                    className="pl-2.5 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-indigo-600 dark:text-sky-300 focus:outline-none cursor-pointer appearance-none"
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   >
                     {CURRENCIES.map(c => (
                       <option key={c.code} value={c.code}>
@@ -777,7 +908,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   {t('estimator.estimatedBudget')} ({selectedCurrency})
                 </span>
+<<<<<<< HEAD
                 <div className="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
+=======
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-baseline gap-1.5 text-gradient-cyan">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   <span>{currentCurrencyObj.symbol}{convertedMin.toLocaleString()}</span>
                   <span className="text-slate-400 text-2xl font-light">-</span>
                   <span>{currentCurrencyObj.symbol}{convertedMax.toLocaleString()}</span>
@@ -809,14 +944,22 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
 
               {/* Included Services Summary */}
               <div className="mb-4 space-y-2">
+<<<<<<< HEAD
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-heading">
+=======
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                   {language === 'ar' ? 'الخدمات المضمنة في التقدير:' : 'Included Scope Services:'}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedServices.map(id => {
                     const svc = servicesOptions.find(o => o.id === id);
                     return (
+<<<<<<< HEAD
                       <span key={id} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#131C31] border border-slate-200 dark:border-[#1E293B] text-[11px] font-medium text-slate-700 dark:text-slate-200 break-words">
+=======
+                      <span key={id} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-medium text-slate-700 dark:text-slate-200">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                         {svc?.title[language]}
                       </span>
                     );
@@ -827,12 +970,20 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               {/* Selected Tech Stack Summary */}
               {selectedStackSpecs.length > 0 && (
                 <div className="mb-7 space-y-2">
+<<<<<<< HEAD
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-heading">
+=======
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                     {language === 'ar' ? 'المواصفات التقنية المحددة:' : 'Specified Tech Stack:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedStackSpecs.map(spec => (
+<<<<<<< HEAD
                       <span key={spec} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-[#131C31] border border-indigo-200 dark:border-[#1E293B] text-[10px] font-mono text-indigo-700 dark:text-sky-300 font-semibold break-words">
+=======
+                      <span key={spec} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 text-[10px] font-mono text-indigo-700 dark:text-sky-300 font-semibold">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                         {spec}
                       </span>
                     ))}
@@ -843,9 +994,15 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               {/* CTA Lock in & Submit */}
               <button
                 onClick={handleTriggerProposal}
+<<<<<<< HEAD
                 className="w-full py-4 px-6 rounded-xl btn-primary-cta text-white font-extrabold text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{language === 'ar' ? 'طلب عرض فني وهندسي رسمي للمشروع' : 'Request Formal Engineering Proposal'}</span>
+=======
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/35 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>{t('estimator.submitQuote')}</span>
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
                 <ArrowRight className="w-4 h-4" />
               </button>
 

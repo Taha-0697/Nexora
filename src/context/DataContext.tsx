@@ -21,12 +21,16 @@ import {
 
 interface DataContextType {
   projects: Project[];
+<<<<<<< HEAD
   isLoadingProjects: boolean;
   projectError: string | null;
   refreshProjects: () => Promise<void>;
   reviews: Review[];
   isLoadingReviews: boolean;
   refreshReviews: () => Promise<void>;
+=======
+  reviews: Review[];
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   inquiries: Inquiry[];
   services: ServiceItem[];
   googleSettings: GoogleReviewSettings;
@@ -34,9 +38,15 @@ interface DataContextType {
   marketingSettings: MarketingSettings;
 
   // Project Actions
+<<<<<<< HEAD
   addProject: (project: any) => Promise<any>;
   updateProject: (project: Project) => void;
   deleteProject: (id: string) => Promise<any>;
+=======
+  addProject: (project: Omit<Project, 'id'>) => void;
+  updateProject: (project: Project) => void;
+  deleteProject: (id: string) => void;
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   // Review Actions
   addReview: (review: Omit<Review, 'id'>) => void;
@@ -69,6 +79,7 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+<<<<<<< HEAD
   // 1. Projects State (Hydrated from Neon DB /api/projects)
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
@@ -117,6 +128,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // 2. Reviews State (Hydrated from Neon DB /api/reviews)
+=======
+  // 1. Projects State
+  const [projects, setProjects] = useState<Project[]>(() => {
+    try {
+      const saved = localStorage.getItem('nexora_projects');
+      return saved ? JSON.parse(saved) : initialProjects;
+    } catch (e) {
+      console.error('Error loading projects', e);
+      return initialProjects;
+    }
+  });
+
+  // 2. Reviews State
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   const [reviews, setReviews] = useState<Review[]>(() => {
     try {
       const saved = localStorage.getItem('nexora_reviews');
@@ -126,6 +151,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return initialReviews;
     }
   });
+<<<<<<< HEAD
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
 
   const refreshReviews = async () => {
@@ -150,6 +176,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshProjects();
     refreshReviews();
   }, []);
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
 
   // 3. Inquiries State
   const [inquiries, setInquiries] = useState<Inquiry[]>(() => {
@@ -238,6 +266,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('nexora_marketing_settings', JSON.stringify(marketingSettings));
   }, [marketingSettings]);
 
+<<<<<<< HEAD
   // Project Handlers (Connected to Neon DB API)
   const addProject = async (projectData: any) => {
     try {
@@ -261,12 +290,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('addProject failed:', err);
       throw err;
     }
+=======
+  // Project Handlers
+  const addProject = (projectData: Omit<Project, 'id'>) => {
+    const newProject: Project = {
+      ...projectData,
+      id: `proj-${Date.now()}`
+    };
+    setProjects(prev => [newProject, ...prev]);
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
   };
 
   const updateProject = (updated: Project) => {
     setProjects(prev => prev.map(p => (p.id === updated.id ? updated : p)));
   };
 
+<<<<<<< HEAD
   const deleteProject = async (id: string) => {
     try {
       const res = await fetch(`/api/projects/${id}`, {
@@ -301,11 +340,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error('Failed to post review to API, saving locally:', err);
     }
+=======
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Review Handlers
+  const addReview = (reviewData: Omit<Review, 'id'>) => {
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     const newReview: Review = {
       ...reviewData,
       id: `rev-${Date.now()}`
     };
     setReviews(prev => [newReview, ...prev]);
+<<<<<<< HEAD
     return newReview;
   };
 
@@ -328,6 +376,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error('Failed to delete review on API:', err);
     }
+=======
+  };
+
+  const updateReview = (updated: Review) => {
+    setReviews(prev => prev.map(r => (r.id === updated.id ? updated : r)));
+  };
+
+  const deleteReview = (id: string) => {
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
     setReviews(prev => prev.filter(r => r.id !== id));
   };
 
@@ -467,12 +524,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <DataContext.Provider
       value={{
         projects,
+<<<<<<< HEAD
         isLoadingProjects,
         projectError,
         refreshProjects,
         reviews,
         isLoadingReviews,
         refreshReviews,
+=======
+        reviews,
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
         inquiries,
         services,
         googleSettings,

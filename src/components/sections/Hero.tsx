@@ -76,7 +76,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
           </p>
 
           {/* Action CTAs */}
+<<<<<<< HEAD
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-7">
+=======
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-14">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             <button
               onClick={() => scrollTo('estimator')}
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold text-sm tracking-wide shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/35 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group cursor-pointer"
@@ -103,6 +107,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
             </button>
           </div>
 
+<<<<<<< HEAD
           {/* Social Proof Uplift Badge Row (Phase 2) */}
           <div className="flex items-center justify-center mb-10">
             <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-full bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-xs text-xs sm:text-sm">
@@ -119,20 +124,32 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
             </div>
           </div>
 
+=======
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
           {/* Software House Core Stack Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto mb-16">
             {[
               'Custom Web ERP (.NET Core)',
+<<<<<<< HEAD
               'Odoo Enterprise & Python Bridges',
               'React.js & Next.js 15',
               'Microsoft SQL Server (MSSQL)',
               'PostgreSQL Data Sync',
+=======
+              'React.js & Next.js 15',
+              'Microsoft SQL Server (MSSQL)',
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               'REST API Integrations',
               'Native iOS Swift',
               'Native Android Kotlin',
               'Flutter Cross-Platform',
               'Node.js & NestJS',
+<<<<<<< HEAD
               'AI & LLM Integrations'
+=======
+              'AI & LLM Integrations',
+              'Customized Enterprise Solutions'
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
             ].map((tech) => (
               <span
                 key={tech}
@@ -159,7 +176,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">LIVE</span>
               </div>
             </div>
+<<<<<<< HEAD
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+=======
+            <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               99.99%
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -176,7 +197,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
               </span>
               <Server className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
             </div>
+<<<<<<< HEAD
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+=======
+            <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               150+
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -194,7 +219,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
                 <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
               </div>
             </div>
+<<<<<<< HEAD
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-amber-500 transition-colors flex items-baseline gap-1.5">
+=======
+            <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-amber-500 transition-colors flex items-baseline gap-1.5">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               <span>{googleSettings.overallRating}</span>
               <span className="text-sm font-semibold text-slate-400">/ 5.0</span>
             </div>
@@ -211,7 +240,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote }) => {
               </span>
               <Zap className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
             </div>
+<<<<<<< HEAD
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+=======
+            <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+>>>>>>> a5fac620b4a00e443286bf9df03bf10890b6e75e
               &lt; 20ms
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
