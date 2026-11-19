@@ -25,7 +25,7 @@ dist-ssr
 
 # Knowledge Graph
 .graph/
-
+*.env*
 <<<<<<< HEAD
 .neon
 =======
