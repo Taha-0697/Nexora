@@ -15,25 +15,33 @@ import {
   ChevronDown,
   Code2,
   Layers,
-  Sparkles,
   Globe2,
   Smartphone,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  Bot,
+  Cloud,
+  Calendar
 } from 'lucide-react';
 
 export type AppView =
   | 'website'
   | 'admin'
+  | 'case-studies'
   | 'service-custom-dotnet-erp'
   | 'service-odoo-enterprise'
-  | 'service-ai-and-cloud';
+  | 'service-web-apps'
+  | 'service-mobile-apps'
+  | 'service-ai-and-agents'
+  | 'service-cloud-devops'
+  | 'service-erp-modernization';
 
 interface NavbarProps {
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
   onNavigate?: (view: AppView, targetSection?: string) => void;
   onOpenQuote: () => void;
+  onBookDemo?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,6 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentView,
   onNavigate,
   onOpenQuote,
+  onBookDemo,
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
@@ -163,18 +172,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {/* Dropdown Flyout Menu */}
                 {servicesDropdownOpen && (
-                  <div className="absolute top-full -left-12 mt-2 w-[580px] rounded-2xl glass-panel bg-white/95 dark:bg-[#0E1526]/95 border border-slate-200 dark:border-slate-800 shadow-2xl p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute top-full -left-12 mt-2 w-[620px] rounded-2xl glass-panel bg-white/95 dark:bg-[#0E1526]/95 border border-slate-200 dark:border-slate-800 shadow-2xl p-5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
                       
-                      {/* Flagship Subpages Column */}
-                      <div className="space-y-2">
+                      {/* Column 1: Core Enterprise Solutions */}
+                      <div className="space-y-1.5">
                         <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400 px-2 pb-1">
-                          {language === 'ar' ? 'الحلول البرمجية الرائدة' : 'Flagship Solutions'}
+                          {language === 'ar' ? 'أنظمة المؤسسات و ERP' : 'Enterprise Systems & Portals'}
                         </div>
 
                         <div
                           onClick={() => handleNavigate('service-custom-dotnet-erp')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/60 dark:border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
@@ -185,7 +194,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 <span>{language === 'ar' ? 'نظام ERP مخصص بـ .NET' : 'Custom .NET Web ERP'}</span>
                                 <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                                 {language === 'ar' ? 'شفرة خاصة، بدون اشتراكات، ملكية 100%' : 'Bespoke microservices, zero seat licensing, 100% IP.'}
                               </p>
                             </div>
@@ -194,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                         <div
                           onClick={() => handleNavigate('service-odoo-enterprise')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/70 border border-purple-200/60 dark:border-purple-500/30 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform">
@@ -205,92 +214,115 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 <span>{language === 'ar' ? 'تطوير أودو إنتربرايز' : 'Odoo Enterprise & Python'}</span>
                                 <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {language === 'ar' ? 'تطوير موديولات، جسور FastAPI، مزامنة' : 'Custom modules, FastAPI bridges & PostgreSQL sync.'}
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'موديولات مخصصة، جسور FastAPI، مزامنة' : 'Custom modules, FastAPI bridges & PostgreSQL sync.'}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div
-                          onClick={() => handleNavigate('service-ai-and-cloud')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          onClick={() => handleNavigate('service-web-apps')}
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/70 border border-cyan-200/60 dark:border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-600 dark:text-cyan-400 group-hover:scale-105 transition-transform">
-                              <Sparkles className="w-4 h-4" />
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/70 border border-blue-200/60 dark:border-blue-500/30 flex items-center justify-center shrink-0 text-blue-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
+                              <Globe2 className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 flex items-center gap-1 font-heading">
-                                <span>{language === 'ar' ? 'ذكاء اصطناعي وبنية سحابية' : 'AI & 24/7 Cloud DevOps'}</span>
+                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 flex items-center gap-1 font-heading">
+                                <span>{language === 'ar' ? 'بوابات الويب و REST APIs' : 'Custom Web Apps & REST APIs'}</span>
                                 <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {language === 'ar' ? 'استرجاع RAG، وكلاء، وبنية 99.99%' : 'Enterprise RAG, AI agents & 99.99% SLA cloud.'}
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'بوابات React/Next.js عالية السرعة' : 'Next.js 15, React 19, high-concurrency microservices.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => handleNavigate('service-mobile-apps')}
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/70 border border-sky-200/60 dark:border-sky-500/30 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
+                              <Smartphone className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 flex items-center gap-1 font-heading">
+                                <span>{language === 'ar' ? 'تطبيقات الجوال (iOS و Android)' : 'Mobile Apps (iOS, Android, Flutter)'}</span>
+                                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'تطبيقات أصلية وفلاتر للشركات' : 'Native Swift, Kotlin, and offline-first Flutter.'}
                               </p>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Secondary Capabilities Column */}
-                      <div className="space-y-2">
-                        <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-2 pb-1">
-                          {language === 'ar' ? 'القدرات الهندسية الشاملة' : 'Core Capabilities'}
+                      {/* Column 2: Advanced AI, Cloud & Modernization */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 px-2 pb-1">
+                          {language === 'ar' ? 'الذكاء الاصطناعي والحوسبة السحابية' : 'AI, Cloud & Modernization'}
                         </div>
 
                         <div
-                          onClick={() => scrollToSection('services')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          onClick={() => handleNavigate('service-ai-and-agents')}
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-blue-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
-                              <Globe2 className="w-4 h-4" />
+                            <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/70 border border-cyan-200/60 dark:border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-600 dark:text-cyan-400 group-hover:scale-105 transition-transform">
+                              <Bot className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-sky-400 font-heading">
-                                {language === 'ar' ? 'بوابات الويب و SaaS' : 'Custom Web Apps & SaaS'}
+                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 flex items-center gap-1 font-heading">
+                                <span>{language === 'ar' ? 'ذكاء اصطناعي وأتمتة الوكلاء' : 'AI Integrations & Agentic Automation'}</span>
+                                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {language === 'ar' ? 'تطبيقات React / Next.js عالية الاستجابة' : 'High-concurrency React & Next.js web applications.'}
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'أنابيب RAG، وكلاء LangGraph، pgvector' : 'Enterprise RAG, LangGraph agents, pgvector.'}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div
-                          onClick={() => scrollToSection('services')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          onClick={() => handleNavigate('service-cloud-devops')}
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-                              <Smartphone className="w-4 h-4" />
+                            <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/70 border border-sky-200/60 dark:border-sky-500/30 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400 group-hover:scale-105 transition-transform">
+                              <Cloud className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-sky-400 font-heading">
-                                {language === 'ar' ? 'تطبيقات الجوال الأصلية' : 'Mobile Apps (iOS & Android)'}
+                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 flex items-center gap-1 font-heading">
+                                <span>{language === 'ar' ? 'إدارة السيرفرات السحابية 24/7' : '24/7 Cloud DevOps & SRE'}</span>
+                                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {language === 'ar' ? 'تطبيقات Swift و Kotlin و Flutter المتقدمة' : 'Native Swift, Kotlin, and enterprise Flutter apps.'}
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'جاهزية 99.99%، Kubernetes، Terraform' : 'Kubernetes, Terraform IaC & Prometheus 99.99% SLA.'}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div
-                          onClick={() => scrollToSection('services')}
-                          className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
+                          onClick={() => handleNavigate('service-erp-modernization')}
+                          className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                         >
                           <div className="flex items-start gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
+                            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-200/60 dark:border-amber-500/30 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
                               <RefreshCw className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-sky-400 font-heading">
-                                {language === 'ar' ? 'تحديث وترقية الأنظمة القديمة' : 'ERP Modernization & APIs'}
+                              <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 flex items-center gap-1 font-heading">
+                                <span>{language === 'ar' ? 'تحديث ERP والتكامل الشامل' : 'ERP Modernization & Integration'}</span>
+                                <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {language === 'ar' ? 'ترحيل قواعد البيانات وقنوات الربط' : 'Zero-downtime database and legacy API cutovers.'}
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {language === 'ar' ? 'بث CDC، انتقال تدريجي بدون توقف' : 'Change Data Capture (Kafka) & zero-downtime cutover.'}
                               </p>
                             </div>
                           </div>
@@ -315,6 +347,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Dedicated Case Studies Nav Link */}
+              <button
+                onClick={() => handleNavigate('case-studies')}
+                className={`text-sm font-semibold transition-colors cursor-pointer ${
+                  currentView === 'case-studies'
+                    ? 'text-indigo-600 dark:text-sky-400 font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-400'
+                }`}
+              >
+                {language === 'ar' ? 'دراسات الحالة' : 'Case Studies'}
+              </button>
 
               <button
                 onClick={() => scrollToSection('portfolio')}
@@ -402,6 +446,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{language === 'en' ? 'العربية' : 'English'}</span>
               </button>
 
+              {/* Book Free Live Demo */}
+              {onBookDemo && (
+                <button
+                  onClick={onBookDemo}
+                  className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-500/30 text-indigo-700 dark:text-sky-300 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
+                  title="Schedule a private interactive 30-minute walkthrough"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />
+                  <span>{language === 'ar' ? 'عرض حي مجاني' : 'Live Demo'}</span>
+                </button>
+              )}
+
               {/* Main Proposal CTA */}
               <button
                 onClick={onOpenQuote}
@@ -459,37 +515,66 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {mobileServicesOpen && (
-                <div className="pl-3 pr-1 py-2 space-y-2 border-l-2 border-indigo-500/30 dark:border-sky-500/30 my-1 bg-slate-50/50 dark:bg-slate-900/40 rounded-r-lg">
+                <div className="pl-3 pr-1 py-2 space-y-1.5 border-l-2 border-indigo-500/30 dark:border-sky-500/30 my-1 bg-slate-50/50 dark:bg-slate-900/40 rounded-r-lg">
                   <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400 pt-1">
-                    {language === 'ar' ? 'صفحات الخدمات المخصصة' : 'Flagship Services'}
+                    {language === 'ar' ? 'صفحات الخدمات المخصصة (7 خدمات)' : 'Dedicated Service Pages (7 Services)'}
                   </div>
                   <button
                     onClick={() => handleNavigate('service-custom-dotnet-erp')}
-                    className="block w-full text-left py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400"
                   >
-                    • {language === 'ar' ? 'نظام ERP مخصص بـ .NET 9' : 'Custom .NET Web ERP & Portals'}
+                    • {language === 'ar' ? 'نظام ERP مخصص بـ .NET' : 'Custom .NET Web ERP'}
                   </button>
                   <button
                     onClick={() => handleNavigate('service-odoo-enterprise')}
-                    className="block w-full text-left py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400"
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400"
                   >
-                    • {language === 'ar' ? 'تطوير أودو إنتربرايز و Python' : 'Odoo Enterprise & Python Bridges'}
+                    • {language === 'ar' ? 'تطوير أودو إنتربرايز و Python' : 'Odoo Enterprise & Python'}
                   </button>
                   <button
-                    onClick={() => handleNavigate('service-ai-and-cloud')}
-                    className="block w-full text-left py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400"
+                    onClick={() => handleNavigate('service-web-apps')}
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400"
                   >
-                    • {language === 'ar' ? 'ذكاء اصطناعي وبنية سحابية 24/7' : 'AI Integrations & 24/7 Cloud DevOps'}
+                    • {language === 'ar' ? 'بوابات الويب و REST APIs' : 'Custom Web Apps & REST APIs'}
                   </button>
                   <button
-                    onClick={() => scrollToSection('services')}
-                    className="block w-full text-left py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-sky-400 border-t border-slate-200/60 dark:border-slate-800 pt-2"
+                    onClick={() => handleNavigate('service-mobile-apps')}
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400"
                   >
-                    {language === 'ar' ? '← عرض جميع الخدمات والقدرات' : '→ View All Capabilities Overview'}
+                    • {language === 'ar' ? 'تطبيقات الجوال (iOS, Android, Flutter)' : 'Custom Mobile Apps (iOS, Android, Flutter)'}
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('service-ai-and-agents')}
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400"
+                  >
+                    • {language === 'ar' ? 'ذكاء اصطناعي وأتمتة الوكلاء' : 'AI Integrations & Agentic Automation'}
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('service-cloud-devops')}
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400"
+                  >
+                    • {language === 'ar' ? 'إدارة السيرفرات السحابية 24/7' : '24/7 Server Management & Cloud DevOps'}
+                  </button>
+                  <button
+                    onClick={() => handleNavigate('service-erp-modernization')}
+                    className="block w-full text-left py-1 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-amber-600 dark:hover:text-amber-400"
+                  >
+                    • {language === 'ar' ? 'تحديث ERP والتكامل الشامل' : 'ERP Modernization & Integration'}
                   </button>
                 </div>
               )}
             </div>
+
+            <button
+              onClick={() => handleNavigate('case-studies')}
+              className={`block w-full text-left py-2 text-sm font-semibold transition-colors ${
+                currentView === 'case-studies'
+                  ? 'text-indigo-600 dark:text-sky-400 font-bold'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-sky-400'
+              }`}
+            >
+              {language === 'ar' ? 'دراسات الحالة' : 'Case Studies'}
+            </button>
 
             <button
               onClick={() => scrollToSection('portfolio')}
@@ -528,7 +613,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               {t('nav.contact')}
             </button>
 
-            <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+              {onBookDemo && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onBookDemo();
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-sky-300 font-bold text-xs text-center border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{language === 'ar' ? 'حجز عرض حي تفاعلي مجاني' : 'Book Free Live Demo'}</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

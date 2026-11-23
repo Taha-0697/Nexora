@@ -54,6 +54,9 @@ interface DataContextType {
   addAdminUser: (user: Omit<AdminUser, 'id'>) => void;
   updateAdminUser: (user: AdminUser) => void;
   deleteAdminUser: (id: string) => void;
+  resetUserPassword: (userId: string, newPassword?: string) => string;
+  resetAllPasswords: (newPassword?: string) => string;
+  resetPasswordByEmail: (email: string, newPassword?: string) => boolean;
 
   // Marketing & Ads Actions
   updateMarketingSettings: (settings: Partial<MarketingSettings>) => void;
@@ -66,27 +69,45 @@ interface DataContextType {
   resetToDefaults: () => void;
 }
 
+function safeParseLocalStorage<T>(key: string, fallback: T, isArray = false): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    if (raw.includes('__proto__') || raw.includes('constructor') || raw.includes('prototype')) {
+      console.warn(`[Security] Suspicious payload detected in localStorage for key "${key}", purging.`);
+      localStorage.removeItem(key);
+      return fallback;
+    }
+    const parsed = JSON.parse(raw);
+    if (isArray && !Array.isArray(parsed)) {
+      console.warn(`[Security] Expected array for key "${key}", received non-array.`);
+      return fallback;
+    }
+    return parsed as T;
+  } catch (err) {
+    console.error(`Error safely reading localStorage key "${key}":`, err);
+    return fallback;
+  }
+}
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // 1. Projects State (Hydrated from Neon DB /api/projects)
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
-      const saved = localStorage.getItem('nexora_projects');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Wipe out old 6 dummy projects if stored in localStorage
-        const hasDummy = Array.isArray(parsed) && parsed.some((p: any) =>
-          p.id === 'proj-1' ||
-          p.title?.en?.includes('NexCore') ||
-          p.titleEn?.includes('NexCore')
-        );
-        if (!hasDummy && Array.isArray(parsed)) return parsed;
-      }
-      return [];
+      const parsed = safeParseLocalStorage<Project[]>('nexora_projects', initialProjects, true);
+      // Wipe out old 6 dummy projects if stored in localStorage
+      const hasDummy = Array.isArray(parsed) && parsed.some((p: any) =>
+        p.id === 'proj-1' ||
+        p.title?.en?.includes('NexCore') ||
+        p.titleEn?.includes('NexCore')
+      );
+      if (!hasDummy && Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return initialProjects;
     } catch (e) {
       console.error('Error loading initial projects', e);
-      return [];
+      return initialProjects;
     }
   });
 
@@ -118,13 +139,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // 2. Reviews State (Hydrated from Neon DB /api/reviews)
   const [reviews, setReviews] = useState<Review[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_reviews');
-      return saved ? JSON.parse(saved) : initialReviews;
-    } catch (e) {
-      console.error('Error loading reviews', e);
-      return initialReviews;
-    }
+    return safeParseLocalStorage<Review[]>('nexora_reviews', initialReviews, true);
   });
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
 
@@ -152,29 +167,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   // 3. Inquiries State
-  const [inquiries, setInquiries] = useState<Inquiry[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_inquiries');
-      if (saved) return JSON.parse(saved);
-      return [
-        {
-          id: 'inq-1',
-          name: 'Mansoor Al-Rashid',
-          email: 'm.rashid@gulflogistics.sa',
-          phone: '+966 50 882 1920',
-          company: 'Gulf Horizon Logistics Holding',
-          serviceType: 'Custom Web ERP & Enterprise Portals',
-          budget: '$30,000 - $60,000',
-          timeline: '2 - 3 Months',
-          message: 'We require a high-throughput .NET Core Web API and Next.js portal with MSSQL to manage multi-country logistics across 5 GCC ports.',
-          createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-          status: 'proposal_sent'
-        }
-      ];
-    } catch (e) {
-      console.error('Error loading inquiries', e);
-      return [];
+  const defaultInquiries: Inquiry[] = [
+    {
+      id: 'inq-1',
+      name: 'Mansoor Al-Rashid',
+      email: 'm.rashid@gulflogistics.sa',
+      phone: '+966 50 882 1920',
+      company: 'Gulf Horizon Logistics Holding',
+      serviceType: 'Custom Web ERP & Enterprise Portals',
+      budget: '$30,000 - $60,000',
+      timeline: '2 - 3 Months',
+      message: 'We require a high-throughput .NET Core Web API and Next.js portal with MSSQL to manage multi-country logistics across 5 GCC ports.',
+      createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+      status: 'proposal_sent'
     }
+  ];
+
+  const [inquiries, setInquiries] = useState<Inquiry[]>(() => {
+    return safeParseLocalStorage<Inquiry[]>('nexora_inquiries', defaultInquiries, true);
   });
 
   // 4. Services (static catalog)
@@ -182,35 +192,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // 5. Google Review Settings
   const [googleSettings, setGoogleSettings] = useState<GoogleReviewSettings>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_google_settings');
-      return saved ? JSON.parse(saved) : initialGoogleSettings;
-    } catch (e) {
-      console.error('Error loading google settings', e);
-      return initialGoogleSettings;
-    }
+    return safeParseLocalStorage<GoogleReviewSettings>('nexora_google_settings', initialGoogleSettings, false);
   });
 
   // 6. Admin Users State
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_admin_users');
-      return saved ? JSON.parse(saved) : initialAdminUsers;
-    } catch (e) {
-      console.error('Error loading admin users', e);
-      return initialAdminUsers;
-    }
+    return safeParseLocalStorage<AdminUser[]>('nexora_admin_users', initialAdminUsers, true);
   });
 
   // 7. Marketing Settings State
   const [marketingSettings, setMarketingSettings] = useState<MarketingSettings>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_marketing_settings');
-      return saved ? JSON.parse(saved) : initialMarketingSettings;
-    } catch (e) {
-      console.error('Error loading marketing settings', e);
-      return initialMarketingSettings;
-    }
+    return safeParseLocalStorage<MarketingSettings>('nexora_marketing_settings', initialMarketingSettings, false);
   });
 
   // Persist updates to localStorage
@@ -250,8 +242,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || errJson.details || 'Failed to save project');
+        let errorDetails = '';
+        try {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const errJson = await res.json();
+            errorDetails = errJson.details
+              ? `${errJson.error || 'Database Error'}: ${errJson.details}`
+              : (errJson.error || errJson.message || '');
+          } else {
+            const rawText = await res.text();
+            if (rawText.trim().startsWith('<')) {
+              errorDetails = 'API endpoint returned HTML (SPA rewrite). The Serverless Function in /api may not be reachable or rewrites are misconfigured.';
+            } else {
+              errorDetails = rawText.slice(0, 250);
+            }
+          }
+        } catch {
+          // ignore
+        }
+        const errorMsg = errorDetails 
+          ? `[HTTP ${res.status}] ${errorDetails}`
+          : `[HTTP ${res.status} ${res.statusText}] Failed to save project to Neon PostgreSQL.`;
+        throw new Error(errorMsg);
       }
 
       const created = await res.json();
@@ -274,8 +287,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || errJson.details || 'Failed to delete project');
+        let errorDetails = '';
+        try {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const errJson = await res.json();
+            errorDetails = errJson.details || errJson.error || '';
+          }
+        } catch {
+          // ignore
+        }
+        const errorMsg = errorDetails 
+          ? `[HTTP ${res.status}] ${errorDetails}`
+          : `[HTTP ${res.status} ${res.statusText}] Failed to delete project.`;
+        throw new Error(errorMsg);
       }
 
       setProjects(prev => prev.filter(p => p.id !== id));
@@ -405,6 +430,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAdminUsers(prev => prev.filter(u => u.id !== id));
   };
 
+  const resetUserPassword = (userId: string, newPassword?: string): string => {
+    const finalPassword = newPassword?.trim() || `nexora${Math.floor(1000 + Math.random() * 9000)}!`;
+    setAdminUsers(prev => prev.map(u => (u.id === userId ? { ...u, password: finalPassword } : u)));
+    return finalPassword;
+  };
+
+  const resetAllPasswords = (newPassword?: string): string => {
+    const finalPassword = newPassword?.trim() || `Nexora#${new Date().getFullYear()}!`;
+    setAdminUsers(prev => prev.map(u => ({ ...u, password: finalPassword })));
+    return finalPassword;
+  };
+
+  const resetPasswordByEmail = (email: string, newPassword?: string): boolean => {
+    const target = adminUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!target) return false;
+    const finalPassword = newPassword?.trim() || `Nexora#${Math.floor(1000 + Math.random() * 9000)}!`;
+    setAdminUsers(prev => prev.map(u => (u.id === target.id ? { ...u, password: finalPassword } : u)));
+    return true;
+  };
+
   // Marketing & Ads Handlers
   const updateMarketingSettings = (settings: Partial<MarketingSettings>) => {
     setMarketingSettings(prev => ({ ...prev, ...settings }));
@@ -492,6 +537,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addAdminUser,
         updateAdminUser,
         deleteAdminUser,
+        resetUserPassword,
+        resetAllPasswords,
+        resetPasswordByEmail,
         updateMarketingSettings,
         addAdCampaign,
         updateAdCampaign,

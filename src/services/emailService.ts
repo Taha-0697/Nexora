@@ -402,3 +402,32 @@ export const sendCostEstimateEmail = async (
     buildTemplateParams({ ...baseInput, toName: formData.name.trim() })
   );
 };
+
+/**
+ * Dispatch Admin Password Reset OTP Email
+ */
+export const sendAdminOtpEmail = async (email: string, otpCode: string): Promise<boolean> => {
+  const { serviceId, publicKey, adminTemplateId } = getEmailConfig();
+
+  // If EmailJS is not configured or in dev, log to console
+  if (!serviceId || !publicKey || !adminTemplateId) {
+    console.log(`[OTP TRANSACTIONAL EMAIL] Delivered to ${email}: Your 6-digit verification code is: ${otpCode}`);
+    return true;
+  }
+
+  try {
+    const params = {
+      to_email: email,
+      to_name: 'Nexora Administrator',
+      subject: 'Your Nexora Command Center Verification Code',
+      message: `Your single-use 6-digit verification code is: ${otpCode}\n\nThis code is valid for 10 minutes. If you did not request this verification, please contact your security team immediately.`,
+      otp_code: otpCode,
+    };
+
+    const res = await emailjs.send(serviceId, adminTemplateId, params, publicKey);
+    return res.status === 200;
+  } catch (err) {
+    console.warn('[sendAdminOtpEmail] EmailJS dispatch fallback:', err);
+    return false;
+  }
+};

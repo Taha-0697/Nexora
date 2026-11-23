@@ -4,7 +4,6 @@ import { useData } from '../../context/DataContext';
 import type { Project, ServiceCategory } from '../../types';
 import {
   FolderGit2,
-  ExternalLink,
   ArrowUpRight,
   TrendingUp,
   X,
@@ -12,19 +11,28 @@ import {
   Building,
   Globe2,
   Play,
-  Video
+  Video,
+  Images
 } from 'lucide-react';
 
-export const Portfolio: React.FC = () => {
+interface PortfolioProps {
+  onBookDemo?: (project: Project) => void;
+}
+
+export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
   const { language, t } = useLanguage();
   const { projects } = useData();
   const [activeCategory, setActiveCategory] = useState<ServiceCategory>('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [videoWalkthroughProject, setVideoWalkthroughProject] = useState<Project | null>(null);
+  const [activeModalImageIndex, setActiveModalImageIndex] = useState<number>(0);
 
   const filteredProjects = activeCategory === 'all'
     ? projects
     : projects.filter(p => {
+      if (activeCategory === 'proprietary') {
+        return p.category === 'proprietary' || p.isProprietary === true || (p.categories && p.categories.includes('proprietary'));
+      }
       if (p.categories && p.categories.length > 0) {
         return p.categories.includes(activeCategory);
       }
@@ -32,19 +40,19 @@ export const Portfolio: React.FC = () => {
     });
 
   return (
-    <section id="portfolio" className="py-20 relative bg-slate-100/50 dark:bg-slate-900/30 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <section id="portfolio" className="py-12 sm:py-16 lg:py-20 relative bg-slate-50 section-surface-1 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-4">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-3 sm:mb-4">
             <FolderGit2 className="w-3.5 h-3.5" />
             <span>{t('portfolio.badge')}</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3 sm:mb-4">
             {t('portfolio.title')}
           </h2>
-          <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-lg">
             {language === 'ar'
               ? 'نماذج ودراسات حالة من أنظمة الـ ERP المخصصة وبوابات الويب السحابية وتطبيقات الجوال مع روابط مباشرة للاطلاع والتجربة.'
               : 'Explore custom ERPs, high-throughput web portals, native mobile apps, and AI integrations with direct live demonstration links.'}
@@ -52,7 +60,7 @@ export const Portfolio: React.FC = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-12">
           {[
             { id: 'all', label: t('portfolio.all') },
             { id: 'erp', label: language === 'ar' ? 'أنظمة ERP مخصصة' : 'Custom ERP' },
@@ -60,11 +68,12 @@ export const Portfolio: React.FC = () => {
             { id: 'mobile', label: t('portfolio.mobile') },
             { id: 'ai', label: language === 'ar' ? 'ذكاء اصطناعي (AI)' : 'AI Integrations' },
             { id: 'cloud', label: t('portfolio.cloud') },
+            { id: 'proprietary', label: language === 'ar' ? 'البرمجيات الحصرية (Proprietary Suite)' : 'Proprietary Suite' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveCategory(tab.id as ServiceCategory)}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${activeCategory === tab.id
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${activeCategory === tab.id
                   ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60 shadow-2xs'
                 }`}
@@ -90,12 +99,12 @@ export const Portfolio: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {filteredProjects.map((project) => {
               const projectTitle = typeof project.title === 'object'
                 ? (project.title[language] || project.title.en)
                 : ((project as any).titleEn || 'Untitled Deliverable');
-              const projectImage = project.image || (project as any).imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+              const projectImage = (project.images && project.images.length > 0 ? project.images[0] : null) || project.image || (project as any).imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
               const projectClient = project.client || (project as any).clientName || 'Enterprise Partner';
               const projectCountry = project.country || (project as any).region || 'UAE / GCC';
               const projectTags = Array.isArray(project.tags) ? project.tags : (Array.isArray((project as any).techStack) ? (project as any).techStack : []);
@@ -103,7 +112,6 @@ export const Portfolio: React.FC = () => {
               const projectShortDesc = typeof project.shortDesc === 'object'
                 ? (project.shortDesc[language] || project.shortDesc.en)
                 : (project.shortDesc || '');
-              const liveUrl = project.liveUrl || (project as any).liveDemoUrl;
 
               return (
                 <div
@@ -111,16 +119,22 @@ export const Portfolio: React.FC = () => {
                   className="glass-panel rounded-2xl overflow-hidden border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-sky-500/50 transition-all duration-300 group hover:-translate-y-1.5 flex flex-col justify-between shadow-xs hover:shadow-xl bg-white dark:bg-slate-900/80"
                 >
                   <div
-                    onClick={() => setSelectedProject(project)}
+                    onClick={() => {
+                      setActiveModalImageIndex(0);
+                      setSelectedProject(project);
+                    }}
                     className="cursor-pointer"
                   >
                     {/* Image Container */}
-                    <div className="relative h-52 w-full overflow-hidden bg-slate-100 dark:bg-slate-950">
+                    <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-100 dark:bg-slate-950">
                       <img
                         src={projectImage}
                         alt={projectTitle}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
 
@@ -163,11 +177,11 @@ export const Portfolio: React.FC = () => {
                     </div>
 
                     {/* Card Content */}
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors line-clamp-2">
+                    <div className="p-4 sm:p-6">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5 sm:mb-2 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors line-clamp-2">
                         {projectTitle}
                       </h3>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4 line-clamp-3">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3 sm:mb-4 line-clamp-3">
                         {projectShortDesc}
                       </p>
 
@@ -214,20 +228,31 @@ export const Portfolio: React.FC = () => {
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* Live Redirect Button */}
-                      {liveUrl ? (
-                        <a
-                          href={liveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs hover:shadow-sm"
-                          title="Direct Project Demo Redirect"
+                      {/* Action Button: Live Demo or Book Free Live Demo for Proprietary */}
+                      {project.category === 'proprietary' || project.isProprietary ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onBookDemo) {
+                              onBookDemo(project);
+                            } else {
+                              window.dispatchEvent(new CustomEvent('nexora_book_demo', { detail: { project } }));
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 cursor-pointer"
+                          title="Schedule a private interactive 30-minute walkthrough"
                         >
-                          <span>{language === 'ar' ? 'رابط المشروع' : 'Live Demo'}</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{language === 'ar' ? 'حجز عرض حي مجاني' : 'Book Free Live Demo'}</span>
+                        </button>
+                      ) : project.images && project.images.length > 1 ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-sky-300 text-[11px] font-mono font-semibold">
+                          <Images className="w-3.5 h-3.5" />
+                          <span>{project.images.length} Arch Views</span>
+                        </span>
                       ) : (
-                        <span className="text-[11px] font-mono text-slate-400">Enterprise NDA</span>
+                        <span className="text-[11px] font-mono text-slate-400">Enterprise Solution</span>
                       )}
                     </div>
                   </div>
@@ -253,27 +278,68 @@ export const Portfolio: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Modal Image Header */}
-            <div className="relative h-60 sm:h-72 w-full rounded-2xl overflow-hidden mb-6">
-              <img
-                src={selectedProject.image || (selectedProject as any).imageUrl}
-                alt={typeof selectedProject.title === 'object' ? (selectedProject.title[language] || selectedProject.title.en) : ((selectedProject as any).titleEn || '')}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {(selectedProject.categories && selectedProject.categories.length > 0 ? selectedProject.categories : [selectedProject.category]).map(cat => (
-                    <span key={cat} className="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black uppercase tracking-wider inline-block shadow-sm">
-                      {cat}
-                    </span>
-                  ))}
+            {/* Modal Image Header & Gallery */}
+            {(() => {
+              const modalImages = selectedProject.images && selectedProject.images.length > 0
+                ? selectedProject.images
+                : [selectedProject.image || (selectedProject as any).imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'];
+              const currentImg = modalImages[activeModalImageIndex] || modalImages[0];
+
+              return (
+                <div className="space-y-3 mb-6">
+                  <div className="relative h-60 sm:h-72 w-full rounded-2xl overflow-hidden">
+                    <img
+                      src={currentImg}
+                      alt={typeof selectedProject.title === 'object' ? (selectedProject.title[language] || selectedProject.title.en) : ((selectedProject as any).titleEn || '')}
+                      className="w-full h-full object-cover transition-all duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {(selectedProject.categories && selectedProject.categories.length > 0 ? selectedProject.categories : [selectedProject.category]).map(cat => (
+                          <span key={cat} className="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black uppercase tracking-wider inline-block shadow-sm">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-extrabold text-white">
+                        {typeof selectedProject.title === 'object' ? (selectedProject.title[language] || selectedProject.title.en) : ((selectedProject as any).titleEn || '')}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Thumbnail Row if Multiple Images */}
+                  {modalImages.length > 1 && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      {modalImages.map((imgUrl, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveModalImageIndex(idx)}
+                          className={`relative w-20 h-14 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                            activeModalImageIndex === idx
+                              ? 'border-indigo-500 scale-105 shadow-md shadow-indigo-500/20'
+                              : 'border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Preview ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white">
-                  {typeof selectedProject.title === 'object' ? (selectedProject.title[language] || selectedProject.title.en) : ((selectedProject as any).titleEn || '')}
-                </h3>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Meta Info Bar */}
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-300 pb-5 border-b border-slate-200 dark:border-slate-800 mb-6">
@@ -340,17 +406,24 @@ export const Portfolio: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
-              {(selectedProject.liveUrl || (selectedProject as any).liveDemoUrl) && (
-                <a
-                  href={selectedProject.liveUrl || (selectedProject as any).liveDemoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20"
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+              {(selectedProject.category === 'proprietary' || selectedProject.isProprietary) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const proj = selectedProject;
+                    setSelectedProject(null);
+                    if (onBookDemo) {
+                      onBookDemo(proj);
+                    } else {
+                      window.dispatchEvent(new CustomEvent('nexora_book_demo', { detail: { project: proj } }));
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02] cursor-pointer"
                 >
-                  <span>{language === 'ar' ? 'زيارة الرابط المباشر للمشروع' : 'Visit Live Deployment'}</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                  <Calendar className="w-4 h-4" />
+                  <span>{language === 'ar' ? 'حجز عرض حي تفاعلي مجاناً' : 'Book Free Live Demo'}</span>
+                </button>
               )}
               <button
                 onClick={() => setSelectedProject(null)}
@@ -436,17 +509,6 @@ export const Portfolio: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {(videoWalkthroughProject.liveUrl || (videoWalkthroughProject as any).liveDemoUrl) && (
-                  <a
-                    href={videoWalkthroughProject.liveUrl || (videoWalkthroughProject as any).liveDemoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
-                  >
-                    <span>{language === 'ar' ? 'تشغيل البوابة الحية' : 'Launch Live Demo'}</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
                 <button
                   type="button"
                   onClick={() => setVideoWalkthroughProject(null)}

@@ -7,6 +7,7 @@ export type ServiceCategory =
   | 'web'
   | 'ai'
   | 'wordpress'
+  | 'proprietary'
   | 'all';
 
 export interface LocalizedString {
@@ -29,10 +30,17 @@ export interface Project {
   client: string;
   country: string;
   image: string;
+  images?: string[];
   tags: string[];
   metrics: ProjectMetric[];
   featured: boolean;
-  liveUrl?: string;
+  isProprietary?: boolean;
+  demoBookingMetadata?: {
+    enabled?: boolean;
+    productName?: string;
+    calendlyOrBookingUrl?: string;
+    badgeText?: string;
+  };
   completionDate: string;
 }
 

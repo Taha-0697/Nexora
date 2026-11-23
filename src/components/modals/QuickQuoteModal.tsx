@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useData } from '../../context/DataContext';
 import {
@@ -9,9 +9,9 @@ import {
   Sparkles,
   Cpu,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Calendar
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { sendCostEstimateEmail, isValidEmail } from '../../services/emailService';
 
 interface QuickQuoteModalProps {
@@ -25,10 +25,14 @@ interface QuickQuoteModalProps {
     estimatedTimeline?: string;
     serviceName?: string;
     customStack?: string[];
+    isLiveDemo?: boolean;
+    productName?: string;
+    category?: string;
+    caseStudy?: string;
   };
 }
 
-export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
+const QuickQuoteModalComponent: React.FC<QuickQuoteModalProps> = ({
   isOpen,
   onClose,
   prefillScope,
@@ -52,8 +56,23 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const updateField = useCallback((field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   useEffect(() => {
-    if (prefillScope) {
+    if (isOpen && prefillScope) {
+      if (prefillScope.isLiveDemo || prefillScope.productName) {
+        setFormData(prev => ({
+          ...prev,
+          serviceType: `Live Demo: ${prefillScope.productName || 'Proprietary Suite'}`,
+          budget: 'N/A - Free Live Demo',
+          timeline: 'Immediate / Next 48 Hours',
+          message: `Requesting a private 30-minute interactive live demonstration of: ${prefillScope.productName || 'Proprietary Software Suite'}.`,
+        }));
+        return;
+      }
+
       const defaultService = prefillScope.serviceName 
         || (prefillScope.services && prefillScope.services.join(', '))
         || 'Custom Web ERP & Enterprise Portals';
@@ -73,9 +92,11 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
           : prev.message
       }));
     }
-  }, [prefillScope]);
+  }, [isOpen, prefillScope]);
 
   if (!isOpen) return null;
+
+  const isDemo = Boolean(prefillScope?.isLiveDemo || prefillScope?.productName);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,16 +166,6 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
           customStack: [],
         });
 
-        try {
-          confetti({
-            particleCount: 100,
-            spread: 80,
-            origin: { y: 0.5 }
-          });
-        } catch {
-          // ignore
-        }
-
         setSubmitted(true);
       } else {
         setSubmitError(
@@ -194,12 +205,18 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {language === 'ar' ? 'تم استلام طلب العرض الفني!' : 'Proposal Request Dispatched!'}
+              {isDemo
+                ? (language === 'ar' ? 'تم تأكيد حجز العرض الحي!' : 'Live Demo Scheduled!')
+                : (language === 'ar' ? 'تم استلام طلب العرض الفني!' : 'Proposal Request Dispatched!')}
             </h3>
             <p className="text-slate-600 dark:text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
-              {language === 'ar' 
-                ? 'شكراً لتواصلك مع نيكسورا سيستمز. تم إدراج طلبك في بوابة الإدارة وسيقوم مهندس الحلول بالتواصل معك خلال ساعات قليلة.'
-                : 'Thank you for connecting with Nexora Systems. Our solution engineering lead will review your requirements and reach out within 4 hours.'}
+              {isDemo
+                ? (language === 'ar'
+                  ? `شكراً لاهتمامك بـ ${prefillScope?.productName || 'أنظمتنا الحصرية'}. سيقوم مهندس الحلول بإرسال دعوة التقويم ورابط بيئة العرض المباشرة عبر بريدك الإلكتروني.`
+                  : `Thank you for booking a live demo for ${prefillScope?.productName || 'our proprietary suite'}. Our lead systems architect will email you a calendar invite with private live staging environment credentials.`)
+                : (language === 'ar' 
+                  ? 'شكراً لتواصلك مع نيكسورا سيستمز. تم إدراج طلبك في بوابة الإدارة وسيقوم مهندس الحلول بالتواصل معك خلال ساعات قليلة.'
+                  : 'Thank you for connecting with Nexora Systems. Our solution engineering lead will review your requirements and reach out within 4 hours.')}
             </p>
             <button
               onClick={() => {
@@ -214,17 +231,27 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
         ) : (
           <div>
             <div className="flex items-center gap-2 text-indigo-600 dark:text-sky-400 text-xs font-mono font-semibold uppercase tracking-wider mb-2">
-              <Sparkles className="w-4 h-4" />
-              <span>{language === 'ar' ? 'طلب عرض هندسي واستشاري' : 'Engineering Proposal Request'}</span>
+              {isDemo ? <Calendar className="w-4 h-4 text-sky-400" /> : <Sparkles className="w-4 h-4" />}
+              <span>
+                {isDemo
+                  ? (language === 'ar' ? 'حجز عرض تفاعلي مباشر' : 'Private Live System Demonstration')
+                  : (language === 'ar' ? 'طلب عرض هندسي واستشاري' : 'Engineering Proposal Request')}
+              </span>
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
-              {language === 'ar' ? 'لنبدأ في هندسة مشروعك القادم' : 'Let’s Architect Your Next Solution'}
+              {isDemo
+                ? (language === 'ar' ? `تجربة حية لـ ${prefillScope?.productName || 'المنظومة'}` : `Book Free Live Demo: ${prefillScope?.productName || 'Proprietary Software'}`)
+                : (language === 'ar' ? 'لنبدأ في هندسة مشروعك القادم' : 'Let’s Architect Your Next Solution')}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 text-xs mb-6">
-              {language === 'ar' 
-                ? 'سنقوم بإعداد دراسة فنية ونطاق عمل مخصص بالكامل مع اتفاقية سرية (NDA).'
-                : 'We will prepare a comprehensive architectural scope and fixed-price quotation under mutual NDA.'}
+              {isDemo
+                ? (language === 'ar'
+                  ? 'احجز جلسة استعراضية تفاعلية مدتها 30 دقيقة مع رئيس مهندسي الأنظمة لاختبار جميع الوحدات وقواعد البيانات والمزامنة اللحظية.'
+                  : 'Schedule an interactive 30-minute private walkthrough with our principal solutions architect to test live modules, database syncing, and telemetry.')
+                : (language === 'ar' 
+                  ? 'سنقوم بإعداد دراسة فنية ونطاق عمل مخصص بالكامل مع اتفاقية سرية (NDA).'
+                  : 'We will prepare a comprehensive architectural scope and fixed-price quotation under mutual NDA.')}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -237,7 +264,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => updateField('name', e.target.value)}
                     placeholder="Your Name"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-indigo-500"
                   />
@@ -250,7 +277,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => updateField('email', e.target.value)}
                     placeholder="name@company.com"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-indigo-500"
                   />
@@ -265,7 +292,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                   <input
                     type="text"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => updateField('phone', e.target.value)}
                     placeholder="+968 / +971 / +1"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-indigo-500"
                   />
@@ -277,7 +304,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                   <input
                     type="text"
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    onChange={(e) => updateField('company', e.target.value)}
                     placeholder="Company Name"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-indigo-500"
                   />
@@ -292,7 +319,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                   <input
                     type="text"
                     value={formData.budget}
-                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                    onChange={(e) => updateField('budget', e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-sky-300 font-bold text-xs"
                   />
                 </div>
@@ -303,7 +330,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                   <input
                     type="text"
                     value={formData.timeline}
-                    onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
+                    onChange={(e) => updateField('timeline', e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
                   />
                 </div>
@@ -332,7 +359,7 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                 <textarea
                   rows={3}
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e) => updateField('message', e.target.value)}
                   placeholder="Outline any legacy software, servers, or user scale..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs resize-none focus:ring-2 focus:ring-indigo-500"
                 />
@@ -367,8 +394,12 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
                     </>
                   ) : (
                     <>
-                      <span>Submit Inquiry to Nexora Architects</span>
-                      <Send className="w-3.5 h-3.5" />
+                      <span>
+                        {isDemo
+                          ? (language === 'ar' ? 'تأكيد حجز العرض التجريبي المباشر ←' : 'Confirm Free Live Demo Request →')
+                          : (language === 'ar' ? 'إرسال طلب العرض الفني لكبار المعماريين' : 'Submit Inquiry to Nexora Architects')}
+                      </span>
+                      {isDemo ? <Calendar className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
                     </>
                   )}
                 </button>
@@ -387,3 +418,5 @@ export const QuickQuoteModal: React.FC<QuickQuoteModalProps> = ({
     </div>
   );
 };
+
+export const QuickQuoteModal = React.memo(QuickQuoteModalComponent);

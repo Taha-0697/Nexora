@@ -259,7 +259,7 @@ export const WhyChooseUs: React.FC = () => {
   };
 
   return (
-    <section id="why-us" className="py-24 relative bg-slate-50 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors overflow-hidden">
+    <section id="why-us" className="py-12 sm:py-16 lg:py-24 relative bg-slate-50 section-surface-1 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors overflow-hidden">
       
       {/* Background Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-indigo-500/10 via-sky-500/10 to-transparent blur-3xl pointer-events-none rounded-full" />
@@ -267,14 +267,14 @@ export const WhyChooseUs: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-4 shadow-xs">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-3 sm:mb-4 shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />
             <span>
               {language === 'ar' ? 'لماذا تختار نيكسورا للأنظمة؟' : 'Why Choose Nexora Systems'}
             </span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4 font-heading">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-3 sm:mb-4 font-heading">
             {language === 'ar' ? (
               <>
                 هندسة برمجية بواسطة <span className="text-gradient-cyan">كبار المعماريين</span>، بلا وسطاء
@@ -285,7 +285,7 @@ export const WhyChooseUs: React.FC = () => {
               </>
             )}
           </h2>
-          <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-lg leading-relaxed">
             {language === 'ar'
               ? 'إجابات مباشرة وشفافة لأهم الأسئلة التقنية التي تهم قادة الأعمال ومديري التكنولوجيا قبل بدء مشاريعهم.'
               : 'Direct, substantive answers to the core architectural, operational, and commercial questions enterprise leaders evaluate before partnering with us.'}
@@ -293,7 +293,7 @@ export const WhyChooseUs: React.FC = () => {
         </div>
 
         {/* 7 Distinct Value Summary Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-3.5 mb-14">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 sm:gap-3.5 mb-6 sm:mb-14">
           {[
             {
               title: { en: 'Direct Senior Code', ar: 'مهندسون كبار مباشرة' },
@@ -349,7 +349,7 @@ export const WhyChooseUs: React.FC = () => {
         </div>
 
         {/* Category Pills Filter */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-8">
           {categories.map(cat => (
             <button
               key={cat.id}
@@ -366,7 +366,7 @@ export const WhyChooseUs: React.FC = () => {
         </div>
 
         {/* Deep Substantive Q&A Accordion */}
-        <div className="max-w-4xl mx-auto space-y-4">
+        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4">
           {filteredQuestions.map((item, idx) => {
             const isOpen = openIndex === idx;
 
@@ -383,10 +383,10 @@ export const WhyChooseUs: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleAccordion(idx)}
-                  className="w-full p-5 sm:p-6 text-start flex items-center justify-between gap-4 cursor-pointer"
+                  className="w-full p-3.5 sm:p-6 text-start flex items-center justify-between gap-3 sm:gap-4 cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  <div className="flex items-center gap-2.5 sm:gap-3.5">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                       isOpen
                         ? 'bg-indigo-600/15 text-indigo-600 dark:text-sky-400'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
@@ -394,16 +394,16 @@ export const WhyChooseUs: React.FC = () => {
                       {item.icon}
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400 block mb-1">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400 block mb-0.5 sm:mb-1">
                         {item.category[language]}
                       </span>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                      <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                         {item.question[language]}
                       </h3>
                     </div>
                   </div>
 
-                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400">
                     {isOpen ? (
                       <ChevronUp className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
                     ) : (
@@ -414,13 +414,13 @@ export const WhyChooseUs: React.FC = () => {
 
                 {/* Expanded Answer Content */}
                 {isOpen && (
-                  <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-slate-100 dark:border-slate-800/80 animate-fade-in">
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
+                  <div className="px-3.5 sm:px-6 pb-4 sm:pb-6 pt-2 border-t border-slate-100 dark:border-slate-800/80 animate-fade-in">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-3 sm:mb-5">
                       {item.answer[language]}
                     </p>
 
                     {/* Technical Proof Highlights */}
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 space-y-2">
+                    <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 space-y-2">
                       <div className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 mb-2">
                         <Code2 className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />
                         <span>{language === 'ar' ? 'المعايير الهندسية المضمونة:' : 'Engineering Guarantees:'}</span>
@@ -440,7 +440,7 @@ export const WhyChooseUs: React.FC = () => {
         </div>
 
         {/* Bottom Direct CTA */}
-        <div className="mt-14 text-center">
+        <div className="mt-8 sm:mt-14 text-center">
           <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm max-w-2xl mx-auto">
             <div className="text-start">
               <div className="text-xs font-bold text-slate-900 dark:text-white">

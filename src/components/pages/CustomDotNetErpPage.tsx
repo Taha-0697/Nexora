@@ -12,6 +12,7 @@ import {
   Calculator,
   Lock
 } from 'lucide-react';
+import { RelatedServiceCaseStudies } from '../common/RelatedServiceCaseStudies';
 
 interface CustomDotNetErpPageProps {
   onOpenQuote: () => void;
@@ -27,7 +28,7 @@ export const CustomDotNetErpPage: React.FC<CustomDotNetErpPageProps> = ({
   return (
     <div className="pt-24 pb-20 overflow-hidden">
       {/* Hero Header */}
-      <section className="relative py-16 sm:py-24 border-b border-slate-200/80 dark:border-slate-800/80">
+      <section className="relative py-16 sm:py-24 border-b border-slate-200/80 dark:border-slate-800/80 section-surface-1">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/10 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
@@ -76,7 +77,7 @@ export const CustomDotNetErpPage: React.FC<CustomDotNetErpPageProps> = ({
       </section>
 
       {/* Core Architectural Pillars */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-surface-2">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400">
             {language === 'ar' ? 'البنية المعمارية المتقدمة' : 'Engineered for Performance & Scale'}
@@ -156,9 +157,15 @@ export const CustomDotNetErpPage: React.FC<CustomDotNetErpPageProps> = ({
           ))}
         </div>
 
+        {/* Related Case Studies for Custom .NET Web ERP */}
+        <RelatedServiceCaseStudies
+          serviceField="Custom Web ERP (.NET Core)"
+          onOpenQuote={onOpenQuote}
+        />
+
         {/* Live CTA Banner */}
         <div className="mt-16 glass-panel p-8 sm:p-12 rounded-3xl border border-indigo-200 dark:border-indigo-500/40 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-indigo-950/40 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-mono font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-mono font-bold">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Ready for Production Deployment</span>
           </div>

@@ -13,9 +13,6 @@ import {
 export const TechStack: React.FC = () => {
   const { language, t } = useLanguage();
   const [selectedTabs, setSelectedTabs] = useState<string[]>(['dotnet-erp']);
-  const [extraCategories, setExtraCategories] = useState<any[]>([]);
-  const [newCatName, setNewCatName] = useState('');
-  const [showAdminControls, setShowAdminControls] = useState(false);
   const categories = [
     {
       id: 'dotnet-erp',
@@ -111,62 +108,33 @@ export const TechStack: React.FC = () => {
   ];
 
   const displayedItems = selectedTabs.flatMap((tabId) => {
-    const cat = [...categories, ...extraCategories].find((c) => c.id === tabId);
+    const cat = categories.find((c) => c.id === tabId);
     return cat?.items ?? [];
   });
 
   return (
-    <section id="tech-stack" className="py-20 relative bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <section id="tech-stack" className="py-12 sm:py-16 lg:py-20 relative bg-white section-surface-2 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-4">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-3 sm:mb-4">
             <Terminal className="w-3.5 h-3.5" />
             <span>{t('tech.badge')}</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3 sm:mb-4">
             {t('tech.title')}
           </h2>
-          <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-lg">
             {language === 'ar'
               ? 'ترسانة تقنية حديثة ومختبرة في كبرى المؤسسات. نركز على الأنظمة المخصصة بالكامل بـ .NET Core و Next.js و React و MSSQL وتطبيقات الجوال بـ Swift و Kotlin و Flutter، مع حلول الذكاء الاصطناعي والتكامل المؤسسي.'
               : 'Our battle-tested stack focuses on custom engineered architectures: .NET Core Web APIs, Next.js, React, Node.js, MSSQL databases, native Swift & Kotlin apps, Flutter, AI integrations, and bespoke enterprise systems.'}
           </p>
         </div>
-        {/* Optional Admin/Dev Category Management (Hidden by default for pristine client view) */}
-        {showAdminControls && (
-          <div className="flex items-center gap-2 mb-6 justify-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs max-w-md mx-auto">
-            <input
-              type="text"
-              placeholder="New category name"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1"
-            />
-            <button
-              onClick={() => {
-                const name = newCatName.trim();
-                if (!name) return;
-                const id = name.toLowerCase().replace(/\s+/g, '-');
-                const newCat = {
-                  id,
-                  name: { en: name, ar: name },
-                  icon: <Terminal className="w-4 h-4" />,
-                  items: []
-                };
-                setExtraCategories([...extraCategories, newCat]);
-                setNewCatName('');
-              }}
-              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition cursor-pointer"
-            >
-              Add Category
-            </button>
-          </div>
-        )}
+
         {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {[...categories, ...extraCategories].map((cat) => (
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-12">
+          {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() =>
@@ -174,7 +142,7 @@ export const TechStack: React.FC = () => {
                   prev.includes(cat.id) ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
                 )
               }
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${selectedTabs.includes(cat.id)
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${selectedTabs.includes(cat.id)
                 ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
                 }`}
@@ -186,36 +154,25 @@ export const TechStack: React.FC = () => {
         </div>
 
         {/* Technology Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {displayedItems.map((tech, idx) => (
             <div
               key={idx}
-              className="glass-panel p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group hover:-translate-y-1 shadow-xs hover:shadow-md bg-white dark:bg-slate-900/60"
+              className="glass-panel p-3.5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group hover:-translate-y-1 shadow-xs hover:shadow-md bg-white dark:bg-slate-900/60"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+              <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2">
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors leading-snug">
                   {tech.name}
                 </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 font-semibold">
+                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 font-semibold whitespace-nowrap shrink-0">
                   {tech.badge}
                 </span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 {tech.role}
               </p>
             </div>
           ))}
-        </div>
-
-        {/* Subtle Category Customization Toggle (Dev/Admin) */}
-        <div className="mt-8 text-center">
-          <button
-            type="button"
-            onClick={() => setShowAdminControls(!showAdminControls)}
-            className="text-[11px] font-mono text-slate-400 hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-          >
-            {showAdminControls ? '— Hide Stack Customizer' : '+ Configure Custom Categories'}
-          </button>
         </div>
 
       </div>

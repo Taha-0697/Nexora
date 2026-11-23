@@ -333,7 +333,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     if (p.includes('google')) {
       return {
         name: 'Google Ads',
-        color: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+        color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20',
         icon: (
           <svg className="w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -347,7 +347,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     if (p.includes('meta') || p.includes('facebook') || p.includes('instagram')) {
       return {
         name: 'Meta Ads',
-        color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+        color: 'text-indigo-800 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20',
         icon: (
           <span className="font-bold text-[11px] inline-block mr-1 text-[#1877F2]">M</span>
         )
@@ -356,7 +356,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     if (p.includes('linkedin')) {
       return {
         name: 'LinkedIn Ads',
-        color: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+        color: 'text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/20',
         icon: (
           <span className="font-bold text-[11px] inline-block mr-1 text-[#0A66C2]">in</span>
         )
@@ -365,15 +365,15 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     if (p.includes('x') || p.includes('twitter')) {
       return {
         name: 'X (Twitter)',
-        color: 'text-slate-300 bg-slate-500/10 border-slate-500/20',
+        color: 'text-slate-900 dark:text-slate-200 bg-slate-100 dark:bg-slate-500/10 border-slate-300 dark:border-slate-500/20',
         icon: (
-          <span className="font-bold text-[11px] inline-block mr-1 text-slate-100">𝕏</span>
+          <span className="font-bold text-[11px] inline-block mr-1 text-slate-900 dark:text-slate-100">𝕏</span>
         )
       };
     }
     return {
       name: platform,
-      color: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+      color: 'text-slate-800 dark:text-slate-400 bg-slate-100 dark:bg-slate-500/10 border-slate-300 dark:border-slate-500/20',
       icon: <Megaphone className="w-3.5 h-3.5 inline mr-1" />
     };
   };
@@ -390,53 +390,53 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
       )}
 
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 shadow-xl relative overflow-hidden text-white">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="glass-panel p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:via-indigo-950/60 dark:to-slate-900 shadow-xl relative overflow-hidden text-slate-900 dark:text-white">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-mono font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-400/30 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-semibold mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />
               <span>Omnichannel Growth Engine • Active</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Omnichannel Marketing & Ad Campaign Hub
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 max-w-2xl mt-1 leading-relaxed">
               Create, run, schedule, and orchestrate paid campaigns & organic content across{' '}
-              <strong className="text-white">Google Ads</strong>,{' '}
-              <strong className="text-white">Meta Ads</strong>,{' '}
-              <strong className="text-white">LinkedIn B2B</strong>, and{' '}
-              <strong className="text-white">X (Twitter)</strong>.
+              <strong className="text-blue-700 dark:text-sky-300 font-bold">Google Ads</strong>,{' '}
+              <strong className="text-indigo-800 dark:text-indigo-300 font-bold">Meta Ads</strong>,{' '}
+              <strong className="text-blue-800 dark:text-blue-400 font-bold">LinkedIn B2B</strong>, and{' '}
+              <strong className="text-slate-900 dark:text-white font-bold">X (Twitter)</strong>.
             </p>
           </div>
 
           {/* Quick Metrics Capsule */}
-          <div className="flex flex-wrap items-center gap-3 bg-white/5 backdrop-blur-md p-3 rounded-2xl border border-white/10">
-            <div className="px-3 py-1 border-r border-white/10">
-              <span className="block text-[10px] font-mono text-slate-400 uppercase">Active Budget</span>
-              <span className="text-base font-bold text-emerald-400">${totalDailyBudget}/day</span>
+          <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-white/5 backdrop-blur-md p-3 rounded-2xl border border-slate-200 dark:border-white/10">
+            <div className="px-3 py-1 border-r border-slate-200 dark:border-white/10">
+              <span className="block text-[10px] font-mono text-slate-600 dark:text-slate-400 uppercase font-semibold">Active Budget</span>
+              <span className="text-base font-bold text-emerald-700 dark:text-emerald-400">${totalDailyBudget}/day</span>
             </div>
-            <div className="px-3 py-1 border-r border-white/10">
-              <span className="block text-[10px] font-mono text-slate-400 uppercase">Total Leads</span>
-              <span className="text-base font-bold text-sky-300">{totalConversions}</span>
+            <div className="px-3 py-1 border-r border-slate-200 dark:border-white/10">
+              <span className="block text-[10px] font-mono text-slate-600 dark:text-slate-400 uppercase font-semibold">Total Leads</span>
+              <span className="text-base font-bold text-blue-700 dark:text-sky-300">{totalConversions}</span>
             </div>
             <div className="px-3 py-1">
-              <span className="block text-[10px] font-mono text-slate-400 uppercase">Avg CTR</span>
-              <span className="text-base font-bold text-amber-300">{avgCtr}%</span>
+              <span className="block text-[10px] font-mono text-slate-600 dark:text-slate-400 uppercase font-semibold">Avg CTR</span>
+              <span className="text-base font-bold text-amber-800 dark:text-amber-300">{avgCtr}%</span>
             </div>
           </div>
         </div>
 
         {/* Sub-Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 pt-6 mt-6 border-t border-white/10 relative z-10">
+        <div className="flex flex-wrap gap-2 pt-6 mt-6 border-t border-slate-200 dark:border-white/10 relative z-10">
           <button
             type="button"
             onClick={() => setActiveSubTab('campaigns')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'campaigns'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -446,10 +446,10 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           <button
             type="button"
             onClick={() => setActiveSubTab('composer')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'composer'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70'
             }`}
           >
             <Share2 className="w-4 h-4" />
@@ -459,10 +459,10 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           <button
             type="button"
             onClick={() => setActiveSubTab('analytics')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'analytics'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
@@ -472,10 +472,10 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           <button
             type="button"
             onClick={() => setActiveSubTab('connections')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'connections'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70'
             }`}
           >
             <Key className="w-4 h-4" />
@@ -485,10 +485,10 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           <button
             type="button"
             onClick={() => setActiveSubTab('banner')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeSubTab === 'banner'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/70'
             }`}
           >
             <Megaphone className="w-4 h-4" />
@@ -560,23 +560,23 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-mono text-[10px] border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 uppercase font-mono text-[10px] font-bold border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-5 py-3.5">Campaign Name & Region</th>
-                    <th className="px-5 py-3.5">Network</th>
-                    <th className="px-5 py-3.5">Status</th>
-                    <th className="px-5 py-3.5">Daily Budget</th>
-                    <th className="px-5 py-3.5">Impressions / Clicks</th>
-                    <th className="px-5 py-3.5">CTR</th>
-                    <th className="px-5 py-3.5">Conversions</th>
-                    <th className="px-5 py-3.5">Spend / ROAS</th>
-                    {canManage && <th className="px-5 py-3.5 text-right">Actions</th>}
+                    <th className="px-5 py-3.5 whitespace-nowrap">Campaign Name & Region</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Network</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Daily Budget</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Impressions / Clicks</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">CTR</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Conversions</th>
+                    <th className="px-5 py-3.5 whitespace-nowrap">Spend / ROAS</th>
+                    {canManage && <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredCampaigns.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-5 py-12 text-center text-slate-400 font-mono text-xs">
+                      <td colSpan={9} className="px-5 py-12 text-center text-slate-500 dark:text-slate-400 font-mono text-xs">
                         No campaigns found for the selected filter.
                       </td>
                     </tr>
@@ -592,24 +592,24 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                             <span className="font-bold text-slate-900 dark:text-white block text-sm">
                               {camp.name}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-medium">
                               Geo: {camp.targetRegion}
                             </span>
                           </td>
 
-                          <td className="px-5 py-3.5">
-                            <span className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-bold border inline-flex items-center ${badge.color}`}>
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <span className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-bold border inline-flex items-center gap-1.5 ${badge.color}`}>
                               {badge.icon}
                               {badge.name}
                             </span>
                           </td>
 
-                          <td className="px-5 py-3.5">
+                          <td className="px-5 py-3.5 whitespace-nowrap">
                             {canManage ? (
                               <button
                                 type="button"
                                 onClick={() => toggleAdCampaignStatus(camp.id)}
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                                   camp.status === 'active'
                                     ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200'
                                     : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-200'
@@ -628,13 +628,13 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                                 )}
                               </button>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                              <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                                 {camp.status.toUpperCase()}
                               </span>
                             )}
                           </td>
 
-                          <td className="px-5 py-3.5">
+                          <td className="px-5 py-3.5 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">
                                 ${camp.dailyBudget}/day
@@ -655,29 +655,29 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                             </div>
                           </td>
 
-                          <td className="px-5 py-3.5 font-mono text-[11px]">
+                          <td className="px-5 py-3.5 font-mono text-[11px] whitespace-nowrap">
                             <span className="text-slate-900 dark:text-white font-semibold">{camp.impressions.toLocaleString()}</span>
-                            <span className="text-slate-400"> imp • </span>
-                            <span className="text-indigo-600 dark:text-sky-400 font-bold">{camp.clicks.toLocaleString()} clicks</span>
+                            <span className="text-slate-500 dark:text-slate-400"> imp • </span>
+                            <span className="text-blue-700 dark:text-sky-400 font-bold">{camp.clicks.toLocaleString()} clicks</span>
                           </td>
 
-                          <td className="px-5 py-3.5 font-mono font-bold text-amber-600 dark:text-amber-400 text-xs">
+                          <td className="px-5 py-3.5 font-mono font-bold text-amber-800 dark:text-amber-400 text-xs whitespace-nowrap">
                             {ctr}%
                           </td>
 
-                          <td className="px-5 py-3.5">
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs">
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono font-bold text-xs">
                               {camp.conversions} leads
                             </span>
                           </td>
 
-                          <td className="px-5 py-3.5 font-mono">
+                          <td className="px-5 py-3.5 font-mono whitespace-nowrap">
                             <div className="text-slate-900 dark:text-white font-semibold">${camp.spent.toLocaleString()}</div>
-                            <div className="text-[10px] text-emerald-500 font-bold">{roas}x ROAS</div>
+                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">{roas}x ROAS</div>
                           </td>
 
                           {canManage && (
-                            <td className="px-5 py-3.5 text-right">
+                            <td className="px-5 py-3.5 text-right whitespace-nowrap">
                               <button
                                 type="button"
                                 onClick={() => deleteAdCampaign(camp.id)}
@@ -1148,24 +1148,24 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
           {/* Top KPI Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              { label: 'Total Ad Spend', value: `$${totalSpend.toLocaleString()}`, trend: '+12.4%', color: 'text-indigo-500' },
-              { label: 'Total Impressions', value: totalImpressions.toLocaleString(), trend: '+28.2%', color: 'text-sky-500' },
-              { label: 'Total Ad Clicks', value: totalClicks.toLocaleString(), trend: '+15.6%', color: 'text-blue-500' },
-              { label: 'Average CTR', value: `${avgCtr}%`, trend: '+0.4%', color: 'text-amber-500' },
-              { label: 'Qualified Leads', value: `${totalConversions} Leads`, trend: '+21.8%', color: 'text-emerald-500' },
-              { label: 'Average CPA', value: `$${avgCpa}`, trend: '-8.5%', color: 'text-emerald-400' }
+              { label: 'Total Ad Spend', value: `$${totalSpend.toLocaleString()}`, trend: '+12.4%', color: 'text-indigo-700 dark:text-indigo-400' },
+              { label: 'Total Impressions', value: totalImpressions.toLocaleString(), trend: '+28.2%', color: 'text-blue-700 dark:text-sky-400' },
+              { label: 'Total Ad Clicks', value: totalClicks.toLocaleString(), trend: '+15.6%', color: 'text-blue-700 dark:text-blue-400' },
+              { label: 'Average CTR', value: `${avgCtr}%`, trend: '+0.4%', color: 'text-amber-800 dark:text-amber-400' },
+              { label: 'Qualified Leads', value: `${totalConversions} Leads`, trend: '+21.8%', color: 'text-emerald-700 dark:text-emerald-400' },
+              { label: 'Average CPA', value: `$${avgCpa}`, trend: '-8.5%', color: 'text-emerald-700 dark:text-emerald-400' }
             ].map((kpi, idx) => (
               <div
                 key={idx}
                 className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs"
               >
-                <span className="text-[10px] font-mono uppercase text-slate-400 block truncate">
+                <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400 font-semibold block truncate">
                   {kpi.label}
                 </span>
                 <span className={`text-xl font-extrabold block mt-1 ${kpi.color}`}>
                   {kpi.value}
                 </span>
-                <span className="text-[10px] font-mono text-emerald-500 font-bold flex items-center gap-0.5 mt-1">
+                <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-0.5 mt-1">
                   <TrendingUp className="w-3 h-3" />
                   <span>{kpi.trend} vs last month</span>
                 </span>
@@ -1184,7 +1184,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                 leads: '84 Leads',
                 cpa: '$29.52',
                 ctr: '4.46%',
-                badgeClass: 'text-blue-400 border-blue-500/20 bg-blue-500/10'
+                badgeClass: 'text-blue-700 dark:text-blue-400 border-blue-500/20 bg-blue-500/10'
               },
               {
                 platform: 'LinkedIn B2B',
@@ -1194,7 +1194,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                 leads: '42 Leads',
                 cpa: '$45.00',
                 ctr: '3.71%',
-                badgeClass: 'text-sky-400 border-sky-500/20 bg-sky-500/10'
+                badgeClass: 'text-blue-700 dark:text-sky-400 border-sky-500/20 bg-sky-500/10'
               },
               {
                 platform: 'Meta Ads',
@@ -1204,7 +1204,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                 leads: '19 Leads',
                 cpa: '$37.89',
                 ctr: '3.23%',
-                badgeClass: 'text-indigo-400 border-indigo-500/20 bg-indigo-500/10'
+                badgeClass: 'text-indigo-700 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10'
               },
               {
                 platform: 'X (Twitter)',
@@ -1214,7 +1214,7 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                 leads: '14 Leads',
                 cpa: '$32.14',
                 ctr: '3.90%',
-                badgeClass: 'text-slate-300 border-slate-500/20 bg-slate-500/10'
+                badgeClass: 'text-slate-700 dark:text-slate-300 border-slate-500/20 bg-slate-500/10'
               }
             ].map((ch, i) => (
               <div
@@ -1225,27 +1225,27 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
                   <span className={`px-2.5 py-1 rounded-md font-mono text-xs font-bold border ${ch.badgeClass}`}>
                     {ch.platform}
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-500">{ch.leads}</span>
+                  <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400">{ch.leads}</span>
                 </div>
                 
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">{ch.sub}</p>
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Spend</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Spend</span>
                     <span className="font-bold text-slate-900 dark:text-white">{ch.spend}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Clicks</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Clicks</span>
                     <span className="font-bold text-slate-900 dark:text-white">{ch.clicks}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Avg CPA</span>
-                    <span className="font-bold text-emerald-500">{ch.cpa}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">Avg CPA</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{ch.cpa}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">CTR</span>
-                    <span className="font-bold text-amber-500">{ch.ctr}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">CTR</span>
+                    <span className="font-bold text-amber-800 dark:text-amber-400">{ch.ctr}</span>
                   </div>
                 </div>
               </div>

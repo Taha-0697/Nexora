@@ -335,7 +335,212 @@ export const initialServices: ServiceItem[] = [
   }
 ];
 
-export const initialProjects: Project[] = [];
+export const initialProjects: Project[] = [
+  {
+    id: 'proj-nexora-flow',
+    title: {
+      en: 'Nexora Flow™ Enterprise ERP & Autonomous Operations Suite',
+      ar: 'منظومة Nexora Flow™ لإدارة الموارد والعمليات المؤسسية'
+    },
+    category: 'proprietary',
+    categories: ['proprietary', 'erp'],
+    shortDesc: {
+      en: 'Turnkey proprietary ERP software asset with 100% intellectual property ownership, multi-branch supply chain controls, and automated banking ledger reconciliation.',
+      ar: 'أصل برمجي مؤسسي مملوك بنسبة 100% لإدارة الموارد وسلاسل التوريد والربط البنكي الآلي بدون أي اشتراكات متكررة.'
+    },
+    fullDesc: {
+      en: 'Nexora Flow™ is our flagship proprietary enterprise suite engineered with .NET 9 Core Web API, React 19, MSSQL, and Redis cache clusters. Eliminates recurring per-seat SaaS taxes while delivering sub-40ms ledger updates and enterprise RBAC.',
+      ar: 'منظومة متكاملة مملوكة للمؤسسة مبنية على .NET 9 و Next.js و MSSQL تلغي الرسوم الشهرية نهائياً وتوفر استقراراً لحظياً للعمليات.'
+    },
+    client: 'Nexora Software Assets',
+    country: 'UAE / GCC & Global',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+    tags: ['.NET 9 Core', 'Next.js 15', 'MSSQL', 'Redis', 'Proprietary IP'],
+    metrics: [
+      { label: { en: 'IP Ownership', ar: 'ملكية المصدر' }, value: '100% Owned' },
+      { label: { en: 'Deployment SLA', ar: 'سرعة النشر' }, value: '14 Days' },
+      { label: { en: 'License Fees', ar: 'رسوم التراخيص' }, value: '$0 / Seat' }
+    ],
+    featured: true,
+    isProprietary: true,
+    demoBookingMetadata: {
+      enabled: true,
+      productName: 'Nexora Flow™ Enterprise ERP Suite',
+      badgeText: 'Instant Staging Access'
+    },
+    completionDate: '2026'
+  },
+  {
+    id: 'proj-omnisync-edi',
+    title: {
+      en: 'OmniSync™ B2B EDI & Financial Bridge Appliance',
+      ar: 'منصة OmniSync™ للربط المالي والمصرفي والـ EDI المؤسسي'
+    },
+    category: 'proprietary',
+    categories: ['proprietary', 'web'],
+    shortDesc: {
+      en: 'Proprietary integration gateway connecting ERP ledgers to SWIFT, central bank e-invoicing portals, and enterprise supplier networks.',
+      ar: 'بوابة ربط حصرية توحد أنظمة المحاسبة مع أنظمة الفوترة الضريبية وشبكات الموردين والبنوك بشكل مؤتمت.'
+    },
+    fullDesc: {
+      en: 'High-throughput transactional bridge handling AS2, SFTP, and REST JSON/XML payloads with cryptographic payload verification and audit hashing.',
+      ar: 'محرك تبادل بيانات عالي السرعة يحقق التوافق التام مع متطلبات الربط الحكومي والمصرفي بأعلى درجات التشفير.'
+    },
+    client: 'Nexora Software Assets',
+    country: 'Saudi Arabia & UAE',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+    tags: ['FastAPI', 'PostgreSQL', 'AES-256', 'EDI AS2', 'Proprietary IP'],
+    metrics: [
+      { label: { en: 'Throughput', ar: 'سرعة المعالجة' }, value: '8.4k tx/s' },
+      { label: { en: 'Reconciliation', ar: 'دقة المطابقة' }, value: '99.999%' },
+      { label: { en: 'Per-seat Cost', ar: 'التكلفة التشغيلية' }, value: '$0 SaaS Fee' }
+    ],
+    featured: true,
+    isProprietary: true,
+    demoBookingMetadata: {
+      enabled: true,
+      productName: 'OmniSync™ B2B EDI Bridge',
+      badgeText: 'Live Architecture Walkthrough'
+    },
+    completionDate: '2026'
+  },
+  {
+    id: 'proj-medpulse',
+    title: {
+      en: 'MedPulse Multi-Hospital Clinical ERP & Patient Telemetry',
+      ar: 'نظام MedPulse لإدارة المستشفيات والعمليات السريرية والفوترة'
+    },
+    category: 'erp',
+    categories: ['erp'],
+    shortDesc: {
+      en: 'Enterprise hospital operations ERP engineered with .NET Core Web API, Next.js, and MSSQL handling multi-facility clinical scheduling, electronic health records, and insurance claim adjudication.',
+      ar: 'منظومة طبية شاملة لإدارة المستشفيات متعددة الفروع والسجلات الصحية الإلكترونية ومطالبات التأمين.'
+    },
+    fullDesc: {
+      en: 'Architected to withstand 24/7 high-concurrency loads across 14 hospital branches with sub-50ms patient lookup and zero data-loss audit logging.',
+      ar: 'بنية تحتية متطورة تدعم 14 فرعاً طبياً مع أوقات استجابة فائقة السرعة وأعلى معايير حماية البيانات الصحية.'
+    },
+    client: 'MedPulse Healthcare Network',
+    country: 'Abu Dhabi, UAE',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80',
+    tags: ['.NET Core Web API', 'Next.js', 'MSSQL', 'Redis', 'HL7 FHIR'],
+    metrics: [
+      { label: { en: 'Daily Visits', ar: 'المراجعين يومياً' }, value: '38,000+' },
+      { label: { en: 'Query Latency', ar: 'زمن الاستجابة' }, value: '< 42ms' },
+      { label: { en: 'Insurance Adjudication', ar: 'المطالبات المؤتمتة' }, value: '99.4%' }
+    ],
+    featured: true,
+    completionDate: '2025'
+  },
+  {
+    id: 'proj-respos',
+    title: {
+      en: 'Respos Enterprise Omnichannel Cloud POS & Inventory Network',
+      ar: 'منظومة Respos لإدارة نقاط البيع السحابية وشبكات المطاعم'
+    },
+    category: 'web',
+    categories: ['web'],
+    shortDesc: {
+      en: 'Distributed cloud POS and centralized multi-branch recipe costing platform with offline-first caching, live table telemetry, and automated fiscal printer dispatch.',
+      ar: 'منصة سحابية متطورة لنقاط البيع وإدارة المستودعات متعددة الفروع تعمل بدون اتصال بالإنترنت مع مزامنة لحظية.'
+    },
+    fullDesc: {
+      en: 'High-availability retail POS ecosystem connecting multi-location kitchen display systems, inventory depletion, and electronic invoicing with seamless offline failover.',
+      ar: 'منظومة نقاط بيع متطورة للمطاعم ومتاجر التجزئة تدعم العمل عند انقطاع الإنترنت مع مزامنة فورية.'
+    },
+    client: 'Respos Retail Systems',
+    country: 'Riyadh, Saudi Arabia',
+    image: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80',
+    tags: ['React 19', '.NET Core', 'MSSQL', 'WebSockets', 'Offline-First'],
+    metrics: [
+      { label: { en: 'Active Outlets', ar: 'المنافذ النشطة' }, value: '180+ Stores' },
+      { label: { en: 'Offline Recovery', ar: 'استعادة الاتصال' }, value: '< 2.1s' }
+    ],
+    featured: true,
+    completionDate: '2025'
+  },
+  {
+    id: 'proj-vanguard-tms',
+    title: {
+      en: 'Vanguard Global Fleet Telemetry & Customs Brokerage Suite',
+      ar: 'تطبيق Vanguard لإدارة وتتبع أساطيل الشحن والجمارك اللحظية'
+    },
+    category: 'mobile',
+    categories: ['mobile'],
+    shortDesc: {
+      en: 'Cross-platform mobile telematics application with automated offline waypoint recording, barcode bill-of-lading scanning, and cross-border customs clearing.',
+      ar: 'تطبيق جوال فائق الدقة لتتبع شاحنات النقل وسائقي الأساطيل ومسح بوالص الشحن عبر الحدود.'
+    },
+    fullDesc: {
+      en: 'Mission-critical cross-platform mobile suite with GPS geofencing, digital signatures, and automated customs data verification across Middle Eastern trade corridors.',
+      ar: 'تطبيق جوال ميداني شامل يتيح للسائقين تتبع الشحنات وإنهاء الإجراءات الجمركية وتسجيل التوقيعات الرقمية.'
+    },
+    client: 'Vanguard Freight Network',
+    country: 'GCC & Jordan',
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80',
+    tags: ['Flutter Cross-Platform', 'Native Swift', 'Native Kotlin', 'PostGIS'],
+    metrics: [
+      { label: { en: 'Vehicles Tracked', ar: 'الشاحنات المدارة' }, value: '2,400+' },
+      { label: { en: 'Customs Clearance', ar: 'تسريع التخليص' }, value: '-65% Time' }
+    ],
+    featured: true,
+    completionDate: '2025'
+  },
+  {
+    id: 'proj-cogniflow-ai',
+    title: {
+      en: 'CogniFlow Enterprise Autonomous Document Intelligence & RAG',
+      ar: 'منصة CogniFlow للذكاء الاصطناعي واستخراج وتحليل العقود والوثائق'
+    },
+    category: 'ai',
+    categories: ['ai'],
+    shortDesc: {
+      en: 'Agentic RAG pipeline utilizing pgvector, LlamaIndex, and local LLM fine-tunes to automatically analyze, classify, and reconcile multi-entity commercial contracts.',
+      ar: 'محرك ذكاء اصطناعي تحليلي يعتمد على تقنيات RAG لفهرسة واستخراج البيانات من الوثائق والعقود الضخمة بدقة متناهية.'
+    },
+    fullDesc: {
+      en: 'Enterprise-grade RAG ingestion architecture slashes regulatory review cycles with sub-second semantic retrieval across millions of corporate documents.',
+      ar: 'محرك ذكاء اصطناعي فائق الدقة لفهرسة واستخراج البيانات القانونية والمالية مع ضمان خصوصية البيانات التامة.'
+    },
+    client: 'Meridian Capital Assets',
+    country: 'London & Dubai',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    tags: ['Python FastAPI', 'pgvector', 'LlamaIndex', 'vLLM', 'Docker'],
+    metrics: [
+      { label: { en: 'Pages Indexed', ar: 'الصفحات المفهرسة' }, value: '1.8M Pages' },
+      { label: { en: 'Review Cycle', ar: 'اختصار المراجعة' }, value: '-78%' }
+    ],
+    featured: true,
+    completionDate: '2025'
+  },
+  {
+    id: 'proj-apex-cloud',
+    title: {
+      en: 'Apex High-Availability Kubernetes Cluster & 24/7 SRE Sentry',
+      ar: 'البنية السحابية المقاومة للأعطال وإدارة حاويات Kubernetes على مدار الساعة'
+    },
+    category: 'cloud',
+    categories: ['cloud'],
+    shortDesc: {
+      en: 'Multi-region hybrid cloud deployment with automated Istio mesh traffic failover, Terraform infrastructure-as-code, and round-the-clock incident response.',
+      ar: 'إدارة سحابية متقدمة تضمن استقرار السيرفرات بنسبة 99.999% مع مراقبة أمنية وهندسية متواصلة 24/7.'
+    },
+    fullDesc: {
+      en: 'Round-the-clock SRE operations and zero-downtime infrastructure architecture sustaining multi-region cloud resilience under peak transactional workloads.',
+      ar: 'إدارة سحابية هندسية احترافية تضمن استمرارية الأعمال وحماية البيانات والتعافي السريع من الكوارث.'
+    },
+    client: 'Apex Industrial Automations',
+    country: 'Frankfurt & Dammam',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+    tags: ['AWS EKS', 'Azure AKS', 'Terraform', 'Istio', 'Prometheus'],
+    metrics: [
+      { label: { en: 'SLA Availability', ar: 'جاهزية السيرفرات' }, value: '99.999%' },
+      { label: { en: 'MTTR', ar: 'زمن احتواء الخلل' }, value: '< 3 Mins' }
+    ],
+    featured: true,
+    completionDate: '2025'
+  }
+];
 
 export const initialReviews: Review[] = [
   {

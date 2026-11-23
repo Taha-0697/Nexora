@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   Calculator,
@@ -15,7 +15,6 @@ import {
   SlidersHorizontal,
   ServerCog
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface EstimatorProps {
   onRequestProposalWithScope: (scopeDetails: {
@@ -66,7 +65,189 @@ const FALLBACK_RATES: Record<string, number> = {
   GBP: 0.79, OMR: 0.385, QAR: 3.64, KWD: 0.307, BHD: 0.377,
 };
 
-export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope }) => {
+// Static architecture options hoisted out of component to prevent allocation overhead
+const PRIMARY_ARCHITECTURES = [
+  {
+    id: 'custom-erp',
+    title: { en: 'Custom ERP (.NET Core)', ar: 'نظام ERP مخصص (.NET Core)' },
+    tagline: { en: '.NET 9, Next.js & MSSQL (100% Owned IP)', ar: '.NET 9 و Next.js و MSSQL' },
+    stack: [
+      '.NET Core Web API',
+      'Next.js / React',
+      'MS SQL Server (MSSQL)',
+      'Redis In-Memory Cache',
+      'REST API Integrations',
+      'Docker & Kubernetes (K8s)'
+    ]
+  },
+  {
+    id: 'odoo-enterprise',
+    title: { en: 'Odoo Enterprise (Python/PostgreSQL)', ar: 'منظومة Odoo Enterprise (بايثون)' },
+    tagline: { en: 'Custom Modules, FastAPI & PostgreSQL Sync', ar: 'وحدات مخصصة وجسور FastAPI ومزامنة PostgreSQL' },
+    stack: [
+      'Odoo Enterprise & Python Bridges',
+      'Python 3.12 ORM / FastAPI',
+      'PostgreSQL / SQL',
+      'PostgreSQL Data Synchronization',
+      'REST API Integrations',
+      'XML-RPC & Webhooks'
+    ]
+  },
+  {
+    id: 'saas-portal',
+    title: { en: 'SaaS Portal', ar: 'بوابة SaaS سحابية' },
+    tagline: { en: 'Next.js 15, Node.js & Redis In-Memory Cache', ar: 'Next.js 15 و Node.js و Redis' },
+    stack: [
+      'Next.js / React',
+      'Node.js / NestJS',
+      'PostgreSQL / SQL',
+      'Redis In-Memory Cache',
+      'AWS Cloud Infrastructure',
+      'REST API Integrations'
+    ]
+  },
+  {
+    id: 'mobile-app',
+    title: { en: 'Mobile App', ar: 'تطبيقات الجوال' },
+    tagline: { en: 'Native iOS Swift, Android Kotlin & Flutter', ar: 'iOS أصيل وأندرويد وفلاتر' },
+    stack: [
+      'Native iOS (Swift & SwiftUI)',
+      'Native Android (Kotlin)',
+      'Flutter Cross-Platform',
+      '.NET Core Web API',
+      'REST API Integrations'
+    ]
+  },
+  {
+    id: 'ai-integration',
+    title: { en: 'AI Integration', ar: 'تكاملات الذكاء الاصطناعي' },
+    tagline: { en: 'Python LLM Engines, Custom RAG & K8s', ar: 'محركات بايثون وذكاء اصطناعي' },
+    stack: [
+      'AI & LLM Integrations',
+      'Python AI Engine & Bridges',
+      'Next.js / React',
+      'PostgreSQL / SQL',
+      'Docker & Kubernetes (K8s)'
+    ]
+  }
+];
+
+const techStackOptions = [
+  { id: 'dotnet-api', label: '.NET Core Web API', category: 'Backend' },
+  { id: 'odoo-python', label: 'Odoo Enterprise & Python Bridges', category: 'ERP' },
+  { id: 'react-next', label: 'Next.js / React', category: 'Frontend' },
+  { id: 'nodejs', label: 'Node.js / NestJS', category: 'Backend' },
+  { id: 'mssql', label: 'MS SQL Server (MSSQL)', category: 'Database' },
+  { id: 'sql-db', label: 'PostgreSQL / SQL', category: 'Database' },
+  { id: 'pg-mssql-sync', label: 'PostgreSQL Data Synchronization', category: 'Database' },
+  { id: 'rest-apis', label: 'REST API Integrations', category: 'Backend' },
+  { id: 'swift-ios', label: 'Native iOS (Swift & SwiftUI)', category: 'Mobile' },
+  { id: 'kotlin-android', label: 'Native Android (Kotlin)', category: 'Mobile' },
+  { id: 'flutter', label: 'Flutter Cross-Platform', category: 'Mobile' },
+  { id: 'ai-integrations', label: 'AI & LLM Integrations', category: 'AI' },
+  { id: 'python-ai', label: 'Python AI Engine & Bridges', category: 'AI' },
+  { id: 'redis', label: 'Redis In-Memory Cache', category: 'Database' },
+  { id: 'aws', label: 'AWS Cloud Infrastructure', category: 'Cloud' },
+  { id: 'azure', label: 'Microsoft Azure Cloud', category: 'Cloud' },
+  { id: 'k8s', label: 'Docker & Kubernetes (K8s)', category: 'Cloud' },
+  { id: 'bespoke-erp', label: 'Bespoke ERP Modules', category: 'ERP' },
+];
+
+const servicesOptions = [
+  {
+    id: 'custom-erp',
+    title: {
+      en: 'Custom Web ERP (.NET Core, Next.js & MSSQL Database)',
+      ar: 'نظام ERP سحابي مخصص بالكامل (.NET Core و Next.js و MSSQL)'
+    },
+    subtitle: {
+      en: '100% bespoke architecture, zero per-seat licensing, full IP ownership',
+      ar: 'بنية برمجية مخصصة 100%، بدون رسوم تراخيص، ملكية فكرية كاملة'
+    },
+    baseCost: 9500,
+    baseWeeks: 7,
+  },
+  {
+    id: 'odoo-enterprise',
+    title: {
+      en: 'Odoo Enterprise Customization & Python Bridges',
+      ar: 'تخصيص وتطوير Odoo Enterprise وجسور بايثون البرمجية'
+    },
+    subtitle: {
+      en: 'Bespoke Odoo modules, FastAPI middleware & PostgreSQL/MSSQL sync',
+      ar: 'وحدات مخصصة، وسيط FastAPI، ومزامنة قواعد بيانات PostgreSQL/MSSQL'
+    },
+    baseCost: 8500,
+    baseWeeks: 6,
+  },
+  {
+    id: 'custom-web',
+    title: {
+      en: 'Custom Enterprise Web Portal & REST API Ecosystem',
+      ar: 'بوابة إلكترونية مؤسسية مخصصة ومنظومة REST API متكاملة'
+    },
+    subtitle: {
+      en: 'High-speed Next.js portals, secure user authentication & microservices',
+      ar: 'بوابات Next.js فائقة السرعة مع مصادقة أمنية متقدمة وخدمات مصغرة'
+    },
+    baseCost: 6500,
+    baseWeeks: 5,
+  },
+  {
+    id: 'mobile-app',
+    title: {
+      en: 'Custom Mobile App (iOS Swift, Android Kotlin or Flutter)',
+      ar: 'تطبيق جوال مخصص (iOS Swift أو Android Kotlin أو Flutter)'
+    },
+    subtitle: {
+      en: 'Native 60FPS mobile experiences with biometric security & offline sync',
+      ar: 'تطبيقات جوال أصيلة بسرعة 60 إطاراً في الثانية مع حماية بيومترية'
+    },
+    baseCost: 7500,
+    baseWeeks: 6,
+  },
+  {
+    id: 'ai-solution',
+    title: {
+      en: 'Enterprise AI Integrations, Custom RAG & Autonomous Agents',
+      ar: 'تكاملات الذكاء الاصطناعي (AI) والبحث الدلالي RAG والوكلاء الأذكياء'
+    },
+    subtitle: {
+      en: 'Private domain LLMs, semantic vector search & business automation',
+      ar: 'نماذج لغوية خاصة، بحث دلالي موجه، وأتمتة ذكية لمهام العمل'
+    },
+    baseCost: 5500,
+    baseWeeks: 4,
+  },
+  {
+    id: 'cloud-devops',
+    title: {
+      en: '24/7 Cloud Architecture & DevOps Operations (AWS / K8s)',
+      ar: 'هندسة السيرفرات السحابية وإدارة DevOps المتقدمة 24/7'
+    },
+    subtitle: {
+      en: '99.99% SLA uptime, automated CI/CD pipelines & container orchestration',
+      ar: 'استقرار تشغيلي 99.99%، خطوط نشر مؤتمتة وإدارة حاويات سحابية'
+    },
+    baseCost: 4000,
+    baseWeeks: 3,
+  },
+  {
+    id: 'erp-modernization',
+    title: {
+      en: 'Custom ERP Modernization & Enterprise System Integration',
+      ar: 'تحديث وتطوير أنظمة الـ ERP والتكاملات البرمجية المؤسسية'
+    },
+    subtitle: {
+      en: 'Legacy DB migration, CDC data streaming & zero-downtime upgrades',
+      ar: 'ترحيل قواعد البيانات القديمة ومزامنة البيانات اللحظية بدون انقطاع'
+    },
+    baseCost: 5000,
+    baseWeeks: 4,
+  },
+];
+
+const EstimatorComponent: React.FC<EstimatorProps> = ({ onRequestProposalWithScope }) => {
   const { language, t } = useLanguage();
 
   // Geo-location Currency State
@@ -86,73 +267,6 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
   // Support SLA
   const [supportTier, setSupportTier] = useState<'none' | 'standard' | 'mission-critical'>('mission-critical');
 
-  // Primary Architecture Selector
-  const PRIMARY_ARCHITECTURES = [
-    {
-      id: 'custom-erp',
-      title: { en: 'Custom ERP (.NET Core)', ar: 'نظام ERP مخصص (.NET Core)' },
-      tagline: { en: '.NET 9, Next.js & MSSQL (100% Owned IP)', ar: '.NET 9 و Next.js و MSSQL' },
-      stack: [
-        '.NET Core Web API',
-        'Next.js / React',
-        'MS SQL Server (MSSQL)',
-        'Redis In-Memory Cache',
-        'REST API Integrations',
-        'Docker & Kubernetes (K8s)'
-      ]
-    },
-    {
-      id: 'odoo-enterprise',
-      title: { en: 'Odoo Enterprise (Python/PostgreSQL)', ar: 'منظومة Odoo Enterprise (بايثون)' },
-      tagline: { en: 'Custom Modules, FastAPI & PostgreSQL Sync', ar: 'وحدات مخصصة وجسور FastAPI ومزامنة PostgreSQL' },
-      stack: [
-        'Odoo Enterprise & Python Bridges',
-        'Python 3.12 ORM / FastAPI',
-        'PostgreSQL / SQL',
-        'PostgreSQL Data Synchronization',
-        'REST API Integrations',
-        'XML-RPC & Webhooks'
-      ]
-    },
-    {
-      id: 'saas-portal',
-      title: { en: 'SaaS Portal', ar: 'بوابة SaaS سحابية' },
-      tagline: { en: 'Next.js 15, Node.js & Redis In-Memory Cache', ar: 'Next.js 15 و Node.js و Redis' },
-      stack: [
-        'Next.js / React',
-        'Node.js / NestJS',
-        'PostgreSQL / SQL',
-        'Redis In-Memory Cache',
-        'AWS Cloud Infrastructure',
-        'REST API Integrations'
-      ]
-    },
-    {
-      id: 'mobile-app',
-      title: { en: 'Mobile App', ar: 'تطبيقات الجوال' },
-      tagline: { en: 'Native iOS Swift, Android Kotlin & Flutter', ar: 'iOS أصيل وأندرويد وفلاتر' },
-      stack: [
-        'Native iOS (Swift & SwiftUI)',
-        'Native Android (Kotlin)',
-        'Flutter Cross-Platform',
-        '.NET Core Web API',
-        'REST API Integrations'
-      ]
-    },
-    {
-      id: 'ai-integration',
-      title: { en: 'AI Integration', ar: 'تكاملات الذكاء الاصطناعي' },
-      tagline: { en: 'Python LLM Engines, Custom RAG & K8s', ar: 'محركات بايثون وذكاء اصطناعي' },
-      stack: [
-        'AI & LLM Integrations',
-        'Python AI Engine & Bridges',
-        'Next.js / React',
-        'PostgreSQL / SQL',
-        'Docker & Kubernetes (K8s)'
-      ]
-    }
-  ];
-
   const [primaryArchitecture, setPrimaryArchitecture] = useState<string>('custom-erp');
   const [showAdvancedCustomization, setShowAdvancedCustomization] = useState<boolean>(false);
 
@@ -165,7 +279,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     'REST API Integrations'
   ]);
 
-  const handleSelectArchitecture = (archId: string) => {
+  const handleSelectArchitecture = useCallback((archId: string) => {
     setPrimaryArchitecture(archId);
     const matched = PRIMARY_ARCHITECTURES.find(a => a.id === archId);
     if (matched) {
@@ -188,7 +302,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     } else if (archId === 'ai-integration') {
       setSelectedServices(prev => prev.includes('ai-solution') ? prev : ['ai-solution', ...prev]);
     }
-  };
+  }, []);
 
   // 1. Auto-detect currency by browser locale and IP
   useEffect(() => {
@@ -241,140 +355,27 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     fetchRates();
   }, []);
 
-  const techStackOptions = [
-    { id: 'dotnet-api', label: '.NET Core Web API', category: 'Backend' },
-    { id: 'odoo-python', label: 'Odoo Enterprise & Python Bridges', category: 'ERP' },
-    { id: 'react-next', label: 'Next.js / React', category: 'Frontend' },
-    { id: 'nodejs', label: 'Node.js / NestJS', category: 'Backend' },
-    { id: 'mssql', label: 'MS SQL Server (MSSQL)', category: 'Database' },
-    { id: 'sql-db', label: 'PostgreSQL / SQL', category: 'Database' },
-    { id: 'pg-mssql-sync', label: 'PostgreSQL Data Synchronization', category: 'Database' },
-    { id: 'rest-apis', label: 'REST API Integrations', category: 'Backend' },
-    { id: 'swift-ios', label: 'Native iOS (Swift & SwiftUI)', category: 'Mobile' },
-    { id: 'kotlin-android', label: 'Native Android (Kotlin)', category: 'Mobile' },
-    { id: 'flutter', label: 'Flutter Cross-Platform', category: 'Mobile' },
-    { id: 'ai-integrations', label: 'AI & LLM Integrations', category: 'AI' },
-    { id: 'python-ai', label: 'Python AI Engine & Bridges', category: 'AI' },
-    { id: 'redis', label: 'Redis In-Memory Cache', category: 'Database' },
-    { id: 'aws', label: 'AWS Cloud Infrastructure', category: 'Cloud' },
-    { id: 'azure', label: 'Microsoft Azure Cloud', category: 'Cloud' },
-    { id: 'k8s', label: 'Docker & Kubernetes (K8s)', category: 'Cloud' },
-    { id: 'bespoke-erp', label: 'Bespoke ERP Modules', category: 'ERP' },
-  ];
-
-  const servicesOptions = [
-    {
-      id: 'custom-erp',
-      title: {
-        en: 'Custom Web ERP (.NET Core, Next.js & MSSQL Database)',
-        ar: 'نظام ERP سحابي مخصص بالكامل (.NET Core و Next.js و MSSQL)'
-      },
-      subtitle: {
-        en: '100% bespoke architecture, zero per-seat licensing, full IP ownership',
-        ar: 'بنية برمجية مخصصة 100%، بدون رسوم تراخيص، ملكية فكرية كاملة'
-      },
-      baseCost: 9500,
-      baseWeeks: 7,
-    },
-    {
-      id: 'odoo-enterprise',
-      title: {
-        en: 'Odoo Enterprise Customization & Python Bridges',
-        ar: 'تخصيص وتطوير Odoo Enterprise وجسور بايثون البرمجية'
-      },
-      subtitle: {
-        en: 'Bespoke Odoo modules, FastAPI middleware & PostgreSQL/MSSQL sync',
-        ar: 'وحدات مخصصة، وسيط FastAPI، ومزامنة قواعد بيانات PostgreSQL/MSSQL'
-      },
-      baseCost: 8500,
-      baseWeeks: 6,
-    },
-    {
-      id: 'custom-web',
-      title: {
-        en: 'Custom Enterprise Web Portal & REST API Ecosystem',
-        ar: 'بوابة إلكترونية مؤسسية مخصصة ومنظومة REST API متكاملة'
-      },
-      subtitle: {
-        en: 'High-speed Next.js portals, secure user authentication & microservices',
-        ar: 'بوابات Next.js فائقة السرعة مع مصادقة أمنية متقدمة وخدمات مصغرة'
-      },
-      baseCost: 6500,
-      baseWeeks: 5,
-    },
-    {
-      id: 'mobile-app',
-      title: {
-        en: 'Custom Mobile App (iOS Swift, Android Kotlin or Flutter)',
-        ar: 'تطبيق جوال مخصص (iOS Swift أو Android Kotlin أو Flutter)'
-      },
-      subtitle: {
-        en: 'Native 60FPS mobile experiences with biometric security & offline sync',
-        ar: 'تطبيقات جوال أصيلة بسرعة 60 إطاراً في الثانية مع حماية بيومترية'
-      },
-      baseCost: 7500,
-      baseWeeks: 6,
-    },
-    {
-      id: 'ai-solution',
-      title: {
-        en: 'Enterprise AI Integrations, Custom RAG & Autonomous Agents',
-        ar: 'تكاملات الذكاء الاصطناعي (AI) والبحث الدلالي RAG والوكلاء الأذكياء'
-      },
-      subtitle: {
-        en: 'Private domain LLMs, semantic vector search & business automation',
-        ar: 'نماذج لغوية خاصة، بحث دلالي موجه، وأتمتة ذكية لمهام العمل'
-      },
-      baseCost: 5500,
-      baseWeeks: 4,
-    },
-    {
-      id: 'cloud-devops',
-      title: {
-        en: '24/7 Cloud Architecture & DevOps Operations (AWS / K8s)',
-        ar: 'هندسة السيرفرات السحابية وإدارة DevOps المتقدمة 24/7'
-      },
-      subtitle: {
-        en: '99.99% SLA uptime, automated CI/CD pipelines & container orchestration',
-        ar: 'استقرار تشغيلي 99.99%، خطوط نشر مؤتمتة وإدارة حاويات سحابية'
-      },
-      baseCost: 4000,
-      baseWeeks: 3,
-    },
-    {
-      id: 'erp-modernization',
-      title: {
-        en: 'Custom ERP Modernization & Enterprise System Integration',
-        ar: 'تحديث وتطوير أنظمة الـ ERP والتكاملات البرمجية المؤسسية'
-      },
-      subtitle: {
-        en: 'Legacy DB migration, CDC data streaming & zero-downtime upgrades',
-        ar: 'ترحيل قواعد البيانات القديمة ومزامنة البيانات اللحظية بدون انقطاع'
-      },
-      baseCost: 5000,
-      baseWeeks: 4,
-    },
-  ];
-
-  const toggleService = (id: string) => {
-    if (selectedServices.includes(id)) {
-      if (selectedServices.length > 1) {
-        setSelectedServices(selectedServices.filter(s => s !== id));
+  const toggleService = useCallback((id: string) => {
+    setSelectedServices(prev => {
+      if (prev.includes(id)) {
+        return prev.length > 1 ? prev.filter(s => s !== id) : prev;
+      } else {
+        return [...prev, id];
       }
-    } else {
-      setSelectedServices([...selectedServices, id]);
-    }
-  };
+    });
+  }, []);
 
-  const toggleStackSpec = (label: string) => {
-    if (selectedStackSpecs.includes(label)) {
-      setSelectedStackSpecs(selectedStackSpecs.filter(s => s !== label));
-    } else {
-      setSelectedStackSpecs([...selectedStackSpecs, label]);
-    }
-  };
+  const toggleStackSpec = useCallback((label: string) => {
+    setSelectedStackSpecs(prev => {
+      if (prev.includes(label)) {
+        return prev.filter(s => s !== label);
+      } else {
+        return [...prev, label];
+      }
+    });
+  }, []);
 
-  // Calculations in USD
+  // Calculations in USD (Strictly Deterministic - Zero Math.random)
   const baseEstimate = useMemo(() => {
     let baseSum = 0;
     let weeksSum = 0;
@@ -388,7 +389,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     });
 
     let multiplier = 1.0;
-    if (projectScale === 'mvp') multiplier = 0.8;
+    if (projectScale === 'mvp') multiplier = 0.85;
     if (projectScale === 'growth') multiplier = 1.3;
     if (projectScale === 'enterprise') multiplier = 2.0;
 
@@ -396,10 +397,36 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     if (supportTier === 'standard') supportCost = 800;
     if (supportTier === 'mission-critical') supportCost = 2200;
 
-    const totalBase = Math.round((baseSum * multiplier) / 500) * 500;
+    // Primary Architecture Baseline Adjustment
+    let archBase = 0;
+    let archWeeks = 0;
+    if (primaryArchitecture === 'custom-erp') {
+      archBase = 1000;
+      archWeeks = 1;
+    } else if (primaryArchitecture === 'odoo-enterprise') {
+      archBase = 800;
+      archWeeks = 1;
+    } else if (primaryArchitecture === 'saas-portal') {
+      archBase = 500;
+      archWeeks = 0.5;
+    } else if (primaryArchitecture === 'mobile-app') {
+      archBase = 600;
+      archWeeks = 0.5;
+    } else if (primaryArchitecture === 'ai-integration') {
+      archBase = 1200;
+      archWeeks = 1;
+    }
+
+    // Configured Tech Components Adjustment (Deterministic $350 + 0.2 weeks per component beyond 2)
+    const customComponentCost = Math.max(0, selectedStackSpecs.length - 2) * 350;
+    const customComponentWeeks = Math.max(0, selectedStackSpecs.length - 2) * 0.2;
+
+    const totalRaw = (baseSum + archBase + customComponentCost) * multiplier;
+    const totalBase = Math.round(totalRaw / 500) * 500;
     const totalMax = Math.round((totalBase * 1.25) / 500) * 500;
 
-    const finalWeeks = Math.max(3, Math.round(weeksSum * (multiplier * 0.75)));
+    const totalWeeksRaw = (weeksSum + archWeeks + customComponentWeeks) * (multiplier * 0.75);
+    const finalWeeks = Math.max(2, Math.round(totalWeeksRaw));
     const finalWeeksMax = Math.round(finalWeeks * 1.3);
 
     return {
@@ -409,27 +436,22 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
       weeksMin: finalWeeks,
       weeksMax: finalWeeksMax,
     };
-  }, [selectedServices, projectScale, supportTier]);
+  }, [selectedServices, projectScale, supportTier, primaryArchitecture, selectedStackSpecs]);
 
-  // Convert to selected currency
-  const currencyRate = exchangeRates[selectedCurrency] || 1;
+  // Convert to selected currency with division-by-zero & NaN guards
+  const rawRate = exchangeRates[selectedCurrency];
+  const currencyRate = (typeof rawRate === 'number' && isFinite(rawRate) && rawRate > 0) ? rawRate : 1;
   const currentCurrencyObj = CURRENCIES.find(c => c.code === selectedCurrency) || CURRENCIES[0];
 
-  const convertedMin = Math.round(baseEstimate.minBudgetUSD * currencyRate);
-  const convertedMax = Math.round(baseEstimate.maxBudgetUSD * currencyRate);
-  const convertedSupport = Math.round(baseEstimate.supportCostUSD * currencyRate);
+  const minUSD = isFinite(baseEstimate.minBudgetUSD) && baseEstimate.minBudgetUSD > 0 ? baseEstimate.minBudgetUSD : 5000;
+  const maxUSD = isFinite(baseEstimate.maxBudgetUSD) && baseEstimate.maxBudgetUSD >= minUSD ? baseEstimate.maxBudgetUSD : minUSD * 1.5;
+  const supportUSD = isFinite(baseEstimate.supportCostUSD) && baseEstimate.supportCostUSD >= 0 ? baseEstimate.supportCostUSD : 0;
 
-  const handleTriggerProposal = () => {
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch {
-      // ignore
-    }
+  const convertedMin = Math.round(minUSD * currencyRate) || 0;
+  const convertedMax = Math.round(maxUSD * currencyRate) || 0;
+  const convertedSupport = Math.round(supportUSD * currencyRate) || 0;
 
+  const handleTriggerProposal = useCallback(() => {
     const serviceTitles = selectedServices.map(id => {
       const s = servicesOptions.find(opt => opt.id === id);
       return s ? s.title[language] : id;
@@ -437,6 +459,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
 
     const budgetString = `${currentCurrencyObj.symbol}${convertedMin.toLocaleString()} - ${currentCurrencyObj.symbol}${convertedMax.toLocaleString()} ${selectedCurrency}`;
 
+    // Immediately trigger proposal request
     onRequestProposalWithScope({
       services: serviceTitles,
       scale: projectScale,
@@ -445,22 +468,22 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
       estimatedTimeline: `${baseEstimate.weeksMin} - ${baseEstimate.weeksMax} ${language === 'ar' ? 'أسابيع' : 'Weeks'}`,
       customStack: selectedStackSpecs,
     });
-  };
+  }, [selectedServices, language, currentCurrencyObj.symbol, convertedMin, convertedMax, selectedCurrency, onRequestProposalWithScope, projectScale, supportTier, baseEstimate.weeksMin, baseEstimate.weeksMax, selectedStackSpecs]);
 
   return (
-    <section id="estimator" className="py-20 relative overflow-hidden bg-slate-50 dark:bg-[#060913] transition-colors">
+    <section id="estimator" className="py-12 sm:py-16 lg:py-20 relative overflow-hidden bg-white section-surface-2 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-4">
+        <div className="text-center max-w-3xl mx-auto mb-6 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-500/30 text-xs font-semibold text-indigo-700 dark:text-sky-400 mb-3 sm:mb-4">
             <Calculator className="w-3.5 h-3.5" />
             <span>{t('estimator.badge')}</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+          <h2 className="text-2xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3 sm:mb-4">
             {t('estimator.title')}
           </h2>
-          <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-lg">
             {language === 'ar'
               ? 'احسب تكلفة مشروعك المخصص بالكامل وفق عملتك المحلية مع حرية تعديل العملة والمواصفات الهندسية.'
               : 'Estimate your bespoke enterprise software investment in your local currency with custom specifications.'}
@@ -468,19 +491,19 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
         </div>
 
         {/* Calculator Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
 
           {/* Controls: Left 7 cols */}
-          <div className="lg:col-span-7 space-y-7">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-7">
 
             {/* Step 1: Select Services */}
-            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <div className="glass-panel p-4 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-dark-950/80 shadow-xs">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">1</span>
                 <span>{t('estimator.stepServices')}</span>
               </h3>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {servicesOptions.map((svc) => {
                   const isChecked = selectedServices.includes(svc.id);
                   return (
@@ -516,13 +539,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
             </div>
 
             {/* Step 2: Project Scale & Complexity */}
-            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <div className="glass-panel p-4 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-dark-950/80 shadow-xs">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">2</span>
                 <span>{t('estimator.stepScale')}</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 {[
                   {
                     id: 'mvp',
@@ -543,7 +566,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                   <div
                     key={scale.id}
                     onClick={() => setProjectScale(scale.id as any)}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${projectScale === scale.id
+                    className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${projectScale === scale.id
                         ? 'bg-indigo-50/70 dark:bg-slate-800 border-indigo-500/70 dark:border-indigo-500/70 shadow-xs'
                         : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
@@ -560,13 +583,13 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
             </div>
 
             {/* Step 3: Cloud & SLA Support Tier */}
-            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <div className="glass-panel p-4 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-dark-950/80 shadow-xs">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">3</span>
                 <span>{t('estimator.stepSLA')}</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 {[
                   {
                     id: 'none',
@@ -587,7 +610,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                   <div
                     key={tier.id}
                     onClick={() => setSupportTier(tier.id as any)}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${supportTier === tier.id
+                    className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${supportTier === tier.id
                         ? 'bg-indigo-50/70 dark:bg-slate-800 border-indigo-500/70 dark:border-indigo-500/70 shadow-xs'
                         : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
@@ -604,7 +627,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
             </div>
 
             {/* Step 4: Primary Architecture Selector & Stack (Phase 3) */}
-            <div className="glass-panel p-6 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xs">
+            <div className="glass-panel p-4 sm:p-7 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-dark-950/80 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">4</span>
@@ -621,14 +644,14 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               </p>
 
               {/* 5 Primary Architecture Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 mb-4">
                 {PRIMARY_ARCHITECTURES.map((arch) => {
                   const isSelected = primaryArchitecture === arch.id;
                   return (
                     <div
                       key={arch.id}
                       onClick={() => handleSelectArchitecture(arch.id)}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between min-w-0 ${
+                      className={`p-3 sm:p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between min-w-0 ${
                         isSelected
                           ? 'bg-indigo-50/80 dark:bg-indigo-950/60 border-indigo-500 shadow-sm ring-1 ring-indigo-500/50'
                           : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
@@ -733,11 +756,11 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
 
           {/* Results Summary Card: Right 5 cols */}
           <div className="lg:col-span-5 sticky top-28">
-            <div className="glass-panel p-7 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-500/40 shadow-xl relative overflow-hidden bg-white dark:bg-[#0E1526]">
+            <div className="glass-panel p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-indigo-200 dark:border-indigo-500/40 shadow-xl relative overflow-hidden bg-slate-50/90 dark:bg-dark-950/90">
               <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo-500/10 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
 
               {/* Geo-Location Currency Bar */}
-              <div className="mb-6 p-3 rounded-2xl bg-slate-50 dark:bg-[#131C31] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-3">
+              <div className="mb-4 sm:mb-6 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-[#131C31] border border-slate-200 dark:border-[#1E293B] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Globe2 className="w-4 h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
                   <div className="text-xs">
@@ -767,19 +790,19 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-sky-400 text-xs font-mono font-semibold uppercase tracking-wider mb-6">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-sky-400 text-xs font-mono font-semibold uppercase tracking-wider mb-4 sm:mb-6">
                 <Sparkles className="w-4 h-4" />
                 <span>{language === 'ar' ? 'التقدير الهندسي المباشر' : 'Live Engineering Scope Output'}</span>
               </div>
 
               {/* Estimated Investment Range in User Currency */}
-              <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+              <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   {t('estimator.estimatedBudget')} ({selectedCurrency})
                 </span>
-                <div className="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
+                <div className="text-2xl sm:text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
                   <span>{currentCurrencyObj.symbol}{convertedMin.toLocaleString()}</span>
-                  <span className="text-slate-400 text-2xl font-light">-</span>
+                  <span className="text-slate-400 text-xl sm:text-2xl font-light">-</span>
                   <span>{currentCurrencyObj.symbol}{convertedMax.toLocaleString()}</span>
                 </div>
                 {convertedSupport > 0 && (
@@ -794,12 +817,12 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               </div>
 
               {/* Estimated Delivery Timeline */}
-              <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+              <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   {t('estimator.estimatedTimeline')}
                 </span>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                  <Clock className="w-6 h-6 text-indigo-600 dark:text-sky-400" />
+                <div className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-sky-400" />
                   <span>{baseEstimate.weeksMin} - {baseEstimate.weeksMax} {language === 'ar' ? 'أسابيع عمل' : 'Weeks Sprint'}</span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -808,7 +831,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               </div>
 
               {/* Included Services Summary */}
-              <div className="mb-4 space-y-2">
+              <div className="mb-3 sm:mb-4 space-y-1.5 sm:space-y-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-heading">
                   {language === 'ar' ? 'الخدمات المضمنة في التقدير:' : 'Included Scope Services:'}
                 </span>
@@ -826,7 +849,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
 
               {/* Selected Tech Stack Summary */}
               {selectedStackSpecs.length > 0 && (
-                <div className="mb-7 space-y-2">
+                <div className="mb-5 sm:mb-7 space-y-1.5 sm:space-y-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-heading">
                     {language === 'ar' ? 'المواصفات التقنية المحددة:' : 'Specified Tech Stack:'}
                   </span>
@@ -843,7 +866,7 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
               {/* CTA Lock in & Submit */}
               <button
                 onClick={handleTriggerProposal}
-                className="w-full py-4 px-6 rounded-xl btn-primary-cta text-white font-extrabold text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 sm:py-4 px-4 sm:px-6 rounded-xl btn-primary-cta text-white font-extrabold text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{language === 'ar' ? 'طلب عرض فني وهندسي رسمي للمشروع' : 'Request Formal Engineering Proposal'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -862,3 +885,5 @@ export const Estimator: React.FC<EstimatorProps> = ({ onRequestProposalWithScope
     </section>
   );
 };
+
+export const Estimator = React.memo(EstimatorComponent);
