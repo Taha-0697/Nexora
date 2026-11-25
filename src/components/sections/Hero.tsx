@@ -4,12 +4,12 @@ import { useData } from '../../context/DataContext';
 import {
   ShieldCheck,
   ArrowRight,
-  Server,
-  CheckCircle2,
-  Zap,
+  Layers,
   Star,
   Calendar,
-  Sparkles
+  Sparkles,
+  Rocket,
+  Shield
 } from 'lucide-react';
 
 interface HeroProps {
@@ -118,47 +118,43 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote, onBookDemo, onOpenConsu
         {/* 4 Core Engineering Metrics Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 max-w-6xl mx-auto">
 
-          {/* Metric 1 */}
-          <div className="glass-panel p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group bg-white dark:bg-slate-900/70 shadow-xs">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
-                SLA Uptime
-              </span>
-              <div className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">LIVE</span>
-              </div>
-            </div>
-            <div className="text-2xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
-              99.99%
-            </div>
-            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-indigo-600 dark:text-sky-400 shrink-0" />
-              <span className="truncate">Contractual SLA</span>
-            </p>
-          </div>
-
-          {/* Metric 2 */}
+          {/* Metric 1: MVP Rollout */}
           <div className="glass-panel p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group bg-white dark:bg-slate-900/70 shadow-xs">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold truncate">
-                ERP & Portals
+                {language === 'ar' ? 'إطلاق المرحلة الأولى' : 'MVP Rollout'}
               </span>
-              <Server className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
+              <Rocket className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
+            </div>
+            <div className="text-2xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
+              4–8 Wks
+            </div>
+            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+              {language === 'ar' ? 'إطلاق النسخة التشغيلية الأولى' : 'First Production Release'}
+            </p>
+          </div>
+
+          {/* Metric 2: Production Systems */}
+          <div className="glass-panel p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group bg-white dark:bg-slate-900/70 shadow-xs">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold truncate">
+                {language === 'ar' ? 'الأنظمة المنفذة' : 'Systems Shipped'}
+              </span>
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
             </div>
             <div className="text-2xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
               150+
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-              Custom Apps & Portals
+              {language === 'ar' ? 'أنظمة ERP وبوابات وتطبيقات' : 'Custom ERPs, Portals & Apps'}
             </p>
           </div>
 
-          {/* Metric 3: Google Rating */}
+          {/* Metric 3: Client Rating */}
           <div className="glass-panel p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-800/80 hover:border-amber-400/60 transition-all group bg-white dark:bg-slate-900/70 shadow-xs">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold truncate">
-                Client Rating
+                {language === 'ar' ? 'تقييم العملاء' : 'Client Rating'}
               </span>
               <div className="flex text-amber-500">
                 <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-500 text-amber-500" />
@@ -169,23 +165,23 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote, onBookDemo, onOpenConsu
               <span className="text-xs sm:text-sm font-semibold text-slate-400">/ 5.0</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-              {googleSettings.totalReviewsCount} Verified Reviews
+              {googleSettings.totalReviewsCount} {language === 'ar' ? 'تقييم موثق' : 'Verified Reviews'}
             </p>
           </div>
 
-          {/* Metric 4 */}
+          {/* Metric 4: Code & IP Ownership */}
           <div className="glass-panel p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/90 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-sky-500/40 transition-all group bg-white dark:bg-slate-900/70 shadow-xs">
             <div className="flex items-center justify-between mb-2 sm:mb-3">
               <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold truncate">
-                Stack Velocity
+                {language === 'ar' ? 'ملكية الكود' : 'Code & IP Rights'}
               </span>
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
+              <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
             </div>
             <div className="text-2xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
-              &lt; 20ms
+              100%
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-              .NET Core API Response
+              {language === 'ar' ? 'ملكية كاملة للكود والبيانات' : 'Full Source & Data Ownership'}
             </p>
           </div>
 
