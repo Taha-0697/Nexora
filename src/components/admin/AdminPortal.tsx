@@ -67,11 +67,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     updateAdminUser,
     addAdminUser,
     deleteAdminUser,
-<<<<<<< HEAD
-=======
     resetUserPassword,
     resetAllPasswords,
->>>>>>> origin/update
     marketingSettings,
     updateMarketingSettings,
     addAdCampaign,
@@ -100,12 +97,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [showResetAllModal, setShowResetAllModal] = useState(false);
   const [resetAllCustomPass, setResetAllCustomPass] = useState('');
   const [resetAllSuccessNotice, setResetAllSuccessNotice] = useState('');
-  const [userToResetPassword, setUserToResetPassword] = useState<AdminUser | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<TeamMember | null>(null);
   const [individualNewPass, setIndividualNewPass] = useState('');
   const [individualResetNotice, setIndividualResetNotice] = useState('');
 
   // Revoke / Remove User Access State
-  const [userToRevoke, setUserToRevoke] = useState<AdminUser | null>(null);
+  const [userToRevoke, setUserToRevoke] = useState<TeamMember | null>(null);
   const [revokeSuccessNotice, setRevokeSuccessNotice] = useState('');
   const [revokeErrorNotice, setRevokeErrorNotice] = useState('');
   const [avatarUploadError, setAvatarUploadError] = useState('');
@@ -234,28 +231,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       } else if (user.roles.includes('review_manager')) {
         setActiveTab('reviews');
       }
-<<<<<<< HEAD
     } catch (err: any) {
       setAuthError('Connection error. Please check your network and try again.');
     } finally {
       setIsLoggingIn(false);
-=======
-    } else {
-      setAuthError('Invalid credentials. Please verify your work email and password.');
     }
   };
 
   // Admin Bulk Reset All Passwords
   const handleConfirmResetAll = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || !currentUser.roles.includes('admin')) return;
+    if (!currentUser || !isSuperOrAdmin()) return;
 
     const newPass = resetAllPasswords(resetAllCustomPass);
     if (currentUser) {
       const updatedSelf = { ...currentUser, password: newPass };
       setCurrentUser(updatedSelf);
       sessionStorage.setItem('nexora_active_user', JSON.stringify(updatedSelf));
->>>>>>> origin/update
     }
 
     setShowResetAllModal(false);
@@ -267,7 +259,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   // Admin Individual User Reset Password
   const handleConfirmIndividualReset = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || !currentUser.roles.includes('admin') || !userToResetPassword) return;
+    if (!currentUser || !isSuperOrAdmin() || !userToResetPassword) return;
 
     if (individualNewPass.trim().length > 0 && individualNewPass.trim().length < 6) {
       return;
@@ -327,13 +319,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   };
 
   // Get primary authorized tab for redirection
-<<<<<<< HEAD
-  const getPrimaryAuthorizedTab = (roles: UserRole[] = []): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' => {
+  const getPrimaryAuthorizedTab = (roles: UserRole[] = []): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' | 'b2b-cms' => {
     if (roles.includes('super_admin') || roles.includes('admin')) return 'projects';
-=======
-  const getPrimaryAuthorizedTab = (roles: UserRole[]): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' | 'b2b-cms' => {
-    if (roles.includes('admin')) return 'projects';
->>>>>>> origin/update
     if (roles.includes('project_manager')) return 'projects';
     if (roles.includes('marketing_manager')) return 'marketing';
     if (roles.includes('review_manager')) return 'reviews';
@@ -614,10 +601,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     });
   };
 
-<<<<<<< HEAD
-  // Submit User (Super Admin creates TeamMember in DB)
-  const handleCreateUser = async (e: React.FormEvent) => {
-=======
   // Handle Avatar File Upload with validation
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -643,15 +626,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     reader.readAsDataURL(file);
   };
 
-  // Submit User
-  const handleCreateUser = (e: React.FormEvent) => {
->>>>>>> origin/update
+  // Submit User (Super Admin creates TeamMember in DB)
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userForm.email || !userForm.name) return;
     setIsSavingUser(true);
     setUserSubmitError('');
 
-<<<<<<< HEAD
     try {
       await addAdminUser({
         name: userForm.name,
@@ -659,15 +640,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         role: userForm.title || 'Team Specialist',
         title: userForm.title || 'Team Specialist',
         password: userForm.password,
+        avatar: userForm.avatar ? userForm.avatar.trim() : undefined,
         roles: userForm.roles
       });
 
       setShowAddUserModal(false);
+      setAvatarUploadError('');
       setUserForm({
         name: '',
         email: '',
         title: '',
         password: '',
+        avatar: '',
         roles: ['project_manager']
       });
     } catch (err: any) {
@@ -675,27 +659,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     } finally {
       setIsSavingUser(false);
     }
-=======
-    addAdminUser({
-      name: userForm.name,
-      email: userForm.email,
-      title: userForm.title || 'Team Specialist',
-      password: userForm.password || 'nexora2026!',
-      avatar: userForm.avatar ? userForm.avatar.trim() : undefined,
-      roles: userForm.roles
-    });
-
-    setShowAddUserModal(false);
-    setAvatarUploadError('');
-    setUserForm({
-      name: '',
-      email: '',
-      title: '',
-      password: '',
-      avatar: '',
-      roles: ['project_manager']
-    });
->>>>>>> origin/update
   };
 
   // Handle Revoke / Remove User Access
@@ -704,8 +667,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     setRevokeErrorNotice('');
 
     // Guard against last admin removal
-    const adminCount = adminUsers.filter(u => u.roles.includes('admin')).length;
-    if (userToRevoke.roles.includes('admin') && adminCount <= 1) {
+    const adminCount = adminUsers.filter(u => (u.roles || []).includes('super_admin') || (u.roles || []).includes('admin')).length;
+    const revokeRoles = userToRevoke.roles || [];
+    if ((revokeRoles.includes('super_admin') || revokeRoles.includes('admin')) && adminCount <= 1) {
       setRevokeErrorNotice('Cannot revoke: Organization must maintain at least one Executive Administrator.');
       setUserToRevoke(null);
       return;
@@ -715,7 +679,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     const removedId = userToRevoke.id;
     const isCurrentSession = currentUser && (
       currentUser.id === removedId || 
-      currentUser.email.toLowerCase() === userToRevoke.email.toLowerCase()
+      (currentUser.email || '').toLowerCase() === (userToRevoke.email || '').toLowerCase()
     );
 
     // Delete user from state & clear all permissions
@@ -827,13 +791,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </button>
           </form>
 
-<<<<<<< HEAD
           <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center pt-2">
             Access restricted to authorized Nexora personnel only.
           </p>
-
-=======
->>>>>>> origin/update
         </div>
       </div>
     );
@@ -857,17 +817,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-<<<<<<< HEAD
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Nexora Command Center</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-500/30">
-                  {(currentUser.roles || []).map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}
-                </span>
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Logged in as <strong>{currentUser.name}</strong> ({currentUser.email})
-              </p>
-=======
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   Nexora Command Center
@@ -882,10 +831,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   Signed in as <strong className="text-slate-700 dark:text-slate-200">{currentUser.name}</strong>
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">
-                  <span>{currentUser.roles.map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}</span>
+                  <span>{(currentUser.roles || []).map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}</span>
                 </div>
               </div>
->>>>>>> origin/update
             </div>
           </div>
 
@@ -1517,22 +1465,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   Management Team & Multi-Role Permissions
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-<<<<<<< HEAD
                   All team users and roles are stored in the database (TeamMember) and managed by Super Admin.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setUserSubmitError('');
-                  setShowAddUserModal(true);
-                }}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Team Member</span>
-              </button>
-=======
-                  Assign roles (Admin, Project Manager, Marketing Manager, Review Manager) and manage security credentials.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1546,14 +1479,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <span>Reset All Passwords</span>
                 </button>
                 <button
-                  onClick={() => setShowAddUserModal(true)}
+                  onClick={() => {
+                    setUserSubmitError('');
+                    setShowAddUserModal(true);
+                  }}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Team Member</span>
                 </button>
               </div>
->>>>>>> origin/update
             </div>
 
             {/* Notification Banners */}
@@ -1565,40 +1500,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   onClick={() => setRevokeSuccessNotice('')}
                   className="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100 font-bold"
                 >
-<<<<<<< HEAD
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={user.avatarUrl || user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                        alt=""
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</h4>
-                        <div className="text-xs text-slate-400">{(user as any).title || user.role}</div>
-                        <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
-                      </div>
-                    </div>
-                    {/* Delete user button — guard against self-deletion */}
-                    {currentUser?.id !== user.id && (
-                      <button
-                        type="button"
-                        title="Remove user"
-                        onClick={async () => {
-                          if (!window.confirm(`Remove ${user.name} from the portal? This action cannot be undone.`)) return;
-                          try {
-                            await deleteAdminUser(user.id);
-                          } catch (err: any) {
-                            alert(err.message || 'Failed to delete user.');
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-colors cursor-pointer flex-shrink-0"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-=======
                   Dismiss
                 </button>
               </div>
@@ -1645,11 +1546,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {adminUsers.map(user => {
-                const adminCount = adminUsers.filter(u => u.roles.includes('admin')).length;
-                const isLastAdmin = user.roles.includes('admin') && adminCount <= 1;
+                const userRolesList = user.roles || [];
+                const adminCount = adminUsers.filter(u => (u.roles || []).includes('super_admin') || (u.roles || []).includes('admin')).length;
+                const isLastAdmin = (userRolesList.includes('super_admin') || userRolesList.includes('admin')) && adminCount <= 1;
                 const isCurrentSessionUser = currentUser && (
                   currentUser.id === user.id || 
-                  currentUser.email.toLowerCase() === user.email.toLowerCase()
+                  (currentUser.email || '').toLowerCase() === (user.email || '').toLowerCase()
                 );
                 const userInitials = user.name
                   .split(' ')
@@ -1658,6 +1560,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   .join('')
                   .substring(0, 2)
                   .toUpperCase() || 'NX';
+                const avatarSrc = user.avatarUrl || user.avatar;
 
                 return (
                   <div
@@ -1666,9 +1569,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        {user.avatar ? (
+                        {avatarSrc ? (
                           <img
-                            src={user.avatar}
+                            src={avatarSrc}
                             alt={user.name}
                             className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                           />
@@ -1686,7 +1589,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">{user.title}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">{user.title || user.role}</div>
                           <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
                         </div>
                       </div>
@@ -1738,7 +1641,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         )}
                       </div>
                     </div>
->>>>>>> origin/update
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                     <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
@@ -2535,17 +2437,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Senior Systems Architect"
-=======
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Professional Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Senior ERP Architect"
->>>>>>> origin/update
                   value={userForm.title}
                   onChange={e => setUserForm({ ...userForm, title: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -2578,13 +2473,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </select>
               </div>
 
-<<<<<<< HEAD
-              {userSubmitError && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
-                  {userSubmitError}
-                </div>
-              )}
-=======
               {/* Profile Image (Optional) */}
               <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between">
@@ -2641,7 +2529,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-[11px]"
                 />
               </div>
->>>>>>> origin/update
+
+              {userSubmitError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
+                  {userSubmitError}
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button
@@ -2656,12 +2549,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </button>
                 <button
                   type="submit"
-<<<<<<< HEAD
                   disabled={isSavingUser}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer"
-=======
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20"
->>>>>>> origin/update
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20"
                 >
                   {isSavingUser ? 'Creating…' : 'Add Team Member'}
                 </button>
@@ -2711,7 +2600,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <div className="flex items-center justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Roles to be Cleared:</span>
                 <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
-                  {userToRevoke.roles.map(r => r.toUpperCase().replace('_', ' ')).join(', ')}
+                  {(userToRevoke.roles || []).map(r => r.toUpperCase().replace('_', ' ')).join(', ')}
                 </span>
               </div>
             </div>

@@ -53,20 +53,13 @@ interface DataContextType {
   updateInquiryStatus: (id: string, status: Inquiry['status']) => void;
   deleteInquiry: (id: string) => void;
 
-<<<<<<< HEAD
   // Team Member / Admin User Actions (Super Admin managed via DB)
   addAdminUser: (user: any) => Promise<TeamMember>;
   updateAdminUser: (user: TeamMember) => Promise<TeamMember>;
   deleteAdminUser: (id: string) => Promise<any>;
-=======
-  // Admin User & Roles Actions
-  addAdminUser: (user: Omit<AdminUser, 'id'>) => void;
-  updateAdminUser: (user: AdminUser) => void;
-  deleteAdminUser: (id: string) => void;
   resetUserPassword: (userId: string, newPassword?: string) => string;
   resetAllPasswords: (newPassword?: string) => string;
   resetPasswordByEmail: (email: string, newPassword?: string) => boolean;
->>>>>>> origin/update
 
   // Marketing & Ads Actions
   updateMarketingSettings: (settings: Partial<MarketingSettings>) => void;
@@ -149,17 +142,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // 2. Reviews State (Hydrated strictly from Neon DB /api/reviews)
   const [reviews, setReviews] = useState<Review[]>(() => {
-<<<<<<< HEAD
-    try {
-      const saved = localStorage.getItem('nexora_reviews');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Error loading reviews', e);
-      return [];
-    }
-=======
     return safeParseLocalStorage<Review[]>('nexora_reviews', initialReviews, true);
->>>>>>> origin/update
   });
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
 
@@ -216,21 +199,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return safeParseLocalStorage<GoogleReviewSettings>('nexora_google_settings', initialGoogleSettings, false);
   });
 
-<<<<<<< HEAD
   // 6. Admin Users State (Hydrated strictly from Neon DB /api/users — no static fallbacks)
   const [adminUsers, setAdminUsers] = useState<TeamMember[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexora_admin_users');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Error loading admin users', e);
-      return [];
-    }
-=======
-  // 6. Admin Users State
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => {
-    return safeParseLocalStorage<AdminUser[]>('nexora_admin_users', initialAdminUsers, true);
->>>>>>> origin/update
+    return safeParseLocalStorage<TeamMember[]>('nexora_admin_users', [], true);
   });
   const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(true);
   const [userError, setUserError] = useState<string | null>(null);
@@ -507,20 +478,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const resetUserPassword = (userId: string, newPassword?: string): string => {
     const finalPassword = newPassword?.trim() || `nexora${Math.floor(1000 + Math.random() * 9000)}!`;
     setAdminUsers(prev => prev.map(u => (u.id === userId ? { ...u, password: finalPassword } : u)));
+    fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: finalPassword }),
+    }).catch(err => console.error('Failed to persist password reset to DB:', err));
     return finalPassword;
   };
 
   const resetAllPasswords = (newPassword?: string): string => {
     const finalPassword = newPassword?.trim() || `Nexora#${new Date().getFullYear()}!`;
-    setAdminUsers(prev => prev.map(u => ({ ...u, password: finalPassword })));
+    setAdminUsers(prev => {
+      prev.forEach(u => {
+        fetch(`/api/users/${u.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: finalPassword }),
+        }).catch(err => console.error('Failed to persist bulk password reset to DB:', err));
+      });
+      return prev.map(u => ({ ...u, password: finalPassword }));
+    });
     return finalPassword;
   };
 
   const resetPasswordByEmail = (email: string, newPassword?: string): boolean => {
-    const target = adminUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    const target = adminUsers.find(u => (u.email || '').toLowerCase() === email.trim().toLowerCase());
     if (!target) return false;
     const finalPassword = newPassword?.trim() || `Nexora#${Math.floor(1000 + Math.random() * 9000)}!`;
     setAdminUsers(prev => prev.map(u => (u.id === target.id ? { ...u, password: finalPassword } : u)));
+    fetch(`/api/users/${target.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: finalPassword }),
+    }).catch(err => console.error('Failed to persist email password reset to DB:', err));
     return true;
   };
 
