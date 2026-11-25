@@ -206,7 +206,7 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 /* Badge, pill, and tag containers should never cause horizontal scroll */
 .flex-wrap {
-  overflow: hidden visible;
+  max-width: 100%;
 }
 
 /* ─── Infinite Logo Marquee ─────────────────────────────────────────── */

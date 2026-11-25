@@ -237,9 +237,8 @@ const MainApp: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen bg-[#F8FAFC] dark:bg-[#060913] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:bg-sky-500/30 dark:selection:text-sky-200 transition-colors duration-300 ${
-        language === 'ar' ? 'font-arabic' : ''
-      }`}
+      className={`min-h-screen bg-[#F8FAFC] dark:bg-[#060913] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:bg-sky-500/30 dark:selection:text-sky-200 transition-colors duration-300 ${language === 'ar' ? 'font-arabic' : ''
+        }`}
     >
       {currentView === 'admin' ? (
         <ErrorBoundary fallbackTitle="Admin Command Center Error" fallbackMessage="An issue occurred within the Command Center module. You can return to the main site or retry.">
@@ -271,96 +270,96 @@ const MainApp: React.FC = () => {
                     }}
                   />
                   <TrustedByMarquee />
-                  <GoogleReviewsSection />
-                  <Estimator onRequestProposalWithScope={handleOpenQuoteWithScope} />
                   <ErrorBoundary fallbackTitle="Portfolio Section Error">
                     <Portfolio onBookDemo={handleOpenDemoModal} />
+                    <Estimator onRequestProposalWithScope={handleOpenQuoteWithScope} />
                   </ErrorBoundary>
                   <TechStack />
                   <WhyChooseUs />
+                  <GoogleReviewsSection />
                   <Contact />
                 </>
               )}
 
-            {currentView === 'case-studies' && (
-              <CaseStudiesPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'Enterprise Case Studies Inquiry' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'case-studies' && (
+                <CaseStudiesPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'Enterprise Case Studies Inquiry' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-custom-dotnet-erp' && (
-              <CustomDotNetErpPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'Custom .NET Web ERP' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-custom-dotnet-erp' && (
+                <CustomDotNetErpPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'Custom .NET Web ERP' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-odoo-enterprise' && (
-              <OdooEnterprisePage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'Odoo Enterprise & Python Bridges' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-odoo-enterprise' && (
+                <OdooEnterprisePage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'Odoo Enterprise & Python Bridges' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-web-apps' && (
-              <CustomWebAppsPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'Custom Web Apps & REST APIs' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-web-apps' && (
+                <CustomWebAppsPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'Custom Web Apps & REST APIs' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-mobile-apps' && (
-              <CustomMobileAppsPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'Custom Mobile Apps (iOS, Android, Flutter)' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-mobile-apps' && (
+                <CustomMobileAppsPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'Custom Mobile Apps (iOS, Android, Flutter)' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-ai-and-agents' && (
-              <AiAndAgentsPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'AI Integrations & Agentic Automation' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-ai-and-agents' && (
+                <AiAndAgentsPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'AI Integrations & Agentic Automation' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-cloud-devops' && (
-              <CloudDevOpsPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: '24/7 Server Management & Cloud DevOps' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-cloud-devops' && (
+                <CloudDevOpsPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: '24/7 Server Management & Cloud DevOps' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
 
-            {currentView === 'service-erp-modernization' && (
-              <ErpModernizationPage
-                onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'ERP Modernization & System Integration' });
-                  setIsQuoteModalOpen(true);
-                }}
-                onNavigateToEstimator={handleNavigateToEstimator}
-              />
-            )}
+              {currentView === 'service-erp-modernization' && (
+                <ErpModernizationPage
+                  onOpenQuote={() => {
+                    setQuotePrefill({ serviceName: 'ERP Modernization & System Integration' });
+                    setIsQuoteModalOpen(true);
+                  }}
+                  onNavigateToEstimator={handleNavigateToEstimator}
+                />
+              )}
             </main>
           </ErrorBoundary>
 
