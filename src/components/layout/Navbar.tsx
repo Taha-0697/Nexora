@@ -6,6 +6,7 @@ import { NexoraLogo } from '../common/NexoraLogo';
 import {
   Menu,
   X,
+  Star,
   Globe,
   ArrowUpRight,
   Sun,
@@ -52,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  // const { googleSettings, marketingSettings } = useData();
+  const { googleSettings, marketingSettings } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
@@ -112,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       {/* Top Marketing Announcement Banner */}
-      {/* {marketingSettings?.bannerEnabled && (
+      {marketingSettings?.bannerEnabled && (
         <div className="bg-gradient-to-r from-indigo-700 via-blue-600 to-indigo-800 text-white text-xs py-2 px-4 text-center font-medium shadow-xs transition-colors flex items-center justify-center gap-2">
           <Megaphone className="w-3.5 h-3.5 shrink-0 animate-pulse text-sky-200" />
           <span className="truncate max-w-2xl">
@@ -128,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </a>
           )}
         </div>
-      )} */}
+      )}
 
       {/* Main Sticky Navigation Bar */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 dark:bg-[#060913]/90 border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-300 shadow-xs dark:shadow-none">
