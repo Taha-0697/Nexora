@@ -1,4 +1,4 @@
-import { getAllProjects, createProjectRecord } from '../../src/server/projectsController.ts';
+import { getAllProjects, createProjectRecord } from '../_lib/projectsController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,4 +1,4 @@
-import { getAllUsers, createUserRecord } from '../../src/server/usersController';
+import { getAllUsers, createUserRecord } from '../_lib/usersController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

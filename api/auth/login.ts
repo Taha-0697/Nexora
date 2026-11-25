@@ -1,4 +1,4 @@
-import { authenticateUser } from '../../src/server/usersController';
+import { authenticateUser } from '../_lib/usersController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

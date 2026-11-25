@@ -1,4 +1,4 @@
-import { getAllReviews, createReviewRecord } from '../../src/server/reviewsController.ts';
+import { getAllReviews, createReviewRecord } from '../_lib/reviewsController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');

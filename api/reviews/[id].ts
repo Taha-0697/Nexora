@@ -1,8 +1,8 @@
-import { updateReviewRecord, deleteReviewRecord } from '../../src/server/reviewsController.ts';
+import { updateReviewRecord, deleteReviewRecord } from '../_lib/reviewsController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'PATCH, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
@@ -11,13 +11,13 @@ export default async function handler(req: any, res: any) {
 
   const { id } = req.query || {};
 
-  if (req.method === 'PUT') {
+  if (req.method === 'PUT' || req.method === 'PATCH') {
     try {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
       const updated = await updateReviewRecord(id as string, body);
       return res.status(200).json(updated);
     } catch (error: any) {
-      console.error('Error in PUT /api/reviews/:id:', error);
+      console.error('Error in PUT/PATCH /api/reviews/:id:', error);
       return res.status(500).json({
         error: 'Failed to update review',
         details: error.message || String(error),

@@ -1,4 +1,4 @@
-import { updateUserRecord, deleteUserRecord } from '../../src/server/usersController';
+import { updateUserRecord, deleteUserRecord } from '../_lib/usersController.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
