@@ -153,6 +153,9 @@ const techStackOptions = [
   { id: 'bespoke-erp', label: 'Bespoke ERP Modules', category: 'ERP' },
 ];
 
+const HOURLY_RATE_MIN_USD = 20;
+const HOURLY_RATE_MAX_USD = 25;
+
 const servicesOptions = [
   {
     id: 'custom-erp',
@@ -164,8 +167,16 @@ const servicesOptions = [
       en: '100% bespoke architecture, zero per-seat licensing, full IP ownership',
       ar: 'بنية برمجية مخصصة 100%، بدون رسوم تراخيص، ملكية فكرية كاملة'
     },
-    baseCost: 9500,
+    baseHours: 240,
     baseWeeks: 7,
+    defaultStack: [
+      '.NET Core Web API',
+      'Next.js / React',
+      'MS SQL Server (MSSQL)',
+      'Redis In-Memory Cache',
+      'REST API Integrations',
+      'Bespoke ERP Modules'
+    ],
   },
   {
     id: 'odoo-enterprise',
@@ -177,8 +188,15 @@ const servicesOptions = [
       en: 'Bespoke Odoo modules, FastAPI middleware & PostgreSQL/MSSQL sync',
       ar: 'وحدات مخصصة، وسيط FastAPI، ومزامنة قواعد بيانات PostgreSQL/MSSQL'
     },
-    baseCost: 8500,
+    baseHours: 200,
     baseWeeks: 6,
+    defaultStack: [
+      'Odoo Enterprise & Python Bridges',
+      'PostgreSQL / SQL',
+      'PostgreSQL Data Synchronization',
+      'REST API Integrations',
+      'Bespoke ERP Modules'
+    ],
   },
   {
     id: 'custom-web',
@@ -190,8 +208,15 @@ const servicesOptions = [
       en: 'High-speed Next.js portals, secure user authentication & microservices',
       ar: 'بوابات Next.js فائقة السرعة مع مصادقة أمنية متقدمة وخدمات مصغرة'
     },
-    baseCost: 6500,
+    baseHours: 140,
     baseWeeks: 5,
+    defaultStack: [
+      'Next.js / React',
+      'Node.js / NestJS',
+      'PostgreSQL / SQL',
+      'REST API Integrations',
+      'Redis In-Memory Cache'
+    ],
   },
   {
     id: 'mobile-app',
@@ -203,8 +228,14 @@ const servicesOptions = [
       en: 'Native 60FPS mobile experiences with biometric security & offline sync',
       ar: 'تطبيقات جوال أصيلة بسرعة 60 إطاراً في الثانية مع حماية بيومترية'
     },
-    baseCost: 7500,
+    baseHours: 180,
     baseWeeks: 6,
+    defaultStack: [
+      'Native iOS (Swift & SwiftUI)',
+      'Native Android (Kotlin)',
+      'Flutter Cross-Platform',
+      'REST API Integrations'
+    ],
   },
   {
     id: 'ai-solution',
@@ -216,8 +247,14 @@ const servicesOptions = [
       en: 'Private domain LLMs, semantic vector search & business automation',
       ar: 'نماذج لغوية خاصة، بحث دلالي موجه، وأتمتة ذكية لمهام العمل'
     },
-    baseCost: 5500,
+    baseHours: 120,
     baseWeeks: 4,
+    defaultStack: [
+      'AI & LLM Integrations',
+      'Python AI Engine & Bridges',
+      'PostgreSQL / SQL',
+      'Docker & Kubernetes (K8s)'
+    ],
   },
   {
     id: 'cloud-devops',
@@ -229,8 +266,14 @@ const servicesOptions = [
       en: '99.99% SLA uptime, automated CI/CD pipelines & container orchestration',
       ar: 'استقرار تشغيلي 99.99%، خطوط نشر مؤتمتة وإدارة حاويات سحابية'
     },
-    baseCost: 4000,
+    baseHours: 80,
     baseWeeks: 3,
+    defaultStack: [
+      'AWS Cloud Infrastructure',
+      'Microsoft Azure Cloud',
+      'Docker & Kubernetes (K8s)',
+      'Redis In-Memory Cache'
+    ],
   },
   {
     id: 'erp-modernization',
@@ -242,8 +285,14 @@ const servicesOptions = [
       en: 'Legacy DB migration, CDC data streaming & zero-downtime upgrades',
       ar: 'ترحيل قواعد البيانات القديمة ومزامنة البيانات اللحظية بدون انقطاع'
     },
-    baseCost: 5000,
+    baseHours: 130,
     baseWeeks: 4,
+    defaultStack: [
+      'Bespoke ERP Modules',
+      'PostgreSQL Data Synchronization',
+      'REST API Integrations',
+      'MS SQL Server (MSSQL)'
+    ],
   },
 ];
 
@@ -357,11 +406,28 @@ const EstimatorComponent: React.FC<EstimatorProps> = ({ onRequestProposalWithSco
 
   const toggleService = useCallback((id: string) => {
     setSelectedServices(prev => {
-      if (prev.includes(id)) {
-        return prev.length > 1 ? prev.filter(s => s !== id) : prev;
-      } else {
-        return [...prev, id];
+      const isRemoving = prev.includes(id);
+      if (isRemoving && prev.length <= 1) return prev;
+      const nextServices = isRemoving ? prev.filter(s => s !== id) : [...prev, id];
+
+      // Auto-select relevant tech stack for the active services
+      const combinedStack = new Set<string>();
+      nextServices.forEach(svcId => {
+        const svc = servicesOptions.find(s => s.id === svcId);
+        svc?.defaultStack.forEach(tech => combinedStack.add(tech));
+      });
+      setSelectedStackSpecs(Array.from(combinedStack));
+
+      // Sync primary architecture when adding a core service
+      if (!isRemoving) {
+        if (id === 'custom-erp') setPrimaryArchitecture('custom-erp');
+        else if (id === 'odoo-enterprise') setPrimaryArchitecture('odoo-enterprise');
+        else if (id === 'custom-web') setPrimaryArchitecture('saas-portal');
+        else if (id === 'mobile-app') setPrimaryArchitecture('mobile-app');
+        else if (id === 'ai-solution') setPrimaryArchitecture('ai-integration');
       }
+
+      return nextServices;
     });
   }, []);
 
@@ -375,61 +441,66 @@ const EstimatorComponent: React.FC<EstimatorProps> = ({ onRequestProposalWithSco
     });
   }, []);
 
-  // Calculations in USD (Strictly Deterministic - Zero Math.random)
+  // Calculations in USD based on real project-based approx hours at $20-$25/hr (Deterministic)
   const baseEstimate = useMemo(() => {
-    let baseSum = 0;
+    let baseHoursSum = 0;
     let weeksSum = 0;
 
     selectedServices.forEach(svcId => {
       const match = servicesOptions.find(s => s.id === svcId);
       if (match) {
-        baseSum += match.baseCost;
+        baseHoursSum += match.baseHours;
         weeksSum += match.baseWeeks;
       }
     });
 
     let multiplier = 1.0;
-    if (projectScale === 'mvp') multiplier = 0.85;
-    if (projectScale === 'growth') multiplier = 1.3;
-    if (projectScale === 'enterprise') multiplier = 2.0;
+    if (projectScale === 'mvp') multiplier = 0.75;
+    if (projectScale === 'growth') multiplier = 1.0;
+    if (projectScale === 'enterprise') multiplier = 1.45;
 
     let supportCost = 0;
-    if (supportTier === 'standard') supportCost = 800;
-    if (supportTier === 'mission-critical') supportCost = 2200;
+    if (supportTier === 'standard') supportCost = 350;
+    if (supportTier === 'mission-critical') supportCost = 750;
 
-    // Primary Architecture Baseline Adjustment
-    let archBase = 0;
+    // Primary Architecture Baseline Hours Adjustment
+    let archHours = 0;
     let archWeeks = 0;
     if (primaryArchitecture === 'custom-erp') {
-      archBase = 1000;
+      archHours = 40;
       archWeeks = 1;
     } else if (primaryArchitecture === 'odoo-enterprise') {
-      archBase = 800;
+      archHours = 30;
       archWeeks = 1;
     } else if (primaryArchitecture === 'saas-portal') {
-      archBase = 500;
+      archHours = 20;
       archWeeks = 0.5;
     } else if (primaryArchitecture === 'mobile-app') {
-      archBase = 600;
+      archHours = 25;
       archWeeks = 0.5;
     } else if (primaryArchitecture === 'ai-integration') {
-      archBase = 1200;
+      archHours = 35;
       archWeeks = 1;
     }
 
-    // Configured Tech Components Adjustment (Deterministic $350 + 0.2 weeks per component beyond 2)
-    const customComponentCost = Math.max(0, selectedStackSpecs.length - 2) * 350;
+    // Configured Tech Components Adjustment (+12 approx hours & 0.2 weeks per component beyond 2)
+    const customComponentHours = Math.max(0, selectedStackSpecs.length - 2) * 12;
     const customComponentWeeks = Math.max(0, selectedStackSpecs.length - 2) * 0.2;
 
-    const totalRaw = (baseSum + archBase + customComponentCost) * multiplier;
-    const totalBase = Math.round(totalRaw / 500) * 500;
-    const totalMax = Math.round((totalBase * 1.25) / 500) * 500;
+    const rawHours = (baseHoursSum + archHours + customComponentHours) * multiplier;
+    const hoursMin = Math.max(40, Math.round((rawHours * 0.9) / 10) * 10);
+    const hoursMax = Math.max(hoursMin + 20, Math.round((rawHours * 1.15) / 10) * 10);
 
-    const totalWeeksRaw = (weeksSum + archWeeks + customComponentWeeks) * (multiplier * 0.75);
+    const totalBase = hoursMin * HOURLY_RATE_MIN_USD;
+    const totalMax = hoursMax * HOURLY_RATE_MAX_USD;
+
+    const totalWeeksRaw = (weeksSum + archWeeks + customComponentWeeks) * (multiplier * 0.85);
     const finalWeeks = Math.max(2, Math.round(totalWeeksRaw));
     const finalWeeksMax = Math.round(finalWeeks * 1.3);
 
     return {
+      hoursMin,
+      hoursMax,
       minBudgetUSD: totalBase,
       maxBudgetUSD: totalMax,
       supportCostUSD: supportCost,
@@ -457,7 +528,7 @@ const EstimatorComponent: React.FC<EstimatorProps> = ({ onRequestProposalWithSco
       return s ? s.title[language] : id;
     });
 
-    const budgetString = `${currentCurrencyObj.symbol}${convertedMin.toLocaleString()} - ${currentCurrencyObj.symbol}${convertedMax.toLocaleString()} ${selectedCurrency}`;
+    const budgetString = `${currentCurrencyObj.symbol}${convertedMin.toLocaleString()} - ${currentCurrencyObj.symbol}${convertedMax.toLocaleString()} ${selectedCurrency} (~${baseEstimate.hoursMin}-${baseEstimate.hoursMax} hrs @ $${HOURLY_RATE_MIN_USD}-$${HOURLY_RATE_MAX_USD}/hr, approx.)`;
 
     // Immediately trigger proposal request
     onRequestProposalWithScope({
@@ -795,25 +866,45 @@ const EstimatorComponent: React.FC<EstimatorProps> = ({ onRequestProposalWithSco
                 <span>{language === 'ar' ? 'التقدير الهندسي المباشر' : 'Live Engineering Scope Output'}</span>
               </div>
 
-              {/* Estimated Investment Range in User Currency */}
+              {/* Estimated Investment Range in User Currency (Hourly-Based Approx) */}
               <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                  {t('estimator.estimatedBudget')} ({selectedCurrency})
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {language === 'ar' ? 'التكلفة التقديرية التقريبية' : 'Approx. Estimated Investment'} ({selectedCurrency})
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                    ${HOURLY_RATE_MIN_USD}–${HOURLY_RATE_MAX_USD}/hr
+                  </span>
+                </div>
                 <div className="text-2xl sm:text-4xl font-extrabold font-mono tracking-tight text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
                   <span>{currentCurrencyObj.symbol}{convertedMin.toLocaleString()}</span>
                   <span className="text-slate-400 text-xl sm:text-2xl font-light">-</span>
                   <span>{currentCurrencyObj.symbol}{convertedMax.toLocaleString()}</span>
                 </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-mono text-slate-700 dark:text-slate-200">
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#131C31] border border-slate-200 dark:border-[#1E293B] font-semibold">
+                    {language === 'ar'
+                      ? `~${baseEstimate.hoursMin} - ${baseEstimate.hoursMax} ساعة عمل (تقريبية)`
+                      : `~${baseEstimate.hoursMin} - ${baseEstimate.hoursMax} Est. Hours (Approx.)`}
+                  </span>
+                </div>
                 {convertedSupport > 0 && (
-                  <p className="text-xs text-indigo-600 dark:text-sky-300 mt-1.5 flex items-center gap-1 font-mono font-medium">
+                  <p className="text-xs text-indigo-600 dark:text-sky-300 mt-2 flex items-center gap-1 font-mono font-medium">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span>+{currentCurrencyObj.symbol}{convertedSupport.toLocaleString()}/mo ({supportTier === 'mission-critical' ? '24/7 Dedicated SRE' : 'Standard SLA'})</span>
                   </p>
                 )}
-                <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                <span className="text-[10px] text-slate-400 font-mono mt-1.5 block">
                   Quote auto-adapted for {selectedCurrency} (Exchange Rate 1 USD ≈ {currencyRate.toFixed(2)} {selectedCurrency})
                 </span>
+
+                {/* Approx Hours & Customer Care Discussion Note */}
+                <div className="mt-3 p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed">
+                  <strong>{language === 'ar' ? 'ملاحظة هامة:' : 'Note:'}</strong>{' '}
+                  {language === 'ar'
+                    ? 'الساعات والتكلفة المعروضة هي تقديرات تقريبية وليست ثابتة (20–25 دولار/ساعة). يتم تحديد الساعات الفعلية والتسعير النهائي بعد المناقشة التفصيلية مع فريق خدمة العملاء لدينا.'
+                    : 'Estimated hours and costs are approximate, not fixed ($20–$25/hr based on real project scope). Final hours and exact pricing will be confirmed after having discussions with our Customer Care team.'}
+                </div>
               </div>
 
               {/* Estimated Delivery Timeline */}
