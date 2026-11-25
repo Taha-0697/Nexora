@@ -6,7 +6,6 @@ import { NexoraLogo } from '../common/NexoraLogo';
 import {
   Menu,
   X,
-  Star,
   Globe,
   ArrowUpRight,
   Sun,
@@ -53,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { googleSettings, marketingSettings } = useData();
+  const { marketingSettings } = useData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
