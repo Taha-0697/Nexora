@@ -27,7 +27,7 @@ export const AiAndCloudPage: React.FC<AiAndCloudPageProps> = ({
   return (
     <div className="pt-24 pb-20 overflow-hidden">
       {/* Hero Header */}
-      <section className="relative py-16 sm:py-24 border-b border-slate-200/80 dark:border-slate-800/80">
+      <section className="relative py-16 sm:py-24 border-b border-slate-200/80 dark:border-slate-800/80 section-surface-1">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
@@ -76,7 +76,7 @@ export const AiAndCloudPage: React.FC<AiAndCloudPageProps> = ({
       </section>
 
       {/* Core Architectural Pillars */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-surface-2">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
             {language === 'ar' ? 'المعايير الهندسية والأمان' : 'Engineered for Zero Downtime & Maximum Accuracy'}
@@ -158,7 +158,7 @@ export const AiAndCloudPage: React.FC<AiAndCloudPageProps> = ({
 
         {/* Live CTA Banner */}
         <div className="mt-16 glass-panel p-8 sm:p-12 rounded-3xl border border-cyan-200 dark:border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-indigo-950/40 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-mono font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 text-xs font-mono font-bold">
             <Sparkles className="w-3.5 h-3.5" />
             <span>99.99% SLA Available</span>
           </div>

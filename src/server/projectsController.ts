@@ -15,9 +15,7 @@ export interface FormattedProject {
   country: string;
   imageUrl: string;
   image: string;
-  hasLiveDemo: boolean;
-  liveDemoUrl: string | null;
-  liveUrl: string;
+  images: string[];
   techStack: string[];
   tags: string[];
   shortDesc: {
@@ -53,8 +51,6 @@ export function formatProject(p: any): FormattedProject {
     p.imageUrl ||
     p.image ||
     'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
-  const liveDemoUrl = p.liveDemoUrl || p.liveUrl || null;
-  const hasLiveDemo = Boolean(p.hasLiveDemo ?? Boolean(liveDemoUrl));
   const category = (p.category || 'erp').toLowerCase();
 
   return {
@@ -72,9 +68,7 @@ export function formatProject(p: any): FormattedProject {
     country: region,
     imageUrl,
     image: imageUrl,
-    hasLiveDemo,
-    liveDemoUrl,
-    liveUrl: hasLiveDemo && liveDemoUrl ? liveDemoUrl : '',
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : (imageUrl ? [imageUrl] : []),
     techStack,
     tags: techStack,
     shortDesc: p.shortDesc && typeof p.shortDesc === 'object'
@@ -143,7 +137,22 @@ export async function createProjectRecord(data: any) {
   }
 
   const titleAr = String(data.titleAr || data.title?.ar || titleEn).trim();
-  const category = String(data.category || 'ERP').toUpperCase();
+
+  // Normalize category to standard uppercase tags: ERP, WEB, MOBILE, AI, CLOUD
+  const rawCat = String(data.category || 'ERP').trim().toLowerCase();
+  let category = 'ERP';
+  if (rawCat.includes('web') || rawCat.includes('saas') || rawCat.includes('portal')) {
+    category = 'WEB';
+  } else if (rawCat.includes('mobile') || rawCat.includes('ios') || rawCat.includes('android') || rawCat.includes('flutter')) {
+    category = 'MOBILE';
+  } else if (rawCat.includes('ai') || rawCat.includes('llm')) {
+    category = 'AI';
+  } else if (rawCat.includes('cloud') || rawCat.includes('devops')) {
+    category = 'CLOUD';
+  } else {
+    category = 'ERP';
+  }
+
   const clientName = String(data.clientName || data.client || 'Enterprise Partner').trim();
   const region = String(data.region || data.country || 'UAE / GCC').trim();
   const imageUrl = String(
@@ -152,9 +161,18 @@ export async function createProjectRecord(data: any) {
       'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'
   ).trim();
 
-  const liveDemoUrl = data.liveDemoUrl || data.liveUrl ? String(data.liveDemoUrl || data.liveUrl).trim() : null;
-  const hasLiveDemo = Boolean(data.hasLiveDemo !== undefined ? data.hasLiveDemo : Boolean(liveDemoUrl));
+  // Handle boolean live demo enabled and redirect url
+  const hasLiveDemo = Boolean(
+    data.hasLiveDemo === true || 
+    data.hasLiveDemo === 'true' || 
+    data.liveDemoEnabled === true ||
+    data.live_demo_enabled === true
+  );
 
+  const rawUrl = data.liveDemoUrl || data.liveUrl || data.live_demo_url;
+  const liveDemoUrl = rawUrl ? String(rawUrl).trim() || null : null;
+
+  // Robust parsing of comma-separated tech stack or arrays, stripping empty/whitespace elements
   let techStack: string[] = [];
   if (Array.isArray(data.techStack)) {
     techStack = data.techStack.map(String).map((s: string) => s.trim()).filter(Boolean);
@@ -167,26 +185,34 @@ export async function createProjectRecord(data: any) {
   }
 
   if (techStack.length === 0) {
-    techStack = ['React', 'PostgreSQL', 'REST API'];
+    techStack = ['.NET Core Web API', 'Next.js', 'MSSQL', 'Redis', 'REST APIs'];
   }
 
-  const created = await withTimeout(
-    prisma.project.create({
-      data: {
-        titleEn,
-        titleAr,
-        category,
-        clientName,
-        region,
-        imageUrl,
-        hasLiveDemo,
-        liveDemoUrl,
-        techStack,
-      },
-    })
-  );
+  try {
+    const created = await withTimeout(
+      prisma.project.create({
+        data: {
+          titleEn,
+          titleAr,
+          category,
+          clientName,
+          region,
+          imageUrl,
+          hasLiveDemo,
+          liveDemoUrl,
+          techStack,
+        },
+      }),
+      10000,
+      'Database connection timed out while saving project to Neon PostgreSQL.'
+    );
 
-  return formatProject(created);
+    return formatProject(created);
+  } catch (err: any) {
+    console.error('Prisma project.create error:', err);
+    const codePrefix = err.code ? `[Postgres/Prisma ${err.code}] ` : '';
+    throw new Error(`${codePrefix}${err.message || 'Database error occurred while creating project.'}`);
+  }
 }
 
 export async function deleteProjectRecord(id: string) {
@@ -194,11 +220,19 @@ export async function deleteProjectRecord(id: string) {
     throw new Error('Project ID is required.');
   }
 
-  await withTimeout(
-    prisma.project.delete({
-      where: { id },
-    })
-  );
+  try {
+    await withTimeout(
+      prisma.project.delete({
+        where: { id },
+      }),
+      10000,
+      'Database connection timed out while deleting project from Neon PostgreSQL.'
+    );
 
-  return { success: true, message: `Project ${id} deleted successfully.` };
+    return { success: true, message: `Project ${id} deleted successfully.` };
+  } catch (err: any) {
+    console.error('Prisma project.delete error:', err);
+    const codePrefix = err.code ? `[Postgres/Prisma ${err.code}] ` : '';
+    throw new Error(`${codePrefix}${err.message || 'Database error occurred while deleting project.'}`);
+  }
 }

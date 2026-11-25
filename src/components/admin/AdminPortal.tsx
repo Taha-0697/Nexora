@@ -20,14 +20,30 @@ import {
   Moon,
   Users,
   Megaphone,
-  ExternalLink,
   Plus,
   X,
-  Video
+  Video,
+  KeyRound,
+  Key,
+  ShieldAlert,
+  CheckCircle2,
+  Sparkles,
+  UserX,
+  Upload,
+  Image as ImageIcon,
+  AlertTriangle,
+  Layout
 } from 'lucide-react';
+import { B2BSectionsAdminDrawer } from './B2BSectionsAdminDrawer';
+import { B2BConsoleCmsModule } from './B2BConsoleCmsModule';
 
 interface AdminPortalProps {
   onBackToWebsite: () => void;
+}
+
+function isValidUrl(url: string): boolean {
+  if (!url) return true; // empty is fine
+  return /^https?:\/\//.test(url) || url.startsWith('/') || url.startsWith('#');
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => {
@@ -51,6 +67,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     updateAdminUser,
     addAdminUser,
     deleteAdminUser,
+<<<<<<< HEAD
+=======
+    resetUserPassword,
+    resetAllPasswords,
+>>>>>>> origin/update
     marketingSettings,
     updateMarketingSettings,
     addAdCampaign,
@@ -75,9 +96,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Admin Password Management Modals (Team tab)
+  const [showResetAllModal, setShowResetAllModal] = useState(false);
+  const [resetAllCustomPass, setResetAllCustomPass] = useState('');
+  const [resetAllSuccessNotice, setResetAllSuccessNotice] = useState('');
+  const [userToResetPassword, setUserToResetPassword] = useState<AdminUser | null>(null);
+  const [individualNewPass, setIndividualNewPass] = useState('');
+  const [individualResetNotice, setIndividualResetNotice] = useState('');
+
+  // Revoke / Remove User Access State
+  const [userToRevoke, setUserToRevoke] = useState<AdminUser | null>(null);
+  const [revokeSuccessNotice, setRevokeSuccessNotice] = useState('');
+  const [revokeErrorNotice, setRevokeErrorNotice] = useState('');
+  const [avatarUploadError, setAvatarUploadError] = useState('');
+
   // Active Tab
   const [activeTab, setActiveTab] = useState<
-    'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team'
+    'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' | 'b2b-cms'
   >('projects');
 
   // Modals State
@@ -87,6 +122,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [showAddCampaignModal, setShowAddCampaignModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showB2BDrawer, setShowB2BDrawer] = useState(false);
 
   // New / Edit Project Form
   const [projectForm, setProjectForm] = useState({
@@ -110,8 +146,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     metric3Val: '-80%',
     metric3LabelEn: 'Time Saved',
     metric3LabelAr: 'توفير الوقت',
-    liveUrl: 'https://demo-portal.nexora.io',
-    hasLiveDemo: true,
+    images: [] as string[],
+    newImageUrl: '',
+    isProprietary: false,
+    demoProductName: '',
+    demoBadgeText: 'Instant Staging Access',
     featured: true,
     completionDate: '2026-06'
   });
@@ -156,6 +195,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     email: '',
     title: '',
     password: '',
+    avatar: '',
     roles: ['project_manager'] as UserRole[]
   });
 
@@ -194,11 +234,57 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       } else if (user.roles.includes('review_manager')) {
         setActiveTab('reviews');
       }
+<<<<<<< HEAD
     } catch (err: any) {
       setAuthError('Connection error. Please check your network and try again.');
     } finally {
       setIsLoggingIn(false);
+=======
+    } else {
+      setAuthError('Invalid credentials. Please verify your work email and password.');
     }
+  };
+
+  // Admin Bulk Reset All Passwords
+  const handleConfirmResetAll = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !currentUser.roles.includes('admin')) return;
+
+    const newPass = resetAllPasswords(resetAllCustomPass);
+    if (currentUser) {
+      const updatedSelf = { ...currentUser, password: newPass };
+      setCurrentUser(updatedSelf);
+      sessionStorage.setItem('nexora_active_user', JSON.stringify(updatedSelf));
+>>>>>>> origin/update
+    }
+
+    setShowResetAllModal(false);
+    setResetAllCustomPass('');
+    setResetAllSuccessNotice(`All team passwords have been securely updated to: "${newPass}". Team members must use this to authenticate.`);
+    setTimeout(() => setResetAllSuccessNotice(''), 8000);
+  };
+
+  // Admin Individual User Reset Password
+  const handleConfirmIndividualReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !currentUser.roles.includes('admin') || !userToResetPassword) return;
+
+    if (individualNewPass.trim().length > 0 && individualNewPass.trim().length < 6) {
+      return;
+    }
+
+    const newPass = resetUserPassword(userToResetPassword.id, individualNewPass);
+    if (currentUser.id === userToResetPassword.id) {
+      const updatedSelf = { ...currentUser, password: newPass };
+      setCurrentUser(updatedSelf);
+      sessionStorage.setItem('nexora_active_user', JSON.stringify(updatedSelf));
+    }
+
+    const userName = userToResetPassword.name;
+    setUserToResetPassword(null);
+    setIndividualNewPass('');
+    setIndividualResetNotice(`Password for ${userName} has been reset to: "${newPass}".`);
+    setTimeout(() => setIndividualResetNotice(''), 8000);
   };
 
   const handleLogout = () => {
@@ -218,7 +304,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   };
 
   // Helper to verify if active tab is accessible
-  const isTabAuthorized = (tab: 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team'): boolean => {
+  const isTabAuthorized = (tab: 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' | 'b2b-cms'): boolean => {
     if (!currentUser) return false;
     if (isSuperOrAdmin()) return true;
     switch (tab) {
@@ -230,6 +316,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         return hasRole('review_manager');
       case 'leads':
         return hasRole('project_manager') || hasRole('marketing_manager');
+      case 'b2b-cms':
+        return hasRole('project_manager') || hasRole('marketing_manager');
       case 'settings':
       case 'team':
         return isSuperOrAdmin();
@@ -239,8 +327,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   };
 
   // Get primary authorized tab for redirection
+<<<<<<< HEAD
   const getPrimaryAuthorizedTab = (roles: UserRole[] = []): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' => {
     if (roles.includes('super_admin') || roles.includes('admin')) return 'projects';
+=======
+  const getPrimaryAuthorizedTab = (roles: UserRole[]): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' | 'b2b-cms' => {
+    if (roles.includes('admin')) return 'projects';
+>>>>>>> origin/update
     if (roles.includes('project_manager')) return 'projects';
     if (roles.includes('marketing_manager')) return 'marketing';
     if (roles.includes('review_manager')) return 'reviews';
@@ -271,8 +364,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       metric3Val: proj.metrics?.[2]?.value || '-40%',
       metric3LabelEn: proj.metrics?.[2]?.label?.en || 'Efficiency',
       metric3LabelAr: proj.metrics?.[2]?.label?.ar || 'الكفاءة',
-      liveUrl: proj.liveDemoUrl || proj.liveUrl || '',
-      hasLiveDemo: proj.hasLiveDemo !== undefined ? proj.hasLiveDemo : Boolean(proj.liveUrl || proj.liveDemoUrl),
+      images: Array.isArray(proj.images) ? proj.images : (proj.image ? [proj.image] : []),
+      newImageUrl: '',
+      isProprietary: proj.category === 'proprietary' || Boolean(proj.isProprietary),
+      demoProductName: proj.demoBookingMetadata?.productName || proj.titleEn || proj.title?.en || '',
+      demoBadgeText: proj.demoBookingMetadata?.badgeText || 'Instant Staging Access',
       featured: proj.featured !== undefined ? proj.featured : true,
       completionDate: proj.completionDate || '2026-06'
     });
@@ -282,10 +378,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectForm.titleEn) return;
+
+    if (!isValidUrl(projectForm.image)) {
+      setProjectSubmitError('Invalid Project Image URL format (must begin with http:// or https://)');
+      return;
+    }
+    for (const imgUrl of projectForm.images) {
+      if (!isValidUrl(imgUrl)) {
+        setProjectSubmitError('One of the project gallery image URLs is invalid (must begin with http:// or https://)');
+        return;
+      }
+    }
+
     setIsSavingProject(true);
     setProjectSubmitError('');
 
     const tagsArray = projectForm.tags.split(',').map(t => t.trim()).filter(Boolean);
+
+    const effectiveImages = projectForm.images.length > 0 
+      ? projectForm.images 
+      : [projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'];
 
     const projectPayload = {
       titleEn: projectForm.titleEn,
@@ -293,9 +405,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       category: projectForm.category,
       clientName: projectForm.client || 'Enterprise Partner',
       region: projectForm.country || 'UAE / GCC',
-      imageUrl: projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      hasLiveDemo: Boolean(projectForm.hasLiveDemo),
-      liveDemoUrl: projectForm.liveUrl || null,
+      imageUrl: projectForm.image || effectiveImages[0],
+      images: effectiveImages,
       techStack: tagsArray,
       // Compatibility fields for immediate UI updates
       title: {
@@ -304,7 +415,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       },
       client: projectForm.client || 'Enterprise Partner',
       country: projectForm.country || 'UAE / GCC',
-      image: projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+      image: projectForm.image || effectiveImages[0],
       shortDesc: {
         en: projectForm.shortDescEn || `${projectForm.category.toUpperCase()} solution engineered for ${projectForm.client || 'Enterprise Partner'}.`,
         ar: projectForm.shortDescAr || `منظومة ${projectForm.category.toUpperCase()} تم تطويرها لـ ${projectForm.client || 'الشركاء'}.`
@@ -329,7 +440,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         }
       ],
       featured: projectForm.featured,
-      liveUrl: projectForm.liveUrl,
+      isProprietary: projectForm.category === 'proprietary' || Boolean(projectForm.isProprietary),
+      demoBookingMetadata: {
+        enabled: projectForm.category === 'proprietary' || Boolean(projectForm.isProprietary),
+        productName: projectForm.demoProductName || projectForm.titleEn,
+        badgeText: projectForm.demoBadgeText || 'Instant Staging Access'
+      },
       completionDate: projectForm.completionDate
     };
 
@@ -498,13 +614,44 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     });
   };
 
+<<<<<<< HEAD
   // Submit User (Super Admin creates TeamMember in DB)
   const handleCreateUser = async (e: React.FormEvent) => {
+=======
+  // Handle Avatar File Upload with validation
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setAvatarUploadError('');
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setAvatarUploadError('Please select a valid image file (PNG, JPG, WebP, GIF).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarUploadError('Profile image must be less than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        setUserForm(prev => ({ ...prev, avatar: event.target?.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Submit User
+  const handleCreateUser = (e: React.FormEvent) => {
+>>>>>>> origin/update
     e.preventDefault();
     if (!userForm.email || !userForm.name) return;
     setIsSavingUser(true);
     setUserSubmitError('');
 
+<<<<<<< HEAD
     try {
       await addAdminUser({
         name: userForm.name,
@@ -528,6 +675,64 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     } finally {
       setIsSavingUser(false);
     }
+=======
+    addAdminUser({
+      name: userForm.name,
+      email: userForm.email,
+      title: userForm.title || 'Team Specialist',
+      password: userForm.password || 'nexora2026!',
+      avatar: userForm.avatar ? userForm.avatar.trim() : undefined,
+      roles: userForm.roles
+    });
+
+    setShowAddUserModal(false);
+    setAvatarUploadError('');
+    setUserForm({
+      name: '',
+      email: '',
+      title: '',
+      password: '',
+      avatar: '',
+      roles: ['project_manager']
+    });
+>>>>>>> origin/update
+  };
+
+  // Handle Revoke / Remove User Access
+  const handleConfirmRevokeUser = () => {
+    if (!userToRevoke) return;
+    setRevokeErrorNotice('');
+
+    // Guard against last admin removal
+    const adminCount = adminUsers.filter(u => u.roles.includes('admin')).length;
+    if (userToRevoke.roles.includes('admin') && adminCount <= 1) {
+      setRevokeErrorNotice('Cannot revoke: Organization must maintain at least one Executive Administrator.');
+      setUserToRevoke(null);
+      return;
+    }
+
+    const removedName = userToRevoke.name;
+    const removedId = userToRevoke.id;
+    const isCurrentSession = currentUser && (
+      currentUser.id === removedId || 
+      currentUser.email.toLowerCase() === userToRevoke.email.toLowerCase()
+    );
+
+    // Delete user from state & clear all permissions
+    deleteAdminUser(removedId);
+
+    // Immediately revoke/invalidate session if this was the logged-in user
+    if (isCurrentSession) {
+      sessionStorage.removeItem('nexora_active_user');
+      setCurrentUser(null);
+      setAuthError('Your access permissions have been revoked by an administrator.');
+      setUserToRevoke(null);
+      return;
+    }
+
+    setUserToRevoke(null);
+    setRevokeSuccessNotice(`Access permanently revoked and user account removed for ${removedName}.`);
+    setTimeout(() => setRevokeSuccessNotice(''), 4500);
   };
 
   // Trigger Google Sync
@@ -559,7 +764,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             Private Access for Management Team (Role-Based Authorization)
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-3.5 text-left mb-6">
+          <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
               <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                 Authorized Work Email
@@ -569,7 +774,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 required
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
-                placeholder="e.g. pm@nexora.io"
+                placeholder="e.g. admin@nexora.io or pm@nexora.io"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
               />
             </div>
@@ -583,15 +788,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 required
                 value={loginPassword}
                 onChange={e => setLoginPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder="Enter your account password"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
               />
             </div>
 
             {authError && (
-              <p className="text-xs text-rose-500 dark:text-rose-400 font-semibold text-center">
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs text-center font-medium">
                 {authError}
-              </p>
+              </div>
             )}
 
             <button
@@ -615,17 +820,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             <button
               type="button"
               onClick={onBackToWebsite}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Return to Public Website</span>
             </button>
           </form>
 
+<<<<<<< HEAD
           <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center pt-2">
             Access restricted to authorized Nexora personnel only.
           </p>
 
+=======
+>>>>>>> origin/update
         </div>
       </div>
     );
@@ -649,6 +857,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
+<<<<<<< HEAD
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Nexora Command Center</span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-500/30">
@@ -658,6 +867,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Logged in as <strong>{currentUser.name}</strong> ({currentUser.email})
               </p>
+=======
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Nexora Command Center
+                </h1>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50/90 dark:bg-slate-800/90 text-indigo-700 dark:text-sky-300 border border-indigo-200/90 dark:border-indigo-500/30 text-xs font-mono font-semibold shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="truncate max-w-[240px] sm:max-w-none">{currentUser.email}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Signed in as <strong className="text-slate-700 dark:text-slate-200">{currentUser.name}</strong>
+                </p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">
+                  <span>{currentUser.roles.map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}</span>
+                </div>
+              </div>
+>>>>>>> origin/update
             </div>
           </div>
 
@@ -702,10 +930,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('project_manager') && (
             <button
               onClick={() => setActiveTab('projects')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'projects'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <FolderPlus className="w-4 h-4" />
@@ -717,10 +945,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('marketing_manager') && (
             <button
               onClick={() => setActiveTab('marketing')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'marketing'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Megaphone className="w-4 h-4" />
@@ -732,10 +960,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('review_manager') && (
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'reviews'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Star className="w-4 h-4" />
@@ -747,10 +975,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {(hasRole('project_manager') || hasRole('marketing_manager')) && (
             <button
               onClick={() => setActiveTab('leads')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'leads'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Mail className="w-4 h-4" />
@@ -762,10 +990,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'settings'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Sliders className="w-4 h-4" />
@@ -777,14 +1005,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('team')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === 'team'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Users className="w-4 h-4" />
               <span>Team & Roles ({adminUsers.length})</span>
+            </button>
+          )}
+
+          {/* B2B Console CMS Tab: Admin, Project Manager or Marketing Manager */}
+          {(hasRole('project_manager') || hasRole('marketing_manager')) && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('b2b-cms')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'b2b-cms'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+              }`}
+              title="Manage Marquee Logos and Enterprise Case Studies"
+            >
+              <Layout className="w-4 h-4" />
+              <span>B2B Console CMS</span>
             </button>
           )}
         </div>
@@ -819,13 +1064,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-mono text-[10px] border-b border-slate-200 dark:border-slate-800">
+                  <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 uppercase font-mono text-[10px] font-bold border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-6 py-4">Project</th>
-                      <th className="px-6 py-4">Category</th>
-                      <th className="px-6 py-4">Client / Region</th>
-                      <th className="px-6 py-4">Live Redirect Link</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Project</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Category</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Client / Region</th>
+                      <th className="px-6 py-4 whitespace-nowrap">Images & Views</th>
+                      <th className="px-6 py-4 text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -844,16 +1089,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         const client = proj.client || (proj as any).clientName || 'Enterprise Partner';
                         const country = proj.country || (proj as any).region || 'UAE / GCC';
                         const image = proj.image || (proj as any).imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
-                        const liveUrl = proj.liveUrl || (proj as any).liveDemoUrl;
+                        const projectImages = Array.isArray(proj.images) && proj.images.length > 0 ? proj.images : (image ? [image] : []);
 
                         return (
                           <tr key={proj.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-3">
                                 <img
                                   src={image}
                                   alt=""
                                   className="w-10 h-10 rounded-lg object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+                                  }}
                                 />
                                 <div>
                                   <div className="font-bold text-slate-900 dark:text-white text-sm">
@@ -865,35 +1113,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 font-mono text-[10px] uppercase font-bold border border-slate-200 dark:border-slate-700">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 font-mono text-[10px] uppercase font-bold border border-slate-200 dark:border-slate-700 whitespace-nowrap inline-block">
                                 {proj.category}
                               </span>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="font-medium text-slate-800 dark:text-slate-200">
                                 {client}
                               </div>
-                              <div className="text-slate-400 text-[10px]">
+                              <div className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">
                                 {country}
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              {liveUrl ? (
-                                <a
-                                  href={liveUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-indigo-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-mono text-xs"
-                                >
-                                  <span className="truncate max-w-[180px]">{liveUrl}</span>
-                                  <ExternalLink className="w-3 h-3 shrink-0" />
-                                </a>
-                              ) : (
-                                <span className="text-slate-400 italic">No direct link</span>
-                              )}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono text-[11px] font-semibold">
+                                  <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>{projectImages.length} image{projectImages.length === 1 ? '' : 's'}</span>
+                                </span>
+                              </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleStartEditProject(proj)}
@@ -965,7 +1206,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     Google Business Profile Reputation Sync
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Live Score: <span className="text-amber-500 font-bold">{googleSettings.overallRating} ★</span> ({googleSettings.totalReviewsCount} Reviews) • Last Sync: {googleSettings.lastSyncTimestamp}
+                    Live Score: <span className="text-amber-800 dark:text-amber-400 font-bold">{googleSettings.overallRating} ★</span> ({googleSettings.totalReviewsCount} Reviews) • Last Sync: {googleSettings.lastSyncTimestamp}
                   </p>
                 </div>
               </div>
@@ -1012,24 +1253,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                             </span>
                             {/* Tech Category Badge */}
                             {(rev as any).techCategory === 'odoo' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-400/30 text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-400/30 text-[9px] font-mono font-bold text-emerald-800 dark:text-emerald-400">
                                 Odoo
                               </span>
                             ) : (rev as any).techCategory === 'dotnet' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-400/30 text-[9px] font-mono font-bold text-indigo-700 dark:text-sky-300">
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-400/30 text-[9px] font-mono font-bold text-indigo-800 dark:text-sky-300">
                                 .NET
                               </span>
                             ) : null}
                           </div>
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                             {rev.authorRole} • {rev.company}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1 text-amber-500">
-                          <Star className="w-3.5 h-3.5 fill-amber-500" />
+                        <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                          <Star className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-400" />
                           <span className="font-bold text-xs">{rev.rating}.0</span>
                         </div>
                         {rev.hasVideo && (
@@ -1057,14 +1298,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                           (rev as any).featured
                             ? 'bg-amber-500 text-slate-950 shadow-sm'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
                         }`}
                         title="Click to pin or unpin from 40% Left Spotlight"
                       >
                         <Star className={`w-3 h-3 ${(rev as any).featured ? 'fill-current' : ''}`} />
                         <span>{(rev as any).featured ? 'Featured Spotlight' : 'Set Featured'}</span>
                       </button>
-                      <span className="text-slate-400 font-mono">{rev.date}</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-mono font-medium">{rev.date}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1149,22 +1390,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Service Requested</span>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono font-semibold">Service Requested</span>
                         <span className="font-semibold text-slate-900 dark:text-white">{inq.serviceType}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Budget Bracket</span>
-                        <span className="font-semibold text-indigo-600 dark:text-sky-400">{inq.budget}</span>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono font-semibold">Budget Bracket</span>
+                        <span className="font-semibold text-indigo-800 dark:text-sky-400">{inq.budget}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <span className="text-slate-400 block text-[10px] uppercase font-mono">Target Timeline</span>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-mono font-semibold">Target Timeline</span>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">{inq.timeline}</span>
                       </div>
                     </div>
 
                     {inq.customStack && inq.customStack.length > 0 && (
                       <div className="text-xs">
-                        <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Client Specified Tech Stacks:</span>
+                        <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-slate-400 block mb-1 font-semibold">Client Specified Tech Stacks:</span>
                         <div className="flex flex-wrap gap-1.5">
                           {inq.customStack.map((s, i) => (
                             <span key={i} className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-[10px] font-mono font-semibold text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-slate-700">
@@ -1270,12 +1511,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             ========================================== */}
         {activeTab === 'team' && isSuperOrAdmin() && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   Management Team & Multi-Role Permissions
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
+<<<<<<< HEAD
                   All team users and roles are stored in the database (TeamMember) and managed by Super Admin.
                 </p>
               </div>
@@ -1289,14 +1531,41 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 <Plus className="w-4 h-4" />
                 <span>Add Team Member</span>
               </button>
+=======
+                  Assign roles (Admin, Project Manager, Marketing Manager, Review Manager) and manage security credentials.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetAllModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  title="Bulk reset passwords for all team members"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Reset All Passwords</span>
+                </button>
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Team Member</span>
+                </button>
+              </div>
+>>>>>>> origin/update
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {adminUsers.map(user => (
-                <div
-                  key={user.id}
-                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 bg-white dark:bg-slate-900 shadow-xs"
+            {/* Notification Banners */}
+            {revokeSuccessNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 flex items-start gap-3 text-xs text-emerald-900 dark:text-emerald-200 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium">{revokeSuccessNotice}</div>
+                <button
+                  onClick={() => setRevokeSuccessNotice('')}
+                  className="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100 font-bold"
                 >
+<<<<<<< HEAD
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <img
@@ -1329,9 +1598,150 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       </button>
                     )}
                   </div>
+=======
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {revokeErrorNotice && (
+              <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 flex items-start gap-3 text-xs text-rose-900 dark:text-rose-200 animate-fadeIn">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium">{revokeErrorNotice}</div>
+                <button
+                  onClick={() => setRevokeErrorNotice('')}
+                  className="text-rose-600 hover:text-rose-800 dark:hover:text-rose-100 font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {resetAllSuccessNotice && (
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium">{resetAllSuccessNotice}</div>
+                <button
+                  onClick={() => setResetAllSuccessNotice('')}
+                  className="text-amber-600 hover:text-amber-800 dark:hover:text-amber-100 font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {individualResetNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 flex items-start gap-3 text-xs text-emerald-900 dark:text-emerald-200 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium">{individualResetNotice}</div>
+                <button
+                  onClick={() => setIndividualResetNotice('')}
+                  className="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100 font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {adminUsers.map(user => {
+                const adminCount = adminUsers.filter(u => u.roles.includes('admin')).length;
+                const isLastAdmin = user.roles.includes('admin') && adminCount <= 1;
+                const isCurrentSessionUser = currentUser && (
+                  currentUser.id === user.id || 
+                  currentUser.email.toLowerCase() === user.email.toLowerCase()
+                );
+                const userInitials = user.name
+                  .split(' ')
+                  .map(n => n[0])
+                  .filter(Boolean)
+                  .join('')
+                  .substring(0, 2)
+                  .toUpperCase() || 'NX';
+
+                return (
+                  <div
+                    key={user.id}
+                    className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 bg-white dark:bg-slate-900 shadow-xs"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-bold font-mono text-xs flex items-center justify-center shrink-0 shadow-xs border border-indigo-200 dark:border-sky-500/30">
+                            {userInitials}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</h4>
+                            {isCurrentSessionUser && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-sky-400 border border-indigo-200 dark:border-indigo-500/30">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">{user.title}</div>
+                          <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserToResetPassword(user);
+                            setIndividualNewPass('');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-sky-300 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                          title={`Reset password for ${user.name}`}
+                        >
+                          <Key className="w-3 h-3 text-indigo-600 dark:text-sky-400" />
+                          <span>Reset Password</span>
+                        </button>
+
+                        {isCurrentSessionUser ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 cursor-not-allowed opacity-60 whitespace-nowrap shrink-0"
+                            title="Active logged-in account (Cannot revoke self)"
+                          >
+                            <UserX className="w-3 h-3 text-slate-400" />
+                            <span>Active</span>
+                          </button>
+                        ) : isLastAdmin ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 cursor-not-allowed opacity-60 whitespace-nowrap shrink-0"
+                            title="Cannot revoke: Last remaining Administrator"
+                          >
+                            <UserX className="w-3 h-3 text-slate-400" />
+                            <span>Last Admin</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setUserToRevoke(user)}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            title={`Revoke access for ${user.name}`}
+                          >
+                            <UserX className="w-3 h-3 text-rose-500 dark:text-rose-400" />
+                            <span>Revoke Access</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+>>>>>>> origin/update
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1.5">
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
                       Assigned Roles (Multi-Role Support):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -1356,10 +1766,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                                 alert(err.message || 'Failed to update roles.');
                               }
                             }}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                               hasThisRole
                                 ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                             }`}
                           >
                             {role.toUpperCase().replace('_', ' ')}
@@ -1369,9 +1779,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           </div>
+        )}
+
+        {/* ==========================================
+            TAB 7: B2B CONSOLE CMS (Marquee & Case Studies)
+            ========================================== */}
+        {activeTab === 'b2b-cms' && isTabAuthorized('b2b-cms') && (
+          <B2BConsoleCmsModule />
         )}
 
         {/* ==========================================
@@ -1463,6 +1881,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     <option value="mobile">Mobile (iOS / Android / Flutter)</option>
                     <option value="ai">AI Integrations & LLMs</option>
                     <option value="cloud">Cloud & DevOps</option>
+                    <option value="proprietary">Proprietary Suite (SaaS & Packaged IP)</option>
                   </select>
                 </div>
                 <div>
@@ -1485,44 +1904,165 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               </div>
 
-              {/* Image URL */}
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Project Image URL
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80"
-                  value={projectForm.image}
-                  onChange={e => setProjectForm({ ...projectForm, image: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
-                />
+              {/* Primary Image & Multi-Image Architecture Gallery */}
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                    Primary Cover Image URL
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80"
+                    value={projectForm.image}
+                    onChange={e => setProjectForm({ ...projectForm, image: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
+                    maxLength={500}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Project Architecture Gallery ({projectForm.images.length} added)</span>
+                    </label>
+                    <label className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-sky-300 text-[11px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors">
+                      <Upload className="w-3 h-3" />
+                      <span>Upload File</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert('File exceeds 2MB limit.');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const result = event.target?.result as string;
+                            if (result && !projectForm.images.includes(result)) {
+                              setProjectForm(prev => ({ ...prev, images: [...prev.images, result] }));
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="url"
+                      placeholder="Or paste screenshot / architecture diagram URL..."
+                      value={projectForm.newImageUrl}
+                      onChange={e => setProjectForm({ ...projectForm, newImageUrl: e.target.value })}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
+                      maxLength={500}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = projectForm.newImageUrl.trim();
+                        if (url && isValidUrl(url) && !projectForm.images.includes(url)) {
+                          setProjectForm(prev => ({
+                            ...prev,
+                            images: [...prev.images, url],
+                            newImageUrl: ''
+                          }));
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {projectForm.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {projectForm.images.map((imgUrl, idx) => (
+                        <div key={idx} className="relative group w-20 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                          <img
+                            src={imgUrl}
+                            alt={`Preview ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProjectForm(prev => ({
+                                ...prev,
+                                images: prev.images.filter((_, i) => i !== idx)
+                              }));
+                            }}
+                            className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600/90 hover:bg-red-600 text-white transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer shadow-xs"
+                            title="Remove image"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <span className="absolute bottom-1 left-1 px-1 py-0.2 rounded bg-slate-950/70 text-[9px] font-mono text-white">
+                            #{idx + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Direct Project Redirect Link & Live Demo Toggle */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    Live Project Redirect URL (Opens on "Live Demo" Click)
-                  </label>
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-indigo-600 dark:text-sky-400">
-                    <input
-                      type="checkbox"
-                      checked={projectForm.hasLiveDemo}
-                      onChange={e => setProjectForm({ ...projectForm, hasLiveDemo: e.target.checked })}
-                      className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span>Live Demo Enabled</span>
-                  </label>
+              {/* Proprietary Suite & Live Demo Booking Metadata */}
+              {(projectForm.category === 'proprietary' || projectForm.isProprietary) && (
+                <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold uppercase text-indigo-700 dark:text-sky-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Proprietary Suite Demo Booking Settings
+                    </span>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-indigo-600 dark:text-sky-400">
+                      <input
+                        type="checkbox"
+                        checked={projectForm.isProprietary}
+                        onChange={e => setProjectForm({ ...projectForm, isProprietary: e.target.checked })}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>Mark as Proprietary IP</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Demo Product Name (Prefills Modal)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Nexora Flow™ Enterprise Suite"
+                        value={projectForm.demoProductName}
+                        onChange={e => setProjectForm({ ...projectForm, demoProductName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Live Demo Badge Label
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Instant Staging Access"
+                        value={projectForm.demoBadgeText}
+                        onChange={e => setProjectForm({ ...projectForm, demoBadgeText: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <input
-                  type="url"
-                  placeholder="https://client-demo.nexora.io"
-                  value={projectForm.liveUrl}
-                  onChange={e => setProjectForm({ ...projectForm, liveUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
-                />
-              </div>
+              )}
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Short Description (English)</label>
@@ -1975,6 +2515,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Sarah Jenkins"
                   value={userForm.name}
                   onChange={e => setUserForm({ ...userForm, name: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -1986,6 +2527,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 <input
                   type="email"
                   required
+                  placeholder="e.g. s.jenkins@nexora.io"
                   value={userForm.email}
                   onChange={e => setUserForm({ ...userForm, email: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -1993,10 +2535,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
 
               <div>
+<<<<<<< HEAD
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Senior Systems Architect"
+=======
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Professional Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Senior ERP Architect"
+>>>>>>> origin/update
                   value={userForm.title}
                   onChange={e => setUserForm({ ...userForm, title: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -2029,24 +2578,90 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </select>
               </div>
 
+<<<<<<< HEAD
               {userSubmitError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
                   {userSubmitError}
                 </div>
               )}
+=======
+              {/* Profile Image (Optional) */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300">
+                    Profile Image <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  {userForm.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setUserForm(prev => ({ ...prev, avatar: '' }))}
+                      className="text-[11px] text-rose-500 hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {userForm.avatar ? (
+                    <img
+                      src={userForm.avatar}
+                      alt="Preview"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-indigo-500 shrink-0 shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-1.5">
+                    <label className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+                      <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Upload Image (Max 2MB)</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleAvatarFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {avatarUploadError && (
+                  <div className="text-[11px] text-rose-500 font-medium">{avatarUploadError}</div>
+                )}
+
+                <input
+                  type="url"
+                  placeholder="Or paste image URL (https://...)"
+                  value={userForm.avatar.startsWith('data:') ? '' : userForm.avatar}
+                  onChange={e => setUserForm({ ...userForm, avatar: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-[11px]"
+                />
+              </div>
+>>>>>>> origin/update
 
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddUserModal(false)}
+                  onClick={() => {
+                    setShowAddUserModal(false);
+                    setAvatarUploadError('');
+                  }}
                   className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+<<<<<<< HEAD
                   disabled={isSavingUser}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer"
+=======
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20"
+>>>>>>> origin/update
                 >
                   {isSavingUser ? 'Creating…' : 'Add Team Member'}
                 </button>
@@ -2055,6 +2670,210 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           </div>
         </div>
       )}
+
+      {/* ==========================================
+          MODAL: CONFIRM REVOKE / REMOVE USER ACCESS
+          ========================================== */}
+      {userToRevoke && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-3xl border border-rose-300 dark:border-rose-500/40 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setUserToRevoke(null)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 border border-rose-200 dark:border-rose-500/30">
+              <UserX className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Revoke Access & Remove Member?
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Are you sure you want to revoke all access permissions for this team member? This action will immediately terminate active sessions and remove them from the management team.
+            </p>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2 mb-5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Team Member:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{userToRevoke.name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                <span className="font-mono text-indigo-600 dark:text-sky-400">{userToRevoke.email}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Title:</span>
+                <span className="text-slate-700 dark:text-slate-300">{userToRevoke.title}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Roles to be Cleared:</span>
+                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                  {userToRevoke.roles.map(r => r.toUpperCase().replace('_', ' ')).join(', ')}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setUserToRevoke(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRevokeUser}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/20 cursor-pointer"
+              >
+                <UserX className="w-3.5 h-3.5" />
+                <span>Confirm & Revoke Access</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL 5: RESET ALL TEAM PASSWORDS
+          ========================================== */}
+      {showResetAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-3xl border border-amber-300 dark:border-amber-500/40 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setShowResetAllModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 border border-amber-200 dark:border-amber-500/30">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Reset Passwords for All Team Members
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              This will update security credentials for all <strong>{adminUsers.length}</strong> team members simultaneously. Existing sessions and passwords will be superseded immediately.
+            </p>
+
+            <form onSubmit={handleConfirmResetAll} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Standardized Temporary Password (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Leave empty to auto-generate default secure password"
+                  value={resetAllCustomPass}
+                  onChange={e => setResetAllCustomPass(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Default: <code className="text-amber-600 dark:text-amber-400 font-mono">Nexora#{new Date().getFullYear()}!</code>
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetAllModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-600/20"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Confirm Bulk Reset</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL 6: RESET INDIVIDUAL USER PASSWORD
+          ========================================== */}
+      {userToResetPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => setUserToResetPassword(null)}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-sky-400 flex items-center justify-center mb-4 border border-indigo-200 dark:border-indigo-500/30">
+              <Key className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Reset Password for {userToResetPassword.name}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-mono">
+              {userToResetPassword.email} • {userToResetPassword.title}
+            </p>
+
+            <form onSubmit={handleConfirmIndividualReset} className="space-y-4 text-xs">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300">
+                    New Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIndividualNewPass(`Nexora#${Math.floor(1000 + Math.random() * 9000)}!`);
+                    }}
+                    className="text-[11px] font-semibold text-indigo-600 dark:text-sky-400 hover:underline cursor-pointer"
+                  >
+                    Auto-Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Leave blank to auto-generate secure password"
+                  value={individualNewPass}
+                  onChange={e => setIndividualNewPass(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setUserToResetPassword(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Update Password</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* B2B Sections CMS Admin Drawer */}
+      <B2BSectionsAdminDrawer
+        isOpen={showB2BDrawer}
+        onClose={() => setShowB2BDrawer(false)}
+      />
 
     </div>
   );

@@ -63,8 +63,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </h4>
             <ul className="space-y-2">
               <li>
-                <button onClick={() => handleLinkClick('services')} className="hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer">
-                  {t('nav.services')}
+                <button onClick={() => handleSubpageClick('case-studies')} className="hover:text-indigo-600 dark:hover:text-sky-400 transition-colors cursor-pointer font-bold text-slate-800 dark:text-slate-200">
+                  {language === 'ar' ? 'دراسات الحالة' : 'Case Studies'}
                 </button>
               </li>
               <li>
@@ -106,7 +106,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   onClick={() => handleSubpageClick('service-custom-dotnet-erp')}
                   className="hover:text-indigo-600 dark:hover:text-sky-400 transition-colors text-left font-medium"
                 >
-                  Custom Web ERP (.NET 9 & MSSQL)
+                  Custom Web ERP (.NET Core)
                 </button>
               </li>
               <li>
@@ -119,16 +119,44 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
               <li>
                 <button
-                  onClick={() => handleSubpageClick('service-ai-and-cloud')}
-                  className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-left font-medium"
+                  onClick={() => handleSubpageClick('service-web-apps')}
+                  className="hover:text-blue-600 dark:hover:text-sky-400 transition-colors text-left font-medium"
                 >
-                  AI Integrations & 24/7 Cloud DevOps
+                  Custom Web Apps & REST APIs
                 </button>
               </li>
-              <li>Custom Web Portals (Next.js & React 19)</li>
-              <li>Native Mobile Apps (iOS, Android & Flutter)</li>
-              <li>REST API Integrations & Microservices</li>
-              <li>Legacy Database Migration & CDC Sync</li>
+              <li>
+                <button
+                  onClick={() => handleSubpageClick('service-mobile-apps')}
+                  className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left font-medium"
+                >
+                  Custom Mobile Apps (iOS, Android & Flutter)
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleSubpageClick('service-ai-and-agents')}
+                  className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-left font-medium"
+                >
+                  AI Integrations & Agentic Automation
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleSubpageClick('service-cloud-devops')}
+                  className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors text-left font-medium"
+                >
+                  24/7 Server Management & Cloud DevOps
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleSubpageClick('service-erp-modernization')}
+                  className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors text-left font-medium"
+                >
+                  ERP Modernization & System Integration
+                </button>
+              </li>
             </ul>
           </div>
 

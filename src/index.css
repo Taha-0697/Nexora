@@ -1,3 +1,6 @@
+@import './styles/theme.css';
+@import './styles/command-center.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -204,4 +207,64 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 /* Badge, pill, and tag containers should never cause horizontal scroll */
 .flex-wrap {
   overflow: hidden visible;
+}
+
+/* ─── Infinite Logo Marquee ─────────────────────────────────────────── */
+@keyframes marquee-scroll-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left var(--marquee-speed, 32s) linear infinite;
+}
+
+.animate-marquee-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-right var(--marquee-speed, 32s) linear infinite;
+}
+
+.marquee-container:hover .animate-marquee-left,
+.marquee-container:hover .animate-marquee-right {
+  animation-play-state: paused;
+}
+
+.marquee-paused .animate-marquee-left,
+.marquee-paused .animate-marquee-right {
+  animation-play-state: paused !important;
+}
+
+.marquee-fade-mask {
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+/* Alternating section surface utilities */
+.section-surface-1 {
+  background-color: #F8FAFC;
+}
+.section-surface-2 {
+  background-color: #EEF2F7;
+}
+html.dark .section-surface-1 {
+  background-color: #060913;
+}
+html.dark .section-surface-2 {
+  background-color: #0A0F1E;
 }

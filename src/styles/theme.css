@@ -1,0 +1,20 @@
+/* Nexora Systems Theme & Typography Extensions */
+
+/* Ambient Grid Background */
+.bg-grid-ambient {
+  background-image: radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0);
+  background-size: 36px 36px;
+}
+
+/* Accent borders & pills */
+.badge-tech-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  border: 1px solid currentColor;
+}

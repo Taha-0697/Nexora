@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { DataProvider } from './context/DataContext';
 import { Navbar, type AppView } from './components/layout/Navbar';
 import { Hero } from './components/sections/Hero';
-import { Services } from './components/sections/Services';
 import { Estimator } from './components/sections/Estimator';
 import { Portfolio } from './components/sections/Portfolio';
 import { TechStack } from './components/sections/TechStack';
@@ -16,7 +15,14 @@ import { QuickQuoteModal } from './components/modals/QuickQuoteModal';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { CustomDotNetErpPage } from './components/pages/CustomDotNetErpPage';
 import { OdooEnterprisePage } from './components/pages/OdooEnterprisePage';
-import { AiAndCloudPage } from './components/pages/AiAndCloudPage';
+import { CustomWebAppsPage } from './components/pages/CustomWebAppsPage';
+import { CustomMobileAppsPage } from './components/pages/CustomMobileAppsPage';
+import { AiAndAgentsPage } from './components/pages/AiAndAgentsPage';
+import { CloudDevOpsPage } from './components/pages/CloudDevOpsPage';
+import { ErpModernizationPage } from './components/pages/ErpModernizationPage';
+import { CaseStudiesPage } from './components/pages/CaseStudiesPage';
+import { TrustedByMarquee } from './components/sections/TrustedByMarquee';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const MainApp: React.FC = () => {
   const { language } = useLanguage();
@@ -40,7 +46,14 @@ const MainApp: React.FC = () => {
       ) {
         setCurrentView('admin');
       } else if (
+        path === '/case-studies' ||
+        hash === '#case-studies'
+      ) {
+        setCurrentView('case-studies');
+      } else if (
+        path === '/services/custom-web-erp' ||
         path === '/services/custom-dotnet-erp' ||
+        hash === '#services/custom-web-erp' ||
         hash === '#services/custom-dotnet-erp'
       ) {
         setCurrentView('service-custom-dotnet-erp');
@@ -50,10 +63,38 @@ const MainApp: React.FC = () => {
       ) {
         setCurrentView('service-odoo-enterprise');
       } else if (
+        path === '/services/custom-web-apps' ||
+        path === '/services/web-apps' ||
+        hash === '#services/custom-web-apps' ||
+        hash === '#services/web-apps'
+      ) {
+        setCurrentView('service-web-apps');
+      } else if (
+        path === '/services/mobile-apps' ||
+        path === '/services/custom-mobile-apps' ||
+        hash === '#services/mobile-apps' ||
+        hash === '#services/custom-mobile-apps'
+      ) {
+        setCurrentView('service-mobile-apps');
+      } else if (
+        path === '/services/ai-integrations' ||
+        path === '/services/ai-and-agents' ||
         path === '/services/ai-and-cloud' ||
+        hash === '#services/ai-integrations' ||
+        hash === '#services/ai-and-agents' ||
         hash === '#services/ai-and-cloud'
       ) {
-        setCurrentView('service-ai-and-cloud');
+        setCurrentView('service-ai-and-agents');
+      } else if (
+        path === '/services/cloud-devops' ||
+        hash === '#services/cloud-devops'
+      ) {
+        setCurrentView('service-cloud-devops');
+      } else if (
+        path === '/services/erp-modernization' ||
+        hash === '#services/erp-modernization'
+      ) {
+        setCurrentView('service-erp-modernization');
       } else {
         setCurrentView('website');
       }
@@ -69,7 +110,7 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
-  const handleNavigate = (view: AppView, targetSection?: string) => {
+  const handleNavigate = useCallback((view: AppView, targetSection?: string) => {
     setCurrentView(view);
 
     if (view === 'website') {
@@ -91,11 +132,18 @@ const MainApp: React.FC = () => {
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+    } else if (view === 'case-studies') {
+      try {
+        history.pushState(null, '', '/case-studies');
+      } catch {
+        window.location.hash = '#case-studies';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (view === 'service-custom-dotnet-erp') {
       try {
-        history.pushState(null, '', '/services/custom-dotnet-erp');
+        history.pushState(null, '', '/services/custom-web-erp');
       } catch {
-        window.location.hash = '#services/custom-dotnet-erp';
+        window.location.hash = '#services/custom-web-erp';
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (view === 'service-odoo-enterprise') {
@@ -105,11 +153,39 @@ const MainApp: React.FC = () => {
         window.location.hash = '#services/odoo-enterprise';
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (view === 'service-ai-and-cloud') {
+    } else if (view === 'service-web-apps') {
       try {
-        history.pushState(null, '', '/services/ai-and-cloud');
+        history.pushState(null, '', '/services/custom-web-apps');
       } catch {
-        window.location.hash = '#services/ai-and-cloud';
+        window.location.hash = '#services/custom-web-apps';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (view === 'service-mobile-apps') {
+      try {
+        history.pushState(null, '', '/services/mobile-apps');
+      } catch {
+        window.location.hash = '#services/mobile-apps';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (view === 'service-ai-and-agents') {
+      try {
+        history.pushState(null, '', '/services/ai-integrations');
+      } catch {
+        window.location.hash = '#services/ai-integrations';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (view === 'service-cloud-devops') {
+      try {
+        history.pushState(null, '', '/services/cloud-devops');
+      } catch {
+        window.location.hash = '#services/cloud-devops';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (view === 'service-erp-modernization') {
+      try {
+        history.pushState(null, '', '/services/erp-modernization');
+      } catch {
+        window.location.hash = '#services/erp-modernization';
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (view === 'admin') {
@@ -120,25 +196,44 @@ const MainApp: React.FC = () => {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, []);
 
-  const handleReturnToWebsite = () => {
+  const handleReturnToWebsite = useCallback(() => {
     handleNavigate('website');
-  };
+  }, [handleNavigate]);
 
-  const handleOpenQuoteWithService = (serviceName: string) => {
-    setQuotePrefill({ serviceName });
-    setIsQuoteModalOpen(true);
-  };
-
-  const handleOpenQuoteWithScope = (scopeDetails: any) => {
+  const handleOpenQuoteWithScope = useCallback((scopeDetails: any) => {
     setQuotePrefill(scopeDetails);
     setIsQuoteModalOpen(true);
-  };
+  }, []);
 
-  const handleNavigateToEstimator = () => {
+  const handleNavigateToEstimator = useCallback(() => {
     handleNavigate('website', 'estimator');
-  };
+  }, [handleNavigate]);
+
+  const handleOpenDemoModal = useCallback((project?: any) => {
+    const projName = project
+      ? (typeof project.title === 'object'
+        ? (project.title[language] || project.title.en)
+        : (project.title || project.titleEn || project.name))
+      : 'Nexora Flow™ Enterprise ERP Suite';
+
+    setQuotePrefill({
+      isLiveDemo: true,
+      productName: projName,
+      category: 'Proprietary Suite',
+      serviceName: 'Proprietary Suite'
+    });
+    setIsQuoteModalOpen(true);
+  }, [language]);
+
+  useEffect(() => {
+    const handleDemoEvent = (e: any) => {
+      handleOpenDemoModal(e.detail?.project);
+    };
+    window.addEventListener('nexora_book_demo', handleDemoEvent);
+    return () => window.removeEventListener('nexora_book_demo', handleDemoEvent);
+  }, [handleOpenDemoModal]);
 
   return (
     <div
@@ -147,7 +242,9 @@ const MainApp: React.FC = () => {
       }`}
     >
       {currentView === 'admin' ? (
-        <AdminPortal onBackToWebsite={handleReturnToWebsite} />
+        <ErrorBoundary fallbackTitle="Admin Command Center Error" fallbackMessage="An issue occurred within the Command Center module. You can return to the main site or retry.">
+          <AdminPortal onBackToWebsite={handleReturnToWebsite} />
+        </ErrorBoundary>
       ) : (
         <>
           <Navbar
@@ -158,20 +255,41 @@ const MainApp: React.FC = () => {
               setQuotePrefill(null);
               setIsQuoteModalOpen(true);
             }}
+            onBookDemo={() => handleOpenDemoModal()}
           />
 
-          <main>
-            {currentView === 'website' && (
-              <>
-                <Hero onOpenQuote={() => setIsQuoteModalOpen(true)} />
-                <GoogleReviewsSection />
-                <Services onSelectService={handleOpenQuoteWithService} />
-                <Estimator onRequestProposalWithScope={handleOpenQuoteWithScope} />
-                <Portfolio />
-                <TechStack />
-                <WhyChooseUs />
-                <Contact />
-              </>
+          <ErrorBoundary fallbackTitle="Page Content Error" fallbackMessage="An issue occurred rendering this view.">
+            <main>
+              {currentView === 'website' && (
+                <>
+                  <Hero
+                    onOpenQuote={() => setIsQuoteModalOpen(true)}
+                    onBookDemo={() => handleOpenDemoModal()}
+                    onOpenConsultation={() => {
+                      const el = document.getElementById('contact');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  />
+                  <TrustedByMarquee />
+                  <GoogleReviewsSection />
+                  <Estimator onRequestProposalWithScope={handleOpenQuoteWithScope} />
+                  <ErrorBoundary fallbackTitle="Portfolio Section Error">
+                    <Portfolio onBookDemo={handleOpenDemoModal} />
+                  </ErrorBoundary>
+                  <TechStack />
+                  <WhyChooseUs />
+                  <Contact />
+                </>
+              )}
+
+            {currentView === 'case-studies' && (
+              <CaseStudiesPage
+                onOpenQuote={() => {
+                  setQuotePrefill({ serviceName: 'Enterprise Case Studies Inquiry' });
+                  setIsQuoteModalOpen(true);
+                }}
+                onNavigateToEstimator={handleNavigateToEstimator}
+              />
             )}
 
             {currentView === 'service-custom-dotnet-erp' && (
@@ -194,24 +312,67 @@ const MainApp: React.FC = () => {
               />
             )}
 
-            {currentView === 'service-ai-and-cloud' && (
-              <AiAndCloudPage
+            {currentView === 'service-web-apps' && (
+              <CustomWebAppsPage
                 onOpenQuote={() => {
-                  setQuotePrefill({ serviceName: 'AI Integrations & 24/7 Cloud DevOps' });
+                  setQuotePrefill({ serviceName: 'Custom Web Apps & REST APIs' });
                   setIsQuoteModalOpen(true);
                 }}
                 onNavigateToEstimator={handleNavigateToEstimator}
               />
             )}
-          </main>
+
+            {currentView === 'service-mobile-apps' && (
+              <CustomMobileAppsPage
+                onOpenQuote={() => {
+                  setQuotePrefill({ serviceName: 'Custom Mobile Apps (iOS, Android, Flutter)' });
+                  setIsQuoteModalOpen(true);
+                }}
+                onNavigateToEstimator={handleNavigateToEstimator}
+              />
+            )}
+
+            {currentView === 'service-ai-and-agents' && (
+              <AiAndAgentsPage
+                onOpenQuote={() => {
+                  setQuotePrefill({ serviceName: 'AI Integrations & Agentic Automation' });
+                  setIsQuoteModalOpen(true);
+                }}
+                onNavigateToEstimator={handleNavigateToEstimator}
+              />
+            )}
+
+            {currentView === 'service-cloud-devops' && (
+              <CloudDevOpsPage
+                onOpenQuote={() => {
+                  setQuotePrefill({ serviceName: '24/7 Server Management & Cloud DevOps' });
+                  setIsQuoteModalOpen(true);
+                }}
+                onNavigateToEstimator={handleNavigateToEstimator}
+              />
+            )}
+
+            {currentView === 'service-erp-modernization' && (
+              <ErpModernizationPage
+                onOpenQuote={() => {
+                  setQuotePrefill({ serviceName: 'ERP Modernization & System Integration' });
+                  setIsQuoteModalOpen(true);
+                }}
+                onNavigateToEstimator={handleNavigateToEstimator}
+              />
+            )}
+            </main>
+          </ErrorBoundary>
 
           <Footer onNavigate={handleNavigate} />
 
-          <QuickQuoteModal
-            isOpen={isQuoteModalOpen}
-            onClose={() => setIsQuoteModalOpen(false)}
-            prefillScope={quotePrefill}
-          />
+          <ErrorBoundary fallbackTitle="Modal Error">
+            <QuickQuoteModal
+              isOpen={isQuoteModalOpen}
+              onClose={() => setIsQuoteModalOpen(false)}
+              prefillScope={quotePrefill}
+            />
+          </ErrorBoundary>
         </>
       )}
     </div>
