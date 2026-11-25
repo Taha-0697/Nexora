@@ -382,8 +382,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
     const tagsArray = projectForm.tags.split(',').map(t => t.trim()).filter(Boolean);
 
-    const effectiveImages = projectForm.images.length > 0 
-      ? projectForm.images 
+    const effectiveImages = projectForm.images.length > 0
+      ? projectForm.images
       : [projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'];
 
     const projectPayload = {
@@ -678,7 +678,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     const removedName = userToRevoke.name;
     const removedId = userToRevoke.id;
     const isCurrentSession = currentUser && (
-      currentUser.id === removedId || 
+      currentUser.id === removedId ||
       (currentUser.email || '').toLowerCase() === (userToRevoke.email || '').toLowerCase()
     );
 
@@ -716,7 +716,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 transition-colors">
         <div className="w-full max-w-lg glass-panel p-8 sm:p-10 rounded-3xl border border-slate-200 dark:border-slate-800 text-center shadow-xl bg-white dark:bg-slate-900">
-          
+
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-sky-400">
             <Lock className="w-8 h-8" />
           </div>
@@ -805,7 +805,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-100 transition-colors">
       <div className="max-w-7xl mx-auto space-y-7">
-        
+
         {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
@@ -878,11 +878,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('project_manager') && (
             <button
               onClick={() => setActiveTab('projects')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'projects'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'projects'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <FolderPlus className="w-4 h-4" />
               <span>Projects ({projects.length})</span>
@@ -893,11 +892,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('marketing_manager') && (
             <button
               onClick={() => setActiveTab('marketing')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'marketing'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'marketing'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <Megaphone className="w-4 h-4" />
               <span>Marketing & Ads ({marketingSettings?.adCampaigns?.length || 0})</span>
@@ -908,11 +906,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {hasRole('review_manager') && (
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'reviews'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'reviews'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <Star className="w-4 h-4" />
               <span>Reviews ({reviews.length})</span>
@@ -923,11 +920,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {(hasRole('project_manager') || hasRole('marketing_manager')) && (
             <button
               onClick={() => setActiveTab('leads')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'leads'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'leads'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <Mail className="w-4 h-4" />
               <span>Inquiries & Leads ({inquiries.length})</span>
@@ -938,11 +934,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'settings'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'settings'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <Sliders className="w-4 h-4" />
               <span>System Settings</span>
@@ -953,11 +948,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('team')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'team'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'team'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
             >
               <Users className="w-4 h-4" />
               <span>Team & Roles ({adminUsers.length})</span>
@@ -969,11 +963,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             <button
               type="button"
               onClick={() => setActiveTab('b2b-cms')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                activeTab === 'b2b-cms'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === 'b2b-cms'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
               title="Manage Marquee Logos and Enterprise Case Studies"
             >
               <Layout className="w-4 h-4" />
@@ -1143,10 +1136,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center p-2 shrink-0 border border-slate-200 dark:border-slate-700">
                   <svg className="w-full h-full" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                   </svg>
                 </div>
                 <div>
@@ -1243,11 +1236,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       <button
                         type="button"
                         onClick={() => handleToggleFeatured(rev)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                          (rev as any).featured
-                            ? 'bg-amber-500 text-slate-950 shadow-sm'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${(rev as any).featured
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
+                          }`}
                         title="Click to pin or unpin from 40% Left Spotlight"
                       >
                         <Star className={`w-3 h-3 ${(rev as any).featured ? 'fill-current' : ''}`} />
@@ -1550,7 +1542,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 const adminCount = adminUsers.filter(u => (u.roles || []).includes('super_admin') || (u.roles || []).includes('admin')).length;
                 const isLastAdmin = (userRolesList.includes('super_admin') || userRolesList.includes('admin')) && adminCount <= 1;
                 const isCurrentSessionUser = currentUser && (
-                  currentUser.id === user.id || 
+                  currentUser.id === user.id ||
                   (currentUser.email || '').toLowerCase() === (user.email || '').toLowerCase()
                 );
                 const userInitials = user.name
@@ -1642,47 +1634,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       </div>
                     </div>
 
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
-                      Assigned Roles (Multi-Role Support):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(['super_admin', 'admin', 'project_manager', 'marketing_manager', 'review_manager'] as UserRole[]).map(role => {
-                        const userRoles = user.roles || [];
-                        const hasThisRole = userRoles.includes(role);
-                        return (
-                          <button
-                            key={role}
-                            type="button"
-                            onClick={async () => {
-                              if (currentUser?.id === user.id && (role === 'super_admin' || role === 'admin') && hasThisRole) {
-                                alert('You cannot remove your own administrative privileges.');
-                                return;
-                              }
-                              const updatedRoles = hasThisRole
-                                ? userRoles.filter(r => r !== role)
-                                : [...userRoles, role];
-                              try {
-                                await updateAdminUser({ ...user, roles: updatedRoles });
-                              } catch (err: any) {
-                                alert(err.message || 'Failed to update roles.');
-                              }
-                            }}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                              hasThisRole
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
+                        Assigned Roles (Multi-Role Support):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(['admin', 'project_manager', 'marketing_manager', 'review_manager'] as UserRole[]).map(role => {
+                          const userRoles = user.roles || [];
+                          const hasThisRole = userRoles.includes(role);
+                          return (
+                            <button
+                              key={role}
+                              type="button"
+                              onClick={async () => {
+                                if (currentUser?.id === user.id && (role === 'super_admin' || role === 'admin') && hasThisRole) {
+                                  alert('You cannot remove your own administrative privileges.');
+                                  return;
+                                }
+                                const updatedRoles = hasThisRole
+                                  ? userRoles.filter(r => r !== role)
+                                  : [...userRoles, role];
+                                try {
+                                  await updateAdminUser({ ...user, roles: updatedRoles });
+                                } catch (err: any) {
+                                  alert(err.message || 'Failed to update roles.');
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer whitespace-nowrap ${hasThisRole
                                 ? 'bg-indigo-600 text-white'
                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                            }`}
-                          >
-                            {role.toUpperCase().replace('_', ' ')}
-                          </button>
-                        );
-                      })}
+                                }`}
+                            >
+                              {role.toUpperCase().replace('_', ' ')}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
         )}
@@ -2167,8 +2158,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   {editingReview ? 'Edit Client Review' : 'Add Verified Client Review'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {editingReview 
-                    ? 'Update client feedback, toggle featured spotlight, or adjust category.' 
+                  {editingReview
+                    ? 'Update client feedback, toggle featured spotlight, or adjust category.'
                     : 'All reviews are saved to the database and shown on the public website.'}
                 </p>
               </div>
@@ -2312,7 +2303,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <Sliders className="w-3.5 h-3.5" />
                   <span>Display Options</span>
                 </h4>
-                
+
                 {/* Featured Spotlight Toggle */}
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 transition-colors">
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -2469,7 +2460,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <option value="marketing_manager">Marketing Manager</option>
                   <option value="review_manager">Review Manager</option>
                   <option value="admin">Administrator (All Access)</option>
-                  <option value="super_admin">Super Administrator</option>
                 </select>
               </div>
 
