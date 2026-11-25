@@ -1,5 +1,5 @@
-import { prisma } from '../lib/prisma.ts';
-import type { User, UserRole } from '../types/index.ts';
+import { prisma } from '../lib/prisma';
+import type { User, UserRole } from '../types/index';
 
 async function withTimeout<T>(
   promise: Promise<T>,

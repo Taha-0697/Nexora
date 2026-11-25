@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma.ts';
+import { prisma } from '../lib/prisma';
 
 // Public endpoint: returns all team members (for the Leadership section on the website)
 export async function getAllTeamMembers() {
