@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useTheme } from '../../context/ThemeContext';
-import type { ServiceCategory, Project, Review, UserRole, AdminUser, AdCampaign } from '../../types';
+import type { ServiceCategory, Project, Review, UserRole, TeamMember, AdCampaign } from '../../types';
 import { OmnichannelMarketingHub } from './OmnichannelMarketingHub';
 import {
   Lock,
@@ -50,6 +50,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     adminUsers,
     updateAdminUser,
     addAdminUser,
+    deleteAdminUser,
     marketingSettings,
     updateMarketingSettings,
     addAdCampaign,
@@ -60,7 +61,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   } = useData();
 
   // Authentication State
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
+  const [currentUser, setCurrentUser] = useState<TeamMember | null>(() => {
     try {
       const saved = sessionStorage.getItem('nexora_active_user');
       return saved ? JSON.parse(saved) : null;
@@ -72,6 +73,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<
@@ -135,6 +137,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
   });
 
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState('');
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const [userSubmitError, setUserSubmitError] = useState('');
+
   // Campaign Form
   const [campaignForm, setCampaignForm] = useState({
     name: '',
@@ -156,42 +163,41 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState('');
 
-  // Handle Login
-  const handleLogin = (e: React.FormEvent) => {
+  // Handle Login — async against Neon DB via /api/auth/login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setIsLoggingIn(true);
 
-    const foundUser = adminUsers.find(
-      u => u.email.toLowerCase() === loginEmail.trim().toLowerCase() && u.password === loginPassword
-    );
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword }),
+      });
 
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      sessionStorage.setItem('nexora_active_user', JSON.stringify(foundUser));
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        setAuthError(errJson.error || 'Invalid email or password. Please try again.');
+        return;
+      }
+
+      const { user } = await res.json();
+      setCurrentUser(user);
+      sessionStorage.setItem('nexora_active_user', JSON.stringify(user));
+
       // Set default tab based on roles
-      if (foundUser.roles.includes('admin') || foundUser.roles.includes('project_manager')) {
+      if (user.roles.includes('super_admin') || user.roles.includes('admin') || user.roles.includes('project_manager')) {
         setActiveTab('projects');
-      } else if (foundUser.roles.includes('marketing_manager')) {
+      } else if (user.roles.includes('marketing_manager')) {
         setActiveTab('marketing');
-      } else if (foundUser.roles.includes('review_manager')) {
+      } else if (user.roles.includes('review_manager')) {
         setActiveTab('reviews');
       }
-    } else {
-      setAuthError('Invalid credentials. Please select one of the registered team members below.');
-    }
-  };
-
-  const handleQuickLogin = (user: AdminUser) => {
-    setLoginEmail(user.email);
-    setLoginPassword(user.password);
-    setCurrentUser(user);
-    sessionStorage.setItem('nexora_active_user', JSON.stringify(user));
-    if (user.roles.includes('admin') || user.roles.includes('project_manager')) {
-      setActiveTab('projects');
-    } else if (user.roles.includes('marketing_manager')) {
-      setActiveTab('marketing');
-    } else if (user.roles.includes('review_manager')) {
-      setActiveTab('reviews');
+    } catch (err: any) {
+      setAuthError('Connection error. Please check your network and try again.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -201,15 +207,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   };
 
   // Helper to check user permissions
+  const isSuperOrAdmin = (): boolean => {
+    if (!currentUser || !Array.isArray(currentUser.roles)) return false;
+    return currentUser.roles.includes('super_admin') || currentUser.roles.includes('admin');
+  };
+
   const hasRole = (role: UserRole): boolean => {
-    if (!currentUser) return false;
-    return currentUser.roles.includes('admin') || currentUser.roles.includes(role);
+    if (!currentUser || !Array.isArray(currentUser.roles)) return false;
+    return isSuperOrAdmin() || currentUser.roles.includes(role);
   };
 
   // Helper to verify if active tab is accessible
   const isTabAuthorized = (tab: 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team'): boolean => {
     if (!currentUser) return false;
-    if (currentUser.roles.includes('admin')) return true;
+    if (isSuperOrAdmin()) return true;
     switch (tab) {
       case 'projects':
         return hasRole('project_manager');
@@ -221,15 +232,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         return hasRole('project_manager') || hasRole('marketing_manager');
       case 'settings':
       case 'team':
-        return currentUser.roles.includes('admin');
+        return isSuperOrAdmin();
       default:
         return false;
     }
   };
 
   // Get primary authorized tab for redirection
-  const getPrimaryAuthorizedTab = (roles: UserRole[]): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' => {
-    if (roles.includes('admin')) return 'projects';
+  const getPrimaryAuthorizedTab = (roles: UserRole[] = []): 'projects' | 'marketing' | 'reviews' | 'leads' | 'settings' | 'team' => {
+    if (roles.includes('super_admin') || roles.includes('admin')) return 'projects';
     if (roles.includes('project_manager')) return 'projects';
     if (roles.includes('marketing_manager')) return 'marketing';
     if (roles.includes('review_manager')) return 'reviews';
@@ -341,9 +352,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     }
   };
 
+  // Open Add Review Modal (reset form)
+  const handleOpenAddReview = () => {
+    setEditingReview(null);
+    setReviewSubmitError('');
+    setReviewForm({
+      authorName: '',
+      authorRole: '',
+      company: '',
+      location: 'Dubai, UAE',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      rating: 5,
+      contentEn: '',
+      contentAr: '',
+      hasVideo: false,
+      videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-42994-large.mp4',
+      featured: false,
+      techCategory: 'dotnet',
+      isGoogleReview: true,
+      googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
+    });
+    setShowAddReviewModal(true);
+  };
+
   // Open Edit Review Modal
   const handleOpenEditReview = (rev: Review) => {
     setEditingReview(rev);
+    setReviewSubmitError('');
     setReviewForm({
       authorName: rev.authorName,
       authorRole: rev.authorRole,
@@ -372,61 +407,69 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     } as any);
   };
 
-  // Submit Review (Add or Edit - Connected to Neon DB)
+  // Submit Review (Add or Edit - Connected strictly to Neon DB)
   const handleCreateReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewForm.authorName) return;
+    if (!reviewForm.authorName || !reviewForm.contentEn.trim()) return;
+    setIsSavingReview(true);
+    setReviewSubmitError('');
 
-    if (editingReview) {
-      await updateReview({
-        ...editingReview,
-        authorName: reviewForm.authorName,
-        clientName: reviewForm.authorName,
-        authorRole: reviewForm.authorRole || 'Managing Director',
-        role: reviewForm.authorRole || 'Managing Director',
-        company: reviewForm.company || 'Enterprise Partner',
-        location: reviewForm.location || 'Dubai, UAE',
-        avatar: reviewForm.avatar,
-        rating: Number(reviewForm.rating) || 5,
-        content: {
-          en: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
-          ar: (reviewForm.contentAr || reviewForm.contentEn).replace(/Odoo 17/g, 'Odoo'),
-        },
-        reviewText: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
-        hasVideo: Boolean(reviewForm.hasVideo),
-        videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
-        featured: Boolean(reviewForm.featured),
-        techCategory: reviewForm.techCategory,
-        verified: true,
-      } as any);
-    } else {
-      await addReview({
-        authorName: reviewForm.authorName,
-        clientName: reviewForm.authorName,
-        authorRole: reviewForm.authorRole || 'Managing Director',
-        role: reviewForm.authorRole || 'Managing Director',
-        company: reviewForm.company || 'Enterprise Partner',
-        location: reviewForm.location || 'Dubai, UAE',
-        avatar: reviewForm.avatar,
-        rating: Number(reviewForm.rating) || 5,
-        content: {
-          en: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
-          ar: (reviewForm.contentAr || reviewForm.contentEn).replace(/Odoo 17/g, 'Odoo'),
-        },
-        reviewText: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
-        hasVideo: Boolean(reviewForm.hasVideo),
-        videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
-        featured: Boolean(reviewForm.featured),
-        techCategory: reviewForm.techCategory,
-        date: 'Just now (Organic)',
-        isGoogleReview: reviewForm.isGoogleReview,
-        googleReviewUrl: reviewForm.googleReviewUrl,
-        verified: true,
-      } as any);
+    try {
+      if (editingReview) {
+        await updateReview({
+          ...editingReview,
+          authorName: reviewForm.authorName,
+          clientName: reviewForm.authorName,
+          authorRole: reviewForm.authorRole || 'Managing Director',
+          role: reviewForm.authorRole || 'Managing Director',
+          company: reviewForm.company || 'Enterprise Partner',
+          location: reviewForm.location || 'Dubai, UAE',
+          avatar: reviewForm.avatar,
+          rating: Number(reviewForm.rating) || 5,
+          content: {
+            en: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
+            ar: (reviewForm.contentAr || reviewForm.contentEn).replace(/Odoo 17/g, 'Odoo'),
+          },
+          reviewText: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
+          hasVideo: Boolean(reviewForm.hasVideo),
+          videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
+          featured: Boolean(reviewForm.featured),
+          techCategory: reviewForm.techCategory,
+          verified: true,
+        } as any);
+      } else {
+        await addReview({
+          authorName: reviewForm.authorName,
+          clientName: reviewForm.authorName,
+          authorRole: reviewForm.authorRole || 'Managing Director',
+          role: reviewForm.authorRole || 'Managing Director',
+          company: reviewForm.company || 'Enterprise Partner',
+          location: reviewForm.location || 'Dubai, UAE',
+          avatar: reviewForm.avatar,
+          rating: Number(reviewForm.rating) || 5,
+          content: {
+            en: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
+            ar: (reviewForm.contentAr || reviewForm.contentEn).replace(/Odoo 17/g, 'Odoo'),
+          },
+          reviewText: reviewForm.contentEn.replace(/Odoo 17/g, 'Odoo'),
+          hasVideo: Boolean(reviewForm.hasVideo),
+          videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
+          featured: Boolean(reviewForm.featured),
+          techCategory: reviewForm.techCategory,
+          date: 'Just now (Organic)',
+          isGoogleReview: reviewForm.isGoogleReview,
+          googleReviewUrl: reviewForm.googleReviewUrl,
+          verified: true,
+        } as any);
+      }
+
+      setEditingReview(null);
+      setShowAddReviewModal(false);
+    } catch (err: any) {
+      setReviewSubmitError(err.message || 'Failed to save review to database.');
+    } finally {
+      setIsSavingReview(false);
     }
-
-    setEditingReview(null);
-    setShowAddReviewModal(false);
   };
 
   // Submit Campaign
@@ -455,27 +498,36 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     });
   };
 
-  // Submit User
-  const handleCreateUser = (e: React.FormEvent) => {
+  // Submit User (Super Admin creates TeamMember in DB)
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userForm.email || !userForm.name) return;
+    setIsSavingUser(true);
+    setUserSubmitError('');
 
-    addAdminUser({
-      name: userForm.name,
-      email: userForm.email,
-      title: userForm.title || 'Team Specialist',
-      password: userForm.password || 'nexora2026!',
-      roles: userForm.roles
-    });
+    try {
+      await addAdminUser({
+        name: userForm.name,
+        email: userForm.email,
+        role: userForm.title || 'Team Specialist',
+        title: userForm.title || 'Team Specialist',
+        password: userForm.password,
+        roles: userForm.roles
+      });
 
-    setShowAddUserModal(false);
-    setUserForm({
-      name: '',
-      email: '',
-      title: '',
-      password: '',
-      roles: ['project_manager']
-    });
+      setShowAddUserModal(false);
+      setUserForm({
+        name: '',
+        email: '',
+        title: '',
+        password: '',
+        roles: ['project_manager']
+      });
+    } catch (err: any) {
+      setUserSubmitError(err.message || 'Failed to add team member to database.');
+    } finally {
+      setIsSavingUser(false);
+    }
   };
 
   // Trigger Google Sync
@@ -544,9 +596,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+              disabled={isLoggingIn}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
             >
-              Sign In to Command Center
+              {isLoggingIn ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Authenticating…
+                </>
+              ) : (
+                'Sign In to Command Center'
+              )}
             </button>
 
             <button
@@ -559,34 +622,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </button>
           </form>
 
-          {/* Quick Access Credentials Switcher */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-left">
-            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 dark:text-slate-500 block mb-2">
-              Team Profiles (Click to Authenticate):
-            </span>
-            <div className="space-y-1.5">
-              {adminUsers.map(user => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => handleQuickLogin(user)}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-850 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-left transition-colors cursor-pointer group"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-sky-400">
-                      {user.name}
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-mono">
-                      {user.email} • Password: <code className="text-indigo-600 dark:text-sky-300">{user.password}</code>
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 uppercase">
-                    {user.roles.join(', ')}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center pt-2">
+            Access restricted to authorized Nexora personnel only.
+          </p>
 
         </div>
       </div>
@@ -614,7 +652,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Nexora Command Center</span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-500/30">
-                  {currentUser.roles.map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}
+                  {(currentUser.roles || []).map(r => r.toUpperCase().replace('_', ' ')).join(' • ')}
                 </span>
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -720,8 +758,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </button>
           )}
 
-          {/* Settings: Admin Only */}
-          {currentUser.roles.includes('admin') && (
+          {/* Settings: Super Admin / Admin Only */}
+          {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
@@ -735,8 +773,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </button>
           )}
 
-          {/* Team Roles: Admin Only */}
-          {currentUser.roles.includes('admin') && (
+          {/* Team Roles: Super Admin / Admin Only */}
+          {isSuperOrAdmin() && (
             <button
               onClick={() => setActiveTab('team')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
@@ -943,7 +981,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </button>
 
                 <button
-                  onClick={() => setShowAddReviewModal(true)}
+                  onClick={handleOpenAddReview}
                   className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
                   <MessageSquarePlus className="w-4 h-4" />
@@ -1154,9 +1192,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         )}
 
         {/* ==========================================
-            TAB 5: SYSTEM SETTINGS (Admin Only)
+            TAB 5: SYSTEM SETTINGS (Super Admin / Admin Only)
             ========================================== */}
-        {activeTab === 'settings' && currentUser.roles.includes('admin') && (
+        {activeTab === 'settings' && isSuperOrAdmin() && (
           <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-7 max-w-3xl bg-white dark:bg-slate-900 shadow-xs">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
@@ -1228,9 +1266,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
         )}
 
         {/* ==========================================
-            TAB 6: TEAM & MULTI-ROLES (Admin Only)
+            TAB 6: TEAM & MULTI-ROLES (Super Admin / Admin Only)
             ========================================== */}
-        {activeTab === 'team' && currentUser.roles.includes('admin') && (
+        {activeTab === 'team' && isSuperOrAdmin() && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1238,11 +1276,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   Management Team & Multi-Role Permissions
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Assign roles (Admin, Project Manager, Marketing Manager, Review Manager) to team users.
+                  All team users and roles are stored in the database (TeamMember) and managed by Super Admin.
                 </p>
               </div>
               <button
-                onClick={() => setShowAddUserModal(true)}
+                onClick={() => {
+                  setUserSubmitError('');
+                  setShowAddUserModal(true);
+                }}
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -1259,16 +1300,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <img
-                        src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                        src={user.avatarUrl || user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                         alt=""
                         className="w-10 h-10 rounded-full object-cover"
                       />
                       <div>
                         <h4 className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</h4>
-                        <div className="text-xs text-slate-400">{user.title}</div>
+                        <div className="text-xs text-slate-400">{(user as any).title || user.role}</div>
                         <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
                       </div>
                     </div>
+                    {/* Delete user button — guard against self-deletion */}
+                    {currentUser?.id !== user.id && (
+                      <button
+                        type="button"
+                        title="Remove user"
+                        onClick={async () => {
+                          if (!window.confirm(`Remove ${user.name} from the portal? This action cannot be undone.`)) return;
+                          try {
+                            await deleteAdminUser(user.id);
+                          } catch (err: any) {
+                            alert(err.message || 'Failed to delete user.');
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
@@ -1276,18 +1335,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       Assigned Roles (Multi-Role Support):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {(['admin', 'project_manager', 'marketing_manager', 'review_manager'] as UserRole[]).map(role => {
-                        const hasThisRole = user.roles.includes(role);
+                      {(['super_admin', 'admin', 'project_manager', 'marketing_manager', 'review_manager'] as UserRole[]).map(role => {
+                        const userRoles = user.roles || [];
+                        const hasThisRole = userRoles.includes(role);
                         return (
                           <button
                             key={role}
                             type="button"
-                            onClick={() => {
-                              if (user.id === 'usr-admin' && role === 'admin') return; // Prevent lock out
+                            onClick={async () => {
+                              if (currentUser?.id === user.id && (role === 'super_admin' || role === 'admin') && hasThisRole) {
+                                alert('You cannot remove your own administrative privileges.');
+                                return;
+                              }
                               const updatedRoles = hasThisRole
-                                ? user.roles.filter(r => r !== role)
-                                : [...user.roles, role];
-                              updateAdminUser({ ...user, roles: updatedRoles });
+                                ? userRoles.filter(r => r !== role)
+                                : [...userRoles, role];
+                              try {
+                                await updateAdminUser({ ...user, roles: updatedRoles });
+                              } catch (err: any) {
+                                alert(err.message || 'Failed to update roles.');
+                              }
                             }}
                             className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
                               hasThisRole
@@ -1320,16 +1387,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 Access Restricted — Insufficient Role Permissions
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                Your current account role(s) <span className="font-mono font-bold text-indigo-600 dark:text-sky-400">[{currentUser.roles.map(r => r.toUpperCase().replace('_', ' ')).join(', ')}]</span> does not have authorization to view or configure the <strong className="text-slate-900 dark:text-white capitalize">{activeTab}</strong> console.
+                Your current account role(s) <span className="font-mono font-bold text-indigo-600 dark:text-sky-400">[{(currentUser.roles || []).map(r => r.toUpperCase().replace('_', ' ')).join(', ')}]</span> does not have authorization to view or configure the <strong className="text-slate-900 dark:text-white capitalize">{activeTab}</strong> console.
               </p>
             </div>
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => setActiveTab(getPrimaryAuthorizedTab(currentUser.roles))}
+                onClick={() => setActiveTab(getPrimaryAuthorizedTab(currentUser.roles || []))}
                 className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 cursor-pointer"
               >
-                Go to Authorized Console ({getPrimaryAuthorizedTab(currentUser.roles).toUpperCase()})
+                Go to Authorized Console ({getPrimaryAuthorizedTab(currentUser.roles || []).toUpperCase()})
               </button>
             </div>
           </div>
@@ -1637,169 +1704,244 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       )}
 
       {/* ==========================================
-          MODAL 3: ADD REVIEW
+          MODAL 3: ADD / EDIT REVIEW — Professional Form
           ========================================== */}
       {showAddReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
             <button
               onClick={() => { setEditingReview(null); setShowAddReviewModal(false); }}
-              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 cursor-pointer"
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
-              {editingReview ? 'Edit Review' : 'Add Verified Review'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              {editingReview 
-                ? 'Update client feedback, toggle featured spotlight, or adjust category.' 
-                : 'Add client feedback to be displayed on the public website and carousel.'}
-            </p>
-
-            <form onSubmit={handleCreateReview} className="space-y-3 text-xs">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-sky-400">
+                <MessageSquarePlus className="w-5 h-5" />
+              </div>
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Author Name</label>
-                <input
-                  type="text"
-                  required
-                  value={reviewForm.authorName}
-                  onChange={e => setReviewForm({ ...reviewForm, authorName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {editingReview ? 'Edit Client Review' : 'Add Verified Client Review'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {editingReview 
+                    ? 'Update client feedback, toggle featured spotlight, or adjust category.' 
+                    : 'All reviews are saved to the database and shown on the public website.'}
+                </p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Role</label>
-                  <input
-                    type="text"
-                    value={reviewForm.authorRole}
-                    onChange={e => setReviewForm({ ...reviewForm, authorRole: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Company</label>
-                  <input
-                    type="text"
-                    value={reviewForm.company}
-                    onChange={e => setReviewForm({ ...reviewForm, company: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Location</label>
-                  <input
-                    type="text"
-                    placeholder="Dubai, UAE"
-                    value={reviewForm.location}
-                    onChange={e => setReviewForm({ ...reviewForm, location: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Rating</label>
-                  <select
-                    value={reviewForm.rating}
-                    onChange={e => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  >
-                    <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
-                    <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
-                    <option value={3}>⭐⭐⭐ (3 Stars)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Requirement 4: Tech Stack Categorization (Strictly .NET vs Odoo) */}
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Tech Stack Category (Strict Separation)
-                </label>
-                <select
-                  value={reviewForm.techCategory}
-                  onChange={e => setReviewForm({ ...reviewForm, techCategory: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
-                >
-                  <option value="dotnet">.NET Enterprise Architecture</option>
-                  <option value="odoo">Odoo Enterprise & Python</option>
-                  <option value="general">General Enterprise & Cloud</option>
-                </select>
-              </div>
-
-              {/* Requirement 3: Featured Spotlight Toggle */}
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={reviewForm.featured}
-                    onChange={e => setReviewForm({ ...reviewForm, featured: e.target.checked })}
-                    className="rounded text-amber-500 focus:ring-amber-400"
-                  />
+            <form onSubmit={handleCreateReview} className="space-y-5 text-xs mt-6">
+              {/* Section 1: Client Information */}
+              <div className="space-y-3">
+                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Client Information</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white block text-xs">
-                      ⭐ Set as Featured Spotlight (40% Left Card)
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Highlight this client review/video in the prominent Left Spotlight on the public homepage.
-                    </span>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Sultan Al-Rashid"
+                      value={reviewForm.authorName}
+                      onChange={e => setReviewForm({ ...reviewForm, authorName: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                    />
                   </div>
-                </label>
-              </div>
-
-              {/* Video Testimonial Toggle */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                <label className="flex items-center gap-2 cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={reviewForm.hasVideo}
-                    onChange={e => setReviewForm({ ...reviewForm, hasVideo: e.target.checked })}
-                    className="rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    Include Video Testimonial (MP4)
-                  </span>
-                </label>
-                {reviewForm.hasVideo && (
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title / Role</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Chief Information Officer"
+                      value={reviewForm.authorRole}
+                      onChange={e => setReviewForm({ ...reviewForm, authorRole: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Company</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Gulf Horizon Logistics"
+                      value={reviewForm.company}
+                      onChange={e => setReviewForm({ ...reviewForm, company: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Location</label>
+                    <input
+                      type="text"
+                      placeholder="Dubai, UAE"
+                      value={reviewForm.location}
+                      onChange={e => setReviewForm({ ...reviewForm, location: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Avatar / Photo URL</label>
                   <input
                     type="url"
-                    placeholder="https://.../video.mp4"
-                    value={reviewForm.videoUrl}
-                    onChange={e => setReviewForm({ ...reviewForm, videoUrl: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={reviewForm.avatar}
+                    onChange={e => setReviewForm({ ...reviewForm, avatar: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-[11px] focus:border-indigo-500 focus:outline-none transition-colors"
                   />
-                )}
+                </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review (English)</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={reviewForm.contentEn}
-                  onChange={e => setReviewForm({ ...reviewForm, contentEn: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
+              {/* Section 2: Rating & Classification */}
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5" />
+                  <span>Rating & Classification</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Star Rating</label>
+                    <div className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                          className="p-1 cursor-pointer transition-transform hover:scale-110"
+                        >
+                          <Star className={`w-6 h-6 ${star <= reviewForm.rating ? 'fill-amber-500 text-amber-500' : 'text-slate-300 dark:text-slate-600'} transition-colors`} />
+                        </button>
+                      ))}
+                      <span className="ml-2 text-xs font-bold text-slate-900 dark:text-white">{reviewForm.rating}.0</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tech Category</label>
+                    <select
+                      value={reviewForm.techCategory}
+                      onChange={e => setReviewForm({ ...reviewForm, techCategory: e.target.value as any })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold focus:border-indigo-500 focus:outline-none transition-colors"
+                    >
+                      <option value="dotnet">.NET Enterprise Architecture</option>
+                      <option value="odoo">Odoo Enterprise & Python</option>
+                      <option value="general">General Enterprise & Cloud</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3">
+              {/* Section 3: Review Content */}
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                  <MessageSquarePlus className="w-3.5 h-3.5" />
+                  <span>Review Content</span>
+                </h4>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review Text (English) *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Enter the client's review in English..."
+                    value={reviewForm.contentEn}
+                    onChange={e => setReviewForm({ ...reviewForm, contentEn: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors leading-relaxed"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review Text (Arabic) <span className="text-slate-400 font-normal">— optional</span></label>
+                  <textarea
+                    rows={3}
+                    dir="rtl"
+                    placeholder="أدخل نص التقييم بالعربية (اختياري)..."
+                    value={reviewForm.contentAr}
+                    onChange={e => setReviewForm({ ...reviewForm, contentAr: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-arabic text-right focus:border-indigo-500 focus:outline-none transition-colors leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* Section 4: Display Options */}
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Display Options</span>
+                </h4>
+                
+                {/* Featured Spotlight Toggle */}
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 transition-colors">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reviewForm.featured}
+                      onChange={e => setReviewForm({ ...reviewForm, featured: e.target.checked })}
+                      className="rounded text-amber-500 focus:ring-amber-400 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                        ⭐ Featured Spotlight
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Pin this review to the prominent left spotlight on the public homepage.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Video Testimonial Toggle */}
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-sky-500/30 transition-colors">
+                  <label className="flex items-center gap-3 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={reviewForm.hasVideo}
+                      onChange={e => setReviewForm({ ...reviewForm, hasVideo: e.target.checked })}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                        🎥 Video Testimonial
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Attach a client video testimonial (MP4 URL).
+                      </span>
+                    </div>
+                  </label>
+                  {reviewForm.hasVideo && (
+                    <input
+                      type="url"
+                      placeholder="https://cdn.example.com/testimonial.mp4"
+                      value={reviewForm.videoUrl}
+                      onChange={e => setReviewForm({ ...reviewForm, videoUrl: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono mt-1 focus:border-indigo-500 focus:outline-none transition-colors"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {reviewSubmitError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
+                  {reviewSubmitError}
+                </div>
+              )}
+
+              {/* Form Actions */}
+              <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => { setEditingReview(null); setShowAddReviewModal(false); }}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
+                  disabled={isSavingReview}
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20 transition-all"
                 >
-                  {editingReview ? 'Update Review' : 'Save Review'}
+                  {isSavingReview ? 'Saving to Database…' : editingReview ? 'Update Review' : 'Save Review to Database'}
                 </button>
               </div>
             </form>
@@ -1851,6 +1993,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
 
               <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Senior Systems Architect"
+                  value={userForm.title}
+                  onChange={e => setUserForm({ ...userForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
                 <input
                   type="password"
@@ -1872,8 +2025,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <option value="marketing_manager">Marketing Manager</option>
                   <option value="review_manager">Review Manager</option>
                   <option value="admin">Administrator (All Access)</option>
+                  <option value="super_admin">Super Administrator</option>
                 </select>
               </div>
+
+              {userSubmitError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
+                  {userSubmitError}
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button
@@ -1885,9 +2045,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold cursor-pointer"
+                  disabled={isSavingUser}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer"
                 >
-                  Add Team Member
+                  {isSavingUser ? 'Creating…' : 'Add Team Member'}
                 </button>
               </div>
             </form>

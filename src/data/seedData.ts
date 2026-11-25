@@ -3,7 +3,6 @@ import type {
   Review,
   ServiceItem,
   GoogleReviewSettings,
-  AdminUser,
   MarketingSettings
 } from '../types';
 
@@ -337,120 +336,10 @@ export const initialServices: ServiceItem[] = [
 
 export const initialProjects: Project[] = [];
 
-export const initialReviews: Review[] = [
-  {
-    id: 'rev-1',
-    authorName: 'Tariq Al-Mansoor',
-    authorRole: 'Chief Operating Officer',
-    company: 'Al-Madar Global Logistics (Dubai)',
-    avatar:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    rating: 5,
-    content: {
-      en: 'Nexora Systems delivered our custom web ERP using .NET Core Web API and Next.js with perfection. Our MSSQL database handles millions of rows effortlessly, and their REST API integrations with our banks eliminated manual reconciliations completely.',
-      ar: 'قامت نيكسورا بتطوير نظام الـ ERP المخصص لنا بالكامل عبر .NET Core و Next.js وقواعد بيانات MSSQL. أصبح العمل سريعاً وسلساً، وأتمتة الـ APIs مع البنوك وفرت مئات الساعات شهرياً.'
-    },
-    date: '1 week ago',
-    isGoogleReview: true,
-    googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems',
-    verified: true
-  },
-  {
-    id: 'rev-2',
-    authorName: 'David H. Sterling',
-    authorRole: 'VP of Engineering',
-    company: 'FinEdge Payment Technologies (London)',
-    avatar:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-    rating: 5,
-    content: {
-      en: 'Exceptional software house. Their team built our mobile apps in native Swift and Kotlin alongside Flutter cross-platform modules. Response times on our .NET Core microservices dropped under 25ms, and their 24/7 Kubernetes management is faultless.',
-      ar: 'بيت برمجيات استثنائي بكل المقاييس. طوّر فريقهم تطبيقاتنا الأصلية بـ Swift و Kotlin بجانب واجهات Flutter. استجابة السيرفرات فائقة والعمل السحابي عبر Kubernetes دون أي انقطاع.'
-    },
-    date: '3 weeks ago',
-    isGoogleReview: true,
-    googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems',
-    verified: true
-  },
-  {
-    id: 'rev-3',
-    authorName: 'Fatima Al-Zahra',
-    authorRole: 'Digital Transformation Director',
-    company: 'Capital Trade & Holdings (Muscat)',
-    avatar:
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
-    rating: 5,
-    content: {
-      en: 'We contracted Nexora Systems for a bespoke enterprise portal and AI document automation pipeline. Their bilingual Arabic/English execution, clean code standards, and rapid bi-weekly sprint deliveries make them our primary technology partner.',
-      ar: 'تعاقدنا مع نيكسورا لتطوير منصة مؤسسية مخصصة ومحرك ذكاء اصطناعي لمعالجة المستندات. دقة التنفيذ ودعم اللغتين العربية والإنجليزية والتسليمات الدورية جعلهم شريكنا التقني الدائم.'
-    },
-    date: '1 month ago',
-    isGoogleReview: true,
-    googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems',
-    verified: true
-  },
-  {
-    id: 'rev-4',
-    authorName: 'Marcus Vance',
-    authorRole: 'Founder & Managing Director',
-    company: 'Vanguard Industrial Technologies',
-    avatar:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
-    rating: 5,
-    content: {
-      en: 'Outstanding engineering team. They delivered our enterprise web portals with bank-grade encryption, Next.js rendering, and robust .NET APIs. Our team loves the fluid performance and eye-friendly interface.',
-      ar: 'فريق هندسي على أعلى مستوى. سلّموا بوابتنا المؤسسية بأعلى معايير الأمان والتشفير وبسرعة تصفح فائقة عبر Next.js ومحركات .NET القوية. تجربة مستخدم مبهرة وسلسة.'
-    },
-    date: '2 months ago',
-    isGoogleReview: true,
-    googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems',
-    verified: true
-  }
-];
+// Dynamic Reviews: all reviews are loaded directly from the Neon database
+export const initialReviews: Review[] = [];
 
-// Pre-configured Team Users with Multi-Role Support
-export const initialAdminUsers: AdminUser[] = [
-  {
-    id: 'usr-admin',
-    email: 'admin@nexora.io',
-    name: 'Executive Administrator',
-    roles: ['admin', 'project_manager', 'marketing_manager', 'review_manager'],
-    password: 'admin2026!',
-    title: 'Chief Technology Officer (All Permissions)',
-    avatar:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-  },
-  {
-    id: 'usr-pm',
-    email: 'pm@nexora.io',
-    name: 'Sarah Jenkins',
-    roles: ['project_manager'],
-    password: 'pm2026!',
-    title: 'Senior Project Manager (Projects & Deliverables)',
-    avatar:
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
-  },
-  {
-    id: 'usr-mkt',
-    email: 'marketing@nexora.io',
-    name: 'Alexander Ross',
-    roles: ['marketing_manager'],
-    password: 'mkt2026!',
-    title: 'Head of Marketing & SEO Growth (Ads & SEO)',
-    avatar:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
-  },
-  {
-    id: 'usr-rev',
-    email: 'reviews@nexora.io',
-    name: 'Zainab Al-Hashimi',
-    roles: ['review_manager'],
-    password: 'rev2026!',
-    title: 'Reputation & Client Review Manager',
-    avatar:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80'
-  }
-];
+// No static users — all users/roles managed exclusively via Super Admin in the DB
 
 // Initial Marketing & Ads Settings
 export const initialMarketingSettings: MarketingSettings = {

@@ -4,55 +4,19 @@ import type { TeamMember } from '../../types';
 import { 
   Users2, 
   ShieldCheck, 
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
-
-const FALLBACK_TEAM: TeamMember[] = [
-  {
-    id: 'team-1',
-    name: 'Farhan M. Tariq',
-    role: 'Chief Systems Architect & Co-Founder',
-    bio: '12+ years engineering high-throughput .NET Core microservices, distributed cloud backends, and multi-tenant ERP platforms for high-load networks across GCC and Europe.',
-    linkedinUrl: 'https://www.linkedin.com/',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    displayOrder: 1,
-  },
-  {
-    id: 'team-2',
-    name: 'Dr. Zaid Al-Nuaimi',
-    role: 'Principal ERP & Odoo Solutions Architect',
-    bio: 'Specialist in Odoo 17 enterprise modernization, custom Python ORM business logic, and real-time PostgreSQL / MSSQL data synchronization pipelines.',
-    linkedinUrl: 'https://www.linkedin.com/',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    displayOrder: 2,
-  },
-  {
-    id: 'team-3',
-    name: 'Elena Rostova',
-    role: 'Head of Mobile & Edge Engineering',
-    bio: 'Pioneered native iOS (Swift) & Android (Kotlin) high-security fintech applications with biometric encryption, offline-first sync, and digital wallets.',
-    linkedinUrl: 'https://www.linkedin.com/',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-    displayOrder: 3,
-  },
-  {
-    id: 'team-4',
-    name: 'Kareem Mansour',
-    role: 'Director of AI & Distributed Systems',
-    bio: 'Leads predictive demand neural models, automated LLM enterprise workflow agents, and zero-downtime Kubernetes infrastructure across multi-region deployments.',
-    linkedinUrl: 'https://www.linkedin.com/',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
-    displayOrder: 4,
-  },
-];
 
 export const Leadership: React.FC = () => {
   const { language } = useLanguage();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(FALLBACK_TEAM);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchTeam = async () => {
       try {
+        setIsLoading(true);
         const res = await fetch('/api/team');
         if (res.ok) {
           const data = await res.json();
@@ -61,7 +25,9 @@ export const Leadership: React.FC = () => {
           }
         }
       } catch {
-        // Fallback to FALLBACK_TEAM silently
+        // Will show empty state
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchTeam();
@@ -92,6 +58,22 @@ export const Leadership: React.FC = () => {
         </div>
 
         {/* Leadership Grid */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Loader2 className="w-8 h-8 text-indigo-500 dark:text-sky-400 animate-spin" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Loading team from database…</p>
+          </div>
+        ) : teamMembers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Users2 className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {language === 'ar' ? 'لم يتم إضافة أعضاء فريق بعد.' : 'No team members added yet.'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              {language === 'ar' ? 'يمكن للمسؤول إضافة أعضاء الفريق من لوحة التحكم.' : 'The Super Admin can add team members from the Command Center.'}
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {teamMembers.map((member) => (
             <div
@@ -131,7 +113,7 @@ export const Leadership: React.FC = () => {
               {/* LinkedIn CTA Button */}
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80">
                 <a
-                  href={member.linkedinUrl}
+                  href={member.linkedinUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-sky-300 text-xs font-bold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer group/link"
@@ -147,6 +129,7 @@ export const Leadership: React.FC = () => {
             </div>
           ))}
         </div>
+        )}
 
       </div>
     </section>

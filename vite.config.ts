@@ -15,6 +15,13 @@ import {
 import { getAllTeamMembers } from './src/server/teamController.ts';
 import { checkNeonServices } from './src/server/neonHealth.ts';
 import { uploadToNeonStorage } from './src/lib/neon.ts';
+import {
+  getAllUsers,
+  createUserRecord,
+  updateUserRecord,
+  deleteUserRecord,
+  authenticateUser,
+} from './src/server/usersController.ts';
 
 dotenv.config();
 
@@ -258,6 +265,140 @@ function apiMiddlewarePlugin(): Plugin {
               })
             );
           }
+          return;
+        }
+
+        // GET /api/users (Fetch all DB users)
+        if (url === '/api/users' && req.method === 'GET') {
+          try {
+            const users = await getAllUsers();
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify(users));
+          } catch (err: any) {
+            console.error('API Error (GET /api/users):', err.message);
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 500;
+            res.end(
+              JSON.stringify({
+                error: 'Failed to fetch users from database',
+                details: err.message,
+              })
+            );
+          }
+          return;
+        }
+
+        // POST /api/users (Super Admin creates a new user & assigns roles)
+        if (url === '/api/users' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => {
+            bodyStr += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              const body = JSON.parse(bodyStr || '{}');
+              const newUser = await createUserRecord(body);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 201;
+              res.end(JSON.stringify(newUser));
+            } catch (err: any) {
+              console.error('API Error (POST /api/users):', err.message);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 400;
+              res.end(
+                JSON.stringify({
+                  error: err.message || 'Failed to create user',
+                })
+              );
+            }
+          });
+          return;
+        }
+
+        // PATCH or PUT /api/users/[id] (Super Admin updates user or roles)
+        if (url.startsWith('/api/users/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          const id = url.replace('/api/users/', '').trim();
+          let bodyStr = '';
+          req.on('data', chunk => {
+            bodyStr += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              const body = JSON.parse(bodyStr || '{}');
+              const updated = await updateUserRecord(id, body);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify(updated));
+            } catch (err: any) {
+              console.error('API Error (PATCH /api/users/:id):', err.message);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 400;
+              res.end(
+                JSON.stringify({
+                  error: err.message || 'Failed to update user',
+                })
+              );
+            }
+          });
+          return;
+        }
+
+        // DELETE /api/users/[id] (Super Admin deletes user)
+        if (url.startsWith('/api/users/') && req.method === 'DELETE') {
+          const id = url.replace('/api/users/', '').trim();
+          try {
+            const result = await deleteUserRecord(id);
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify(result));
+          } catch (err: any) {
+            console.error('API Error (DELETE /api/users/:id):', err.message);
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 400;
+            res.end(
+              JSON.stringify({
+                error: err.message || 'Failed to delete user',
+              })
+            );
+          }
+          return;
+        }
+
+        // POST /api/auth/login (Authenticate user against database)
+        if (url === '/api/auth/login' && req.method === 'POST') {
+          let bodyStr = '';
+          req.on('data', chunk => {
+            bodyStr += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              const body = JSON.parse(bodyStr || '{}');
+              const user = await authenticateUser(body.email, body.password);
+              if (!user) {
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 401;
+                res.end(
+                  JSON.stringify({
+                    error: 'Invalid email or password. Please verify credentials.',
+                  })
+                );
+                return;
+              }
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, user }));
+            } catch (err: any) {
+              console.error('API Error (POST /api/auth/login):', err.message);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 500;
+              res.end(
+                JSON.stringify({
+                  error: err.message || 'Authentication error',
+                })
+              );
+            }
+          });
           return;
         }
 

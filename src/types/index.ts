@@ -57,12 +57,19 @@ export interface Review {
 
 export interface TeamMember {
   id: string;
+  email?: string | null;
+  password?: string | null;
+  roles?: UserRole[];
   name: string;
-  role: string;
+  role: string; // Job title (e.g. "Chief Technology Officer")
+  title?: string | null; // Alias for role
   bio?: string | null;
-  linkedinUrl: string;
+  linkedinUrl?: string | null;
   avatarUrl?: string | null;
+  avatar?: string;
   displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Inquiry {
@@ -107,20 +114,15 @@ export interface GoogleReviewSettings {
 
 // User Roles & Access Control
 export type UserRole =
+  | 'super_admin'
   | 'admin'
   | 'project_manager'
   | 'marketing_manager'
   | 'review_manager';
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  roles: UserRole[];
-  password: string;
-  title: string;
-  avatar?: string;
-}
+// Legacy aliases — kept for backward compatibility across components
+export type User = TeamMember;
+export type AdminUser = TeamMember;
 
 // Marketing & Ads Types
 export type MarketingPlatform =

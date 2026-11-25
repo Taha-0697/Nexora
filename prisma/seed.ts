@@ -212,6 +212,27 @@ async function main() {
     }
     console.log(`Seeded ${teamToSeed.length} leadership members successfully to Neon.`);
   }
+
+  // 4. Seed Super Admin User in TeamMember table if none exists
+  const userCount = await prisma.teamMember.count({
+    where: { email: { not: null } },
+  });
+  if (userCount === 0) {
+    await prisma.teamMember.create({
+      data: {
+        email: 'admin@nexora.io',
+        name: 'Super Administrator',
+        roles: ['super_admin', 'admin', 'project_manager', 'marketing_manager', 'review_manager'],
+        password: 'admin2026!',
+        role: 'Chief Technology Officer (Super Admin)',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+        displayOrder: 0,
+      },
+    });
+    console.log('Seeded root Super Admin user into TeamMember table successfully.');
+  } else {
+    console.log(`Database already contains ${userCount} portal users in TeamMember.`);
+  }
 }
 
 main()

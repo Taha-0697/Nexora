@@ -6,7 +6,7 @@ import type {
   Inquiry,
   ServiceItem,
   GoogleReviewSettings,
-  AdminUser,
+  TeamMember,
   MarketingSettings,
   AdCampaign
 } from '../types';
@@ -15,7 +15,6 @@ import {
   initialReviews,
   initialServices,
   initialGoogleSettings,
-  initialAdminUsers,
   initialMarketingSettings
 } from '../data/seedData';
 
@@ -30,7 +29,11 @@ interface DataContextType {
   inquiries: Inquiry[];
   services: ServiceItem[];
   googleSettings: GoogleReviewSettings;
-  adminUsers: AdminUser[];
+  users: TeamMember[];
+  adminUsers: TeamMember[];
+  isLoadingUsers: boolean;
+  userError: string | null;
+  refreshUsers: () => Promise<void>;
   marketingSettings: MarketingSettings;
 
   // Project Actions
@@ -39,9 +42,9 @@ interface DataContextType {
   deleteProject: (id: string) => Promise<any>;
 
   // Review Actions
-  addReview: (review: Omit<Review, 'id'>) => void;
-  updateReview: (review: Review) => void;
-  deleteReview: (id: string) => void;
+  addReview: (review: Omit<Review, 'id'>) => Promise<any>;
+  updateReview: (review: Review) => Promise<any>;
+  deleteReview: (id: string) => Promise<any>;
   syncGoogleReviews: () => Promise<boolean>;
   updateGoogleSettings: (settings: Partial<GoogleReviewSettings>) => void;
 
@@ -50,10 +53,10 @@ interface DataContextType {
   updateInquiryStatus: (id: string, status: Inquiry['status']) => void;
   deleteInquiry: (id: string) => void;
 
-  // Admin User & Roles Actions
-  addAdminUser: (user: Omit<AdminUser, 'id'>) => void;
-  updateAdminUser: (user: AdminUser) => void;
-  deleteAdminUser: (id: string) => void;
+  // Team Member / Admin User Actions (Super Admin managed via DB)
+  addAdminUser: (user: any) => Promise<TeamMember>;
+  updateAdminUser: (user: TeamMember) => Promise<TeamMember>;
+  deleteAdminUser: (id: string) => Promise<any>;
 
   // Marketing & Ads Actions
   updateMarketingSettings: (settings: Partial<MarketingSettings>) => void;
@@ -116,14 +119,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // 2. Reviews State (Hydrated from Neon DB /api/reviews)
+  // 2. Reviews State (Hydrated strictly from Neon DB /api/reviews)
   const [reviews, setReviews] = useState<Review[]>(() => {
     try {
       const saved = localStorage.getItem('nexora_reviews');
-      return saved ? JSON.parse(saved) : initialReviews;
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error('Error loading reviews', e);
-      return initialReviews;
+      return [];
     }
   });
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
@@ -134,7 +137,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await fetch('/api/reviews');
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setReviews(data);
           localStorage.setItem('nexora_reviews', JSON.stringify(data));
         }
@@ -149,6 +152,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     refreshProjects();
     refreshReviews();
+    refreshUsers();
   }, []);
 
   // 3. Inquiries State
@@ -191,16 +195,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
-  // 6. Admin Users State
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => {
+  // 6. Admin Users State (Hydrated strictly from Neon DB /api/users — no static fallbacks)
+  const [adminUsers, setAdminUsers] = useState<TeamMember[]>(() => {
     try {
       const saved = localStorage.getItem('nexora_admin_users');
-      return saved ? JSON.parse(saved) : initialAdminUsers;
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error('Error loading admin users', e);
-      return initialAdminUsers;
+      return [];
     }
   });
+  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(true);
+  const [userError, setUserError] = useState<string | null>(null);
+
+  const refreshUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      setUserError(null);
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAdminUsers(data);
+          localStorage.setItem('nexora_admin_users', JSON.stringify(data));
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        setUserError(errJson.error || 'Failed to fetch users from database');
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch /api/users:', err);
+      setUserError(err.message || 'Error communicating with database');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   // 7. Marketing Settings State
   const [marketingSettings, setMarketingSettings] = useState<MarketingSettings>(() => {
@@ -285,83 +314,52 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Review Handlers (Connected to Neon DB API)
+  // Review Handlers (Connected strictly to Neon DB API)
   const addReview = async (reviewData: any) => {
-    try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reviewData),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        setReviews(prev => [created, ...prev.filter(r => r.id !== created.id)]);
-        return created;
-      }
-    } catch (err) {
-      console.error('Failed to post review to API, saving locally:', err);
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reviewData),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || errJson.details || 'Failed to save review to database');
     }
-    const newReview: Review = {
-      ...reviewData,
-      id: `rev-${Date.now()}`
-    };
-    setReviews(prev => [newReview, ...prev]);
-    return newReview;
+    const created = await res.json();
+    setReviews(prev => [created, ...prev.filter(r => r.id !== created.id)]);
+    return created;
   };
 
   const updateReview = async (updated: Review) => {
-    try {
-      await fetch(`/api/reviews/${updated.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-    } catch (err) {
-      console.error('Failed to update review on API:', err);
+    const res = await fetch(`/api/reviews/${updated.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || errJson.details || 'Failed to update review in database');
     }
-    setReviews(prev => prev.map(r => (r.id === updated.id ? updated : r)));
+    const saved = await res.json();
+    setReviews(prev => prev.map(r => (r.id === saved.id ? saved : r)));
+    return saved;
   };
 
   const deleteReview = async (id: string) => {
-    try {
-      await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
-    } catch (err) {
-      console.error('Failed to delete review on API:', err);
+    const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || errJson.details || 'Failed to delete review from database');
     }
     setReviews(prev => prev.filter(r => r.id !== id));
   };
 
   const syncGoogleReviews = async (): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 1400));
-    const organicGoogleReview: Review = {
-      id: `rev-google-${Date.now()}`,
-      authorName: 'Sultan Khalid Al-Harthy',
-      authorRole: 'Chief Information Officer',
-      company: 'PetroTech Global Systems',
-      avatar:
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      rating: 5,
-      content: {
-        en: 'Nexora Systems engineered our custom web ERP and migrated our legacy clusters to a resilient .NET Core & MSSQL architecture. Outstanding responsiveness and deep technical mastery.',
-        ar: 'قامت نيكسورا للأنظمة بتطوير نظام الـ ERP السحابي وترحيل قواعد بياناتنا إلى بنية .NET Core و MSSQL مستقرة وسريعة للغاية. احترافية عالية واستجابة لا مثيل لها.'
-      },
-      date: 'Just now (Google Live Sync)',
-      isGoogleReview: true,
-      googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems',
-      verified: true
-    };
-
-    setReviews(prev => {
-      if (prev.some(r => r.authorName.includes('Sultan Khalid'))) return prev;
-      return [organicGoogleReview, ...prev];
-    });
-
+    await refreshReviews();
     setGoogleSettings(prev => ({
       ...prev,
-      totalReviewsCount: prev.totalReviewsCount + 1,
-      lastSyncTimestamp: new Date().toLocaleTimeString() + ' (Google Verified)'
+      lastSyncTimestamp: new Date().toLocaleTimeString() + ' (DB Synced)'
     }));
-
     return true;
   };
 
@@ -388,21 +386,68 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setInquiries(prev => prev.filter(inq => inq.id !== id));
   };
 
-  // Admin User & Roles Handlers
-  const addAdminUser = (userData: Omit<AdminUser, 'id'>) => {
-    const newUser: AdminUser = {
-      ...userData,
-      id: `usr-${Date.now()}`
-    };
-    setAdminUsers(prev => [...prev, newUser]);
+  // Admin User & Roles Handlers (Live Neon DB API — no static users)
+  const addAdminUser = async (userData: any): Promise<TeamMember> => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to add user to database');
+      }
+
+      const created = await res.json();
+      setAdminUsers(prev => [...prev.filter(u => u.id !== created.id), created]);
+      return created;
+    } catch (err: any) {
+      console.error('addAdminUser failed:', err);
+      throw err;
+    }
   };
 
-  const updateAdminUser = (updatedUser: AdminUser) => {
-    setAdminUsers(prev => prev.map(u => (u.id === updatedUser.id ? updatedUser : u)));
+  const updateAdminUser = async (updatedUser: TeamMember): Promise<TeamMember> => {
+    try {
+      const res = await fetch(`/api/users/${updatedUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedUser),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to update user in database');
+      }
+
+      const updated = await res.json();
+      setAdminUsers(prev => prev.map(u => (u.id === updated.id ? updated : u)));
+      return updated;
+    } catch (err: any) {
+      console.error('updateAdminUser failed:', err);
+      throw err;
+    }
   };
 
-  const deleteAdminUser = (id: string) => {
-    setAdminUsers(prev => prev.filter(u => u.id !== id));
+  const deleteAdminUser = async (id: string): Promise<any> => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to delete user from database');
+      }
+
+      setAdminUsers(prev => prev.filter(u => u.id !== id));
+      return await res.json();
+    } catch (err: any) {
+      console.error('deleteAdminUser failed:', err);
+      throw err;
+    }
   };
 
   // Marketing & Ads Handlers
@@ -454,7 +499,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setProjects(initialProjects);
     setReviews(initialReviews);
     setGoogleSettings(initialGoogleSettings);
-    setAdminUsers(initialAdminUsers);
+    setAdminUsers([]);
     setMarketingSettings(initialMarketingSettings);
     localStorage.removeItem('nexora_projects');
     localStorage.removeItem('nexora_reviews');
@@ -477,6 +522,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         services,
         googleSettings,
         adminUsers,
+        users: adminUsers,
+        isLoadingUsers,
+        userError,
+        refreshUsers,
         marketingSettings,
         addProject,
         updateProject,

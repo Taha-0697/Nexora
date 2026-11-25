@@ -42,11 +42,16 @@ model Review {
 }
 
 model TeamMember {
-  id          String   @id @default(uuid())
-  name        String
-  role        String
-  bio         String?
-  linkedinUrl String
-  avatarUrl   String?
-  displayOrder Int     @default(0)
+  id           String    @id @default(uuid())
+  email        String?   @unique
+  password     String?
+  roles        String[]  @default(["project_manager"]) // 'super_admin', 'admin', 'project_manager', 'marketing_manager', 'review_manager'
+  name         String
+  role         String    @default("Senior Systems Architect") // role title
+  bio          String?
+  linkedinUrl  String?   @default("https://www.linkedin.com/")
+  avatarUrl    String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @updatedAt
 }
