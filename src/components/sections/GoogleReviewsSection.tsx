@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useData } from '../../context/DataContext';
 import type { Review } from '../../types';
+import {
+  translateToArabicCached,
+  getCachedArabicTranslation,
+  hasArabicCharacters
+} from '../../services/translationService';
 import { 
   Star, 
   ExternalLink, 
@@ -35,16 +40,98 @@ export const GoogleReviewsSection: React.FC = () => {
     setExpandedReviews(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const videoReviewsCount = reviews.filter(r => r.hasVideo).length;
-  const dotnetReviewsCount = reviews.filter(r => (r as any).techCategory === 'dotnet' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('.net'))).length;
-  const odooReviewsCount = reviews.filter(r => (r as any).techCategory === 'odoo' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('odoo'))).length;
+  // Requirement 3: Only reviews marked as Display (isVisible !== false) are rendered on the public website
+  const publicReviews = useMemo(() => {
+    return reviews.filter(r => r.isVisible !== false);
+  }, [reviews]);
+
+  // Automatic Arabic translation for review quotes & roles (preserving company/product & tech stack names)
+  const [arReviewMap, setArReviewMap] = useState<Record<string, { text?: string; role?: string }>>({});
+
+  useEffect(() => {
+    if (language !== 'ar' || publicReviews.length === 0) return;
+    let cancelled = false;
+
+    const initialMap: Record<string, { text?: string; role?: string }> = {};
+    const pending: Array<Promise<void>> = [];
+
+    for (const r of publicReviews) {
+      const enText = typeof r.content === 'object' ? r.content.en : (r.content || (r as any).reviewText || '');
+      const arTextExisting = typeof r.content === 'object' ? r.content.ar : '';
+      const protectedTerms = [r.company, r.authorName].filter(Boolean);
+      const entry: { text?: string; role?: string } = {};
+
+      if (enText && !hasArabicCharacters(arTextExisting)) {
+        const cached = getCachedArabicTranslation(enText, protectedTerms);
+        if (cached) entry.text = cached;
+        else {
+          pending.push(
+            translateToArabicCached(enText, protectedTerms).then(res => {
+              if (!cancelled && res) {
+                setArReviewMap(prev => ({ ...prev, [r.id]: { ...prev[r.id], text: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (r.authorRole && !hasArabicCharacters(r.authorRole)) {
+        const cachedRole = getCachedArabicTranslation(r.authorRole);
+        if (cachedRole) entry.role = cachedRole;
+        else {
+          pending.push(
+            translateToArabicCached(r.authorRole).then(res => {
+              if (!cancelled && res) {
+                setArReviewMap(prev => ({ ...prev, [r.id]: { ...prev[r.id], role: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (Object.keys(entry).length > 0) {
+        initialMap[r.id] = entry;
+      }
+    }
+
+    if (Object.keys(initialMap).length > 0) {
+      setArReviewMap(prev => ({ ...prev, ...initialMap }));
+    }
+    if (pending.length > 0) {
+      Promise.all(pending).catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language, publicReviews]);
+
+  const getLocalizedReviewText = (r: Review): string => {
+    const enText = typeof r.content === 'object' ? r.content.en : (r.content || (r as any).reviewText || '');
+    if (language === 'ar') {
+      const arExisting = typeof r.content === 'object' ? r.content.ar : '';
+      return arReviewMap[r.id]?.text || (hasArabicCharacters(arExisting) ? arExisting : enText);
+    }
+    return enText;
+  };
+
+  const getLocalizedRole = (r: Review): string => {
+    if (language === 'ar') {
+      return arReviewMap[r.id]?.role || r.authorRole;
+    }
+    return r.authorRole;
+  };
+
+  const videoReviewsCount = publicReviews.filter(r => r.hasVideo).length;
+  const dotnetReviewsCount = publicReviews.filter(r => (r as any).techCategory === 'dotnet' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('.net'))).length;
+  const odooReviewsCount = publicReviews.filter(r => (r as any).techCategory === 'odoo' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('odoo'))).length;
 
   const handleFilterChange = (type: 'all' | 'video' | 'google' | 'dotnet' | 'odoo') => {
     setFilterType(type);
     setCurrentPage(0);
   };
 
-  const filteredReviews = reviews.filter(r => {
+  const filteredReviews = publicReviews.filter(r => {
     const isDotnet = (r as any).techCategory === 'dotnet' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('.net'));
     const isOdoo = (r as any).techCategory === 'odoo' || (r.content && typeof r.content === 'object' && r.content.en && r.content.en.toLowerCase().includes('odoo'));
 
@@ -61,8 +148,8 @@ export const GoogleReviewsSection: React.FC = () => {
     filteredReviews.find(r => r.featured) ||
     filteredReviews.find(r => r.hasVideo) ||
     filteredReviews[0] ||
-    reviews.find(r => r.hasVideo) ||
-    reviews[0];
+    publicReviews.find(r => r.hasVideo) ||
+    publicReviews[0];
 
   // 2. Stacked Reviews for right column (Other reviews or all reviews)
   const nonSpotlightReviews = filteredReviews.filter(r => r.id !== spotlightReview?.id);
@@ -321,7 +408,7 @@ export const GoogleReviewsSection: React.FC = () => {
                             {spotlightReview.authorName}
                           </h4>
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {spotlightReview.authorRole} • <span className="text-slate-800 dark:text-slate-200 font-medium">{spotlightReview.company}</span>
+                            {getLocalizedRole(spotlightReview)} • <span className="text-slate-800 dark:text-slate-200 font-medium">{spotlightReview.company}</span>
                           </p>
                         </div>
                       </div>
@@ -335,8 +422,8 @@ export const GoogleReviewsSection: React.FC = () => {
 
                     {/* Short 2-Line Key Takeaway Quote */}
                     <div className="relative pl-3 border-l-2 border-indigo-500/60 dark:border-sky-500/60 mb-5">
-                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed italic line-clamp-3">
-                        "{typeof spotlightReview.content === 'object' ? spotlightReview.content[language] || spotlightReview.content.en : spotlightReview.content}"
+                      <p dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed italic line-clamp-3">
+                        "{getLocalizedReviewText(spotlightReview)}"
                       </p>
                     </div>
                   </div>
@@ -383,9 +470,7 @@ export const GoogleReviewsSection: React.FC = () => {
                 {/* Vertical Stack of 2 Full-Width Review Cards (Filling height evenly) */}
                 <div className="flex-1 min-w-0 flex flex-col gap-4 sm:gap-5 h-full justify-between">
                   {currentTwoReviews.map((review) => {
-                  const reviewText = typeof review.content === 'object'
-                    ? (review.content[language] || review.content.en)
-                    : (review.content || (review as any).reviewText || '');
+                  const reviewText = getLocalizedReviewText(review);
                   
                   const isOdoo = (review as any).techCategory === 'odoo' || reviewText.toLowerCase().includes('odoo');
                   const isDotnet = (review as any).techCategory === 'dotnet' || reviewText.toLowerCase().includes('.net');
@@ -411,7 +496,7 @@ export const GoogleReviewsSection: React.FC = () => {
                                 {review.authorName}
                               </h4>
                               <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {review.authorRole} • <span className="text-slate-700 dark:text-slate-300 font-medium">{review.company}</span>
+                                {getLocalizedRole(review)} • <span className="text-slate-700 dark:text-slate-300 font-medium">{review.company}</span>
                               </p>
                             </div>
                           </div>
@@ -620,8 +705,8 @@ export const GoogleReviewsSection: React.FC = () => {
             </div>
 
             {/* Quote excerpt */}
-            <p className="text-xs sm:text-sm text-slate-300 italic mb-4">
-              "{typeof activeVideoReview.content === 'object' ? activeVideoReview.content[language] || activeVideoReview.content.en : activeVideoReview.content}"
+            <p dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-xs sm:text-sm text-slate-300 italic mb-4">
+              "{getLocalizedReviewText(activeVideoReview)}"
             </p>
 
             <div className="flex justify-end">

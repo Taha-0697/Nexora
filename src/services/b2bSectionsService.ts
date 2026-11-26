@@ -35,6 +35,10 @@ export interface ClientLogo {
   category: string;
   logoSvg?: string;
   imageUrl?: string;
+  linkType?: 'none' | 'website' | 'case_study';
+  websiteUrl?: string;
+  caseStudySlug?: string;
+  caseStudyId?: string;
   active: boolean;
   order: number;
 }
@@ -422,6 +426,17 @@ export function saveMarqueeSettings(settings: MarqueeSettings): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.MARQUEE_SETTINGS, JSON.stringify(settings));
   broadcastUpdate();
+  fetch('/api/b2b/marquee', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      isPlaying: !settings.isPaused,
+      direction: settings.direction,
+      speedSeconds: settings.speed,
+      pauseOnHover: settings.pauseOnHover,
+      headingText: settings.headingText,
+    }),
+  }).catch(err => console.warn('[B2B] Failed to sync marquee settings to Neon DB:', err));
 }
 
 export function addClientLogo(logo: Omit<ClientLogo, 'id' | 'order'>): ClientLogo {
@@ -433,6 +448,21 @@ export function addClientLogo(logo: Omit<ClientLogo, 'id' | 'order'>): ClientLog
   };
   const updated = [...current, newLogo];
   saveClientLogos(updated);
+
+  fetch('/api/b2b/logos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newLogo),
+  })
+    .then(res => (res.ok ? res.json() : null))
+    .then(created => {
+      if (created && created.id) {
+        const latest = getClientLogos().map(l => (l.id === newLogo.id ? { ...l, id: created.id } : l));
+        saveClientLogos(latest);
+      }
+    })
+    .catch(err => console.warn('[B2B] Failed to create logo in Neon DB:', err));
+
   return newLogo;
 }
 
@@ -440,18 +470,36 @@ export function updateClientLogo(id: string, updates: Partial<ClientLogo>): void
   const current = getClientLogos();
   const updated = current.map(l => (l.id === id ? { ...l, ...updates } : l));
   saveClientLogos(updated);
+
+  fetch(`/api/b2b/logos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  }).catch(err => console.warn('[B2B] Failed to update logo in Neon DB:', err));
 }
 
 export function deleteClientLogo(id: string): void {
   const current = getClientLogos();
   const updated = current.filter(l => l.id !== id);
   saveClientLogos(updated);
+
+  fetch(`/api/b2b/logos/${id}`, { method: 'DELETE' }).catch(err =>
+    console.warn('[B2B] Failed to delete logo in Neon DB:', err)
+  );
 }
 
 export function toggleLogoActive(id: string): void {
   const current = getClientLogos();
-  const updated = current.map(l => (l.id === id ? { ...l, active: !l.active } : l));
+  const target = current.find(l => l.id === id);
+  const nextActive = target ? !target.active : true;
+  const updated = current.map(l => (l.id === id ? { ...l, active: nextActive } : l));
   saveClientLogos(updated);
+
+  fetch(`/api/b2b/logos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive: nextActive }),
+  }).catch(err => console.warn('[B2B] Failed to toggle logo in Neon DB:', err));
 }
 
 // ----------------------------------------------------------------------
@@ -517,6 +565,11 @@ export function assignHeroCaseStudy(id: string): void {
     return cs;
   });
   saveCaseStudies(updated);
+  fetch(`/api/b2b/casestudies/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isHero: true, isStacked: false }),
+  }).catch(() => {});
 }
 
 export function assignStackedCaseStudy(id: string, position: 1 | 2): void {
@@ -531,6 +584,11 @@ export function assignStackedCaseStudy(id: string, position: 1 | 2): void {
     return cs;
   });
   saveCaseStudies(updated);
+  fetch(`/api/b2b/casestudies/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isStacked: true, stackedPosition: position, isHero: false }),
+  }).catch(() => {});
 }
 
 export function addCaseStudy(cs: Omit<CaseStudy, 'id' | 'order' | 'isHero' | 'isStacked'>): CaseStudy {
@@ -544,6 +602,21 @@ export function addCaseStudy(cs: Omit<CaseStudy, 'id' | 'order' | 'isHero' | 'is
   };
   const updated = [...current, newCs];
   saveCaseStudies(updated);
+
+  fetch('/api/b2b/casestudies', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newCs),
+  })
+    .then(res => (res.ok ? res.json() : null))
+    .then(created => {
+      if (created && created.id) {
+        const latest = getCaseStudies().map(item => (item.id === newCs.id ? { ...item, id: created.id } : item));
+        saveCaseStudies(latest);
+      }
+    })
+    .catch(err => console.warn('[B2B] Failed to create case study in Neon DB:', err));
+
   return newCs;
 }
 
@@ -551,12 +624,104 @@ export function updateCaseStudy(id: string, updates: Partial<CaseStudy>): void {
   const current = getCaseStudies();
   const updated = current.map(cs => (cs.id === id ? { ...cs, ...updates } : cs));
   saveCaseStudies(updated);
+
+  fetch(`/api/b2b/casestudies/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  }).catch(err => console.warn('[B2B] Failed to update case study in Neon DB:', err));
 }
 
 export function deleteCaseStudy(id: string): void {
   const current = getCaseStudies();
   const updated = current.filter(cs => cs.id !== id);
   saveCaseStudies(updated);
+
+  fetch(`/api/b2b/casestudies/${id}`, { method: 'DELETE' }).catch(err =>
+    console.warn('[B2B] Failed to delete case study in Neon DB:', err)
+  );
+}
+
+// Background Neon DB hydration for B2B CMS
+export async function syncB2bFromNeon(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const [logosRes, csRes, marqueeRes] = await Promise.all([
+      fetch('/api/b2b/logos'),
+      fetch('/api/b2b/casestudies'),
+      fetch('/api/b2b/marquee'),
+    ]);
+
+    if (logosRes.ok) {
+      const dbLogos = await logosRes.json();
+      if (Array.isArray(dbLogos) && dbLogos.length > 0) {
+        const mappedLogos: ClientLogo[] = dbLogos.map((l: any) => ({
+          id: l.id,
+          name: l.companyName || l.name,
+          tagline: l.tagline || '',
+          category: l.category || '',
+          logoSvg: l.logoSvg || undefined,
+          imageUrl: l.logoUrl || l.imageUrl,
+          linkType: (l.linkType as 'none' | 'website' | 'case_study') || (l.websiteUrl ? 'website' : (l.caseStudySlug || l.caseStudyId ? 'case_study' : 'none')),
+          websiteUrl: l.websiteUrl || undefined,
+          caseStudySlug: l.caseStudySlug || undefined,
+          caseStudyId: l.caseStudyId || undefined,
+          active: l.isActive !== undefined ? Boolean(l.isActive) : true,
+          order: l.displayOrder ?? 0,
+        }));
+        localStorage.setItem(STORAGE_KEYS.LOGOS, JSON.stringify(mappedLogos));
+      }
+    }
+
+    if (csRes.ok) {
+      const dbCs = await csRes.json();
+      if (Array.isArray(dbCs) && dbCs.length > 0) {
+        const mappedCs: CaseStudy[] = dbCs.map((cs: any) => ({
+          id: cs.id,
+          title: cs.title,
+          categoryTag: cs.categoryTag || 'ERP Modernization',
+          serviceField: (cs.serviceField || 'Custom Web ERP (.NET Core)') as ServiceField,
+          summary: cs.summary || '',
+          outcomeHighlight: cs.outcomeHighlight || '',
+          imageUrl: cs.coverImageUrl || cs.imageUrl || '',
+          storyUrl: cs.storyUrl || '#',
+          client: cs.clientName || cs.client || 'Enterprise Partner',
+          industry: cs.industry || 'Enterprise Logistics',
+          isHero: Boolean(cs.isHero),
+          isStacked: Boolean(cs.isStacked),
+          stackedPosition: cs.stackedPosition || undefined,
+          isProprietary: Boolean(cs.isProprietary),
+          demoProductName: cs.demoProductName || undefined,
+          bookDemoUrl: cs.bookDemoUrl || undefined,
+          order: cs.displayOrder ?? 0,
+        }));
+        localStorage.setItem(STORAGE_KEYS.CASE_STUDIES, JSON.stringify(mappedCs));
+      }
+    }
+
+    if (marqueeRes.ok) {
+      const dbMarquee = await marqueeRes.json();
+      if (dbMarquee && dbMarquee.id) {
+        const current = getMarqueeSettings();
+        const synced: MarqueeSettings = {
+          ...current,
+          direction: (dbMarquee.direction === 'rtl' ? 'rtl' : 'ltr'),
+          speed: dbMarquee.speedSeconds ?? current.speed,
+          isPaused: dbMarquee.isPlaying !== undefined ? !dbMarquee.isPlaying : current.isPaused,
+          pauseOnHover: dbMarquee.pauseOnHover !== undefined ? dbMarquee.pauseOnHover : current.pauseOnHover,
+          headingText: dbMarquee.headingText || current.headingText,
+        };
+        localStorage.setItem(STORAGE_KEYS.MARQUEE_SETTINGS, JSON.stringify(synced));
+      }
+    }
+    broadcastUpdate();
+  } catch (err) {
+    console.warn('[B2B] Background Neon sync failed:', err);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  syncB2bFromNeon();
 }
 
 // ----------------------------------------------------------------------

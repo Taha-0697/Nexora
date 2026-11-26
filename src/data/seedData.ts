@@ -354,12 +354,7 @@ export const initialProjects: Project[] = [
     client: 'Nexora Software Assets',
     country: 'UAE / GCC & Global',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-    tags: ['.NET 9 Core', 'Next.js 15', 'MSSQL', 'Redis', 'Proprietary IP'],
-    metrics: [
-      { label: { en: 'IP Ownership', ar: 'ملكية المصدر' }, value: '100% Owned' },
-      { label: { en: 'Deployment SLA', ar: 'سرعة النشر' }, value: '14 Days' },
-      { label: { en: 'License Fees', ar: 'رسوم التراخيص' }, value: '$0 / Seat' }
-    ],
+    tags: ['.NET 9 Core', 'Next.js 15', 'MSSQL', 'Redis', 'Proprietary IP'],
     featured: true,
     isProprietary: true,
     demoBookingMetadata: {
@@ -388,12 +383,7 @@ export const initialProjects: Project[] = [
     client: 'Nexora Software Assets',
     country: 'Saudi Arabia & UAE',
     image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
-    tags: ['FastAPI', 'PostgreSQL', 'AES-256', 'EDI AS2', 'Proprietary IP'],
-    metrics: [
-      { label: { en: 'Throughput', ar: 'سرعة المعالجة' }, value: '8.4k tx/s' },
-      { label: { en: 'Reconciliation', ar: 'دقة المطابقة' }, value: '99.999%' },
-      { label: { en: 'Per-seat Cost', ar: 'التكلفة التشغيلية' }, value: '$0 SaaS Fee' }
-    ],
+    tags: ['FastAPI', 'PostgreSQL', 'AES-256', 'EDI AS2', 'Proprietary IP'],
     featured: true,
     isProprietary: true,
     demoBookingMetadata: {
@@ -422,12 +412,7 @@ export const initialProjects: Project[] = [
     client: 'MedPulse Healthcare Network',
     country: 'Abu Dhabi, UAE',
     image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80',
-    tags: ['.NET Core Web API', 'Next.js', 'MSSQL', 'Redis', 'HL7 FHIR'],
-    metrics: [
-      { label: { en: 'Daily Visits', ar: 'المراجعين يومياً' }, value: '38,000+' },
-      { label: { en: 'Query Latency', ar: 'زمن الاستجابة' }, value: '< 42ms' },
-      { label: { en: 'Insurance Adjudication', ar: 'المطالبات المؤتمتة' }, value: '99.4%' }
-    ],
+    tags: ['.NET Core Web API', 'Next.js', 'MSSQL', 'Redis', 'HL7 FHIR'],
     featured: true,
     completionDate: '2025'
   },
@@ -450,11 +435,7 @@ export const initialProjects: Project[] = [
     client: 'Respos Retail Systems',
     country: 'Riyadh, Saudi Arabia',
     image: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80',
-    tags: ['React 19', '.NET Core', 'MSSQL', 'WebSockets', 'Offline-First'],
-    metrics: [
-      { label: { en: 'Active Outlets', ar: 'المنافذ النشطة' }, value: '180+ Stores' },
-      { label: { en: 'Offline Recovery', ar: 'استعادة الاتصال' }, value: '< 2.1s' }
-    ],
+    tags: ['React 19', '.NET Core', 'MSSQL', 'WebSockets', 'Offline-First'],
     featured: true,
     completionDate: '2025'
   },
@@ -477,11 +458,7 @@ export const initialProjects: Project[] = [
     client: 'Vanguard Freight Network',
     country: 'GCC & Jordan',
     image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80',
-    tags: ['Flutter Cross-Platform', 'Native Swift', 'Native Kotlin', 'PostGIS'],
-    metrics: [
-      { label: { en: 'Vehicles Tracked', ar: 'الشاحنات المدارة' }, value: '2,400+' },
-      { label: { en: 'Customs Clearance', ar: 'تسريع التخليص' }, value: '-65% Time' }
-    ],
+    tags: ['Flutter Cross-Platform', 'Native Swift', 'Native Kotlin', 'PostGIS'],
     featured: true,
     completionDate: '2025'
   },
@@ -504,11 +481,7 @@ export const initialProjects: Project[] = [
     client: 'Meridian Capital Assets',
     country: 'London & Dubai',
     image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-    tags: ['Python FastAPI', 'pgvector', 'LlamaIndex', 'vLLM', 'Docker'],
-    metrics: [
-      { label: { en: 'Pages Indexed', ar: 'الصفحات المفهرسة' }, value: '1.8M Pages' },
-      { label: { en: 'Review Cycle', ar: 'اختصار المراجعة' }, value: '-78%' }
-    ],
+    tags: ['Python FastAPI', 'pgvector', 'LlamaIndex', 'vLLM', 'Docker'],
     featured: true,
     completionDate: '2025'
   },
@@ -531,11 +504,7 @@ export const initialProjects: Project[] = [
     client: 'Apex Industrial Automations',
     country: 'Frankfurt & Dammam',
     image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
-    tags: ['AWS EKS', 'Azure AKS', 'Terraform', 'Istio', 'Prometheus'],
-    metrics: [
-      { label: { en: 'SLA Availability', ar: 'جاهزية السيرفرات' }, value: '99.999%' },
-      { label: { en: 'MTTR', ar: 'زمن احتواء الخلل' }, value: '< 3 Mins' }
-    ],
+    tags: ['AWS EKS', 'Azure AKS', 'Terraform', 'Istio', 'Prometheus'],
     featured: true,
     completionDate: '2025'
   }

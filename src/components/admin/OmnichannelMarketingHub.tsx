@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type {
   AdCampaign,
   MarketingSettings,
@@ -189,6 +189,82 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
 
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
 
+  useEffect(() => {
+    const syncMarketingFromNeon = async () => {
+      try {
+        const [connRes, postsRes, bpRes] = await Promise.all([
+          fetch('/api/marketing/connections'),
+          fetch('/api/marketing/posts'),
+          fetch('/api/marketing/banner-pixel'),
+        ]);
+
+        if (connRes.ok) {
+          const dbConns = await connRes.json();
+          if (Array.isArray(dbConns) && dbConns.length > 0) {
+            const mapped = dbConns.map((c: any) => ({
+              id: c.id,
+              platform: c.platform,
+              accountName: c.accountName || '',
+              accountId: c.accountId || '',
+              status: c.status || 'connected',
+              lastSyncedAt: c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleTimeString() : 'Synced',
+              webhookUrl: c.webhookUrl,
+              apiKeyMasked: c.apiKeyMasked,
+              developerToken: c.developerToken,
+            }));
+            setAccounts(mapped);
+            localStorage.setItem('nexora_marketing_accounts', JSON.stringify(mapped));
+          }
+        }
+
+        if (postsRes.ok) {
+          const dbPosts = await postsRes.json();
+          if (Array.isArray(dbPosts) && dbPosts.length > 0) {
+            const mappedPosts: SocialAdPost[] = dbPosts.map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              platforms: p.targetNetworks || [],
+              headline: p.headline || p.title,
+              copy: p.content,
+              mediaUrl: p.mediaUrl || '',
+              ctaText: p.ctaLabel || 'Learn More',
+              targetUrl: p.ctaUrl || 'https://nexora.io',
+              status: p.status || 'draft',
+              scheduledFor: p.scheduledAt ? new Date(p.scheduledAt).toISOString().slice(0, 16) : undefined,
+              createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recent',
+            }));
+            setPostsList(mappedPosts);
+            localStorage.setItem('nexora_marketing_posts', JSON.stringify(mappedPosts));
+          }
+        }
+
+        if (bpRes.ok) {
+          const bp = await bpRes.json();
+          if (bp && bp.id) {
+            updateMarketingSettings({
+              bannerEnabled: Boolean(bp.bannerActive),
+              bannerText: {
+                en: bp.bannerText || marketingSettings.bannerText?.en || '',
+                ar: bp.bannerText || marketingSettings.bannerText?.ar || '',
+              },
+              bannerCtaText: {
+                en: bp.bannerCtaLabel || marketingSettings.bannerCtaText?.en || 'Learn More',
+                ar: bp.bannerCtaLabel || marketingSettings.bannerCtaText?.ar || 'Learn More',
+              },
+              bannerUrl: bp.bannerCtaUrl || marketingSettings.bannerUrl || '#contact',
+              googleAnalyticsId: bp.googleAdsPixel || marketingSettings.googleAnalyticsId || '',
+              metaPixelId: bp.metaPixel || marketingSettings.metaPixelId || '',
+              linkedInInsightId: bp.linkedinPixel || marketingSettings.linkedInInsightId || '',
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[Marketing] Neon DB sync warning:', err);
+      }
+    };
+    syncMarketingFromNeon();
+  }, []);
+
   const showNotification = (text: string, type: 'success' | 'info' = 'success') => {
     setFeedbackMsg({ text, type });
     setTimeout(() => setFeedbackMsg(null), 4000);
@@ -202,16 +278,20 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
 
   // Handle Account Connection Toggle
   const handleToggleConnection = (id: string) => {
-    const updated = accounts.map(acc => {
-      if (acc.id === id) {
-        const nextStatus = acc.status === 'connected' ? 'disconnected' : 'connected';
-        return { ...acc, status: nextStatus as 'connected' | 'disconnected' };
-      }
-      return acc;
-    });
+    const target = accounts.find(a => a.id === id);
+    const nextStatus = target?.status === 'connected' ? 'disconnected' : 'connected';
+    const updated = accounts.map(acc => (acc.id === id ? { ...acc, status: nextStatus as 'connected' | 'disconnected' } : acc));
     setAccounts(updated);
     localStorage.setItem('nexora_marketing_accounts', JSON.stringify(updated));
-    showNotification('Account connection status updated successfully.');
+    showNotification('Account connection status updated in Neon DB.');
+
+    if (target) {
+      fetch('/api/marketing/connections', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...target, status: nextStatus }),
+      }).catch(err => console.warn('[Marketing] Connection toggle persist failed:', err));
+    }
   };
 
   // Test Ping Connection
@@ -232,7 +312,13 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     setAccounts(list);
     localStorage.setItem('nexora_marketing_accounts', JSON.stringify(list));
     setSelectedConnectionModal(null);
-    showNotification(`${updated.platform} credentials and webhook updated.`);
+    showNotification(`${updated.platform} credentials and webhook updated in Neon DB.`);
+
+    fetch('/api/marketing/connections', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    }).catch(err => console.warn('[Marketing] Connection save persist failed:', err));
   };
 
   // Handle Add Campaign
@@ -294,6 +380,29 @@ export const OmnichannelMarketingHub: React.FC<OmnichannelMarketingHubProps> = (
     const updated = [newPost, ...postsList];
     setPostsList(updated);
     localStorage.setItem('nexora_marketing_posts', JSON.stringify(updated));
+
+    fetch('/api/marketing/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newPost.title,
+        headline: newPost.headline,
+        content: newPost.copy,
+        mediaUrl: newPost.mediaUrl,
+        ctaLabel: newPost.ctaText,
+        ctaUrl: newPost.targetUrl,
+        targetNetworks: newPost.platforms,
+        status: newPost.status,
+        scheduledAt: newPost.scheduledFor,
+      }),
+    })
+      .then(res => (res.ok ? res.json() : null))
+      .then(created => {
+        if (created && created.id) {
+          setPostsList(prev => prev.map(p => (p.id === newPost.id ? { ...p, id: created.id } : p)));
+        }
+      })
+      .catch(err => console.warn('[Marketing] Post creation failed in Neon DB:', err));
 
     showNotification(
       isScheduleAction || composerForm.isScheduled

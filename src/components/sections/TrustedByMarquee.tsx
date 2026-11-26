@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  translateToArabicCached,
+  getCachedArabicTranslation
+} from '../../services/translationService';
 import {
   getClientLogos,
   getMarqueeSettings,
@@ -17,7 +22,9 @@ function safeSvg(raw: string): string {
 }
 
 export const TrustedByMarquee: React.FC = () => {
+  const { language } = useLanguage();
   const [logos, setLogos] = useState<ClientLogo[]>([]);
+  const [arHeading, setArHeading] = useState<string>('');
   const [settings, setSettings] = useState<MarqueeSettings>({
     direction: 'ltr',
     speed: 32,
@@ -44,18 +51,131 @@ export const TrustedByMarquee: React.FC = () => {
     };
   }, [loadData]);
 
-  const activeLogos = logos.filter(l => l.active);
+  useEffect(() => {
+    if (language !== 'ar' || !settings.headingText) return;
+    let cancelled = false;
+    const cached = getCachedArabicTranslation(settings.headingText);
+    if (cached) {
+      setArHeading(cached);
+    } else {
+      translateToArabicCached(settings.headingText).then(tr => {
+        if (!cancelled && tr) setArHeading(tr);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [language, settings.headingText]);
+
+  const activeLogos = useMemo(() => logos.filter(l => l.active), [logos]);
+
+  // Ensure each half-track is wide enough for any viewport so -50% wraparound is seamless
+  const trackLogos = useMemo(() => {
+    if (activeLogos.length === 0) return [];
+    const repeatCount = Math.max(1, Math.ceil(6 / activeLogos.length));
+    const list: ClientLogo[] = [];
+    for (let i = 0; i < repeatCount; i++) {
+      list.push(...activeLogos);
+    }
+    return list;
+  }, [activeLogos]);
+
   const animationClass = settings.direction === 'ltr' ? 'animate-marquee-right' : 'animate-marquee-left';
+
+  const renderLogoInner = (logo: ClientLogo) => (
+    <>
+      {logo.logoSvg ? (
+        <div
+          className="inline-flex items-center [&_svg]:h-10 sm:[&_svg]:h-12 [&_svg]:w-auto"
+          dangerouslySetInnerHTML={{ __html: safeSvg(logo.logoSvg) }}
+        />
+      ) : logo.imageUrl ? (
+        <>
+          <img
+            src={logo.imageUrl}
+            alt={logo.name}
+            className="h-10 sm:h-12 w-auto max-w-[160px] object-contain opacity-95 group-hover:opacity-100 transition-all duration-300"
+          />
+          <span className="font-heading font-extrabold text-lg sm:text-2xl tracking-tight">
+            {logo.name}
+          </span>
+        </>
+      ) : (
+        <>
+          <ShieldCheck className="w-8 h-8 sm:w-9 sm:h-9 text-indigo-600 dark:text-sky-400 group-hover:text-indigo-700 dark:group-hover:text-sky-300 transition-colors shrink-0" />
+          <span className="font-heading font-extrabold text-lg sm:text-2xl tracking-tight">
+            {logo.name}
+          </span>
+        </>
+      )}
+    </>
+  );
+
+  const renderLogoItem = (logo: ClientLogo, key: string) => {
+    const baseClasses =
+      'inline-flex items-center gap-4 whitespace-nowrap shrink-0 select-none text-slate-800 dark:text-slate-100 hover:text-slate-950 dark:hover:text-white hover:scale-[1.03] transition-all duration-300 group';
+
+    const effectiveLinkType =
+      logo.linkType ||
+      (logo.websiteUrl ? 'website' : logo.caseStudySlug || logo.caseStudyId ? 'case_study' : 'none');
+
+    if (effectiveLinkType === 'website' && logo.websiteUrl) {
+      return (
+        <a
+          key={key}
+          href={logo.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${logo.name} website`}
+          title={`Visit ${logo.name}`}
+          className={`${baseClasses} cursor-pointer focus:outline-none focus-visible:underline`}
+        >
+          {renderLogoInner(logo)}
+        </a>
+      );
+    }
+
+    if (effectiveLinkType === 'case_study' && (logo.caseStudySlug || logo.caseStudyId)) {
+      const slugPart = logo.caseStudySlug ? `/${encodeURIComponent(logo.caseStudySlug)}` : '';
+      const targetHref = `/case-studies${slugPart}`;
+      return (
+        <a
+          key={key}
+          href={targetHref}
+          aria-label={`${logo.name} case study`}
+          title={`View ${logo.name} Case Study`}
+          onClick={e => {
+            e.preventDefault();
+            try {
+              window.history.pushState(null, '', '/case-studies');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            } catch {
+              window.location.hash = '#case-studies';
+            }
+          }}
+          className={`${baseClasses} cursor-pointer focus:outline-none focus-visible:underline`}
+        >
+          {renderLogoInner(logo)}
+        </a>
+      );
+    }
+
+    return (
+      <div key={key} className={`${baseClasses} cursor-default`}>
+        {renderLogoInner(logo)}
+      </div>
+    );
+  };
 
   return (
     <section
       id="clients"
-      className="py-10 sm:py-14 section-surface-2 border-b border-slate-200/80 dark:border-slate-800/80 relative overflow-hidden transition-colors"
+      className="py-12 sm:py-16 section-surface-2 border-b border-slate-200/80 dark:border-slate-800/80 relative overflow-hidden transition-colors"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         
         {/* Section Header with Nexora's Indigo-to-Sky Vertical Accent Bar */}
-        <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center justify-between gap-4 mb-8 sm:mb-10">
           <div className="flex items-center gap-3.5 sm:gap-4">
             {/* 4px vertical accent bar */}
             <div className="w-1 self-stretch rounded-full bg-gradient-to-b from-indigo-500 via-blue-500 to-sky-400 shrink-0 min-h-[28px]" />
@@ -63,12 +183,12 @@ export const TrustedByMarquee: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] sm:text-[11px] font-mono uppercase font-bold tracking-wider text-indigo-600 dark:text-sky-400">
-                  Trusted Infrastructure
+                  {language === 'ar' ? 'البنية التحتية الموثوقة' : 'Trusted Infrastructure'}
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </div>
               <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
-                {settings.headingText}
+                {language === 'ar' ? (arHeading || 'موثوق به من قبل قادة الهندسة والعمليات حول العالم') : settings.headingText}
               </h2>
             </div>
           </div>
@@ -76,53 +196,33 @@ export const TrustedByMarquee: React.FC = () => {
 
       </div>
 
-      {/* Full-width Marquee Track with Edge Fade Masks */}
-      <div
-        className={`w-full relative overflow-hidden marquee-fade-mask marquee-container ${
-          settings.isPaused ? 'marquee-paused' : ''
-        }`}
-        style={
-          {
-            '--marquee-speed': `${settings.speed}s`
-          } as React.CSSProperties
-        }
-      >
-        <div className={`flex items-center gap-4 sm:gap-6 py-2 ${animationClass}`}>
-          {/* Render track twice for seamless loop */}
-          {[...activeLogos, ...activeLogos].map((logo, index) => (
-            <div
-              key={`${logo.id}-${index}`}
-              className="w-[190px] sm:w-[230px] h-[82px] sm:h-[90px] rounded-2xl bg-white dark:bg-[#0E1526] border border-slate-200/90 dark:border-slate-800/90 shadow-xs hover:border-indigo-400/60 dark:hover:border-sky-500/50 hover:shadow-md transition-all shrink-0 flex flex-col items-center justify-center p-3.5 group cursor-default text-slate-800 dark:text-slate-100"
-            >
-              {logo.logoSvg ? (
-                <div
-                  className="flex items-center justify-center opacity-85 group-hover:opacity-100 transition-opacity"
-                  dangerouslySetInnerHTML={{ __html: safeSvg(logo.logoSvg) }}
-                />
-              ) : logo.imageUrl ? (
-                <img
-                  src={logo.imageUrl}
-                  alt={logo.name}
-                  className="max-h-8 max-w-[130px] object-contain opacity-85 group-hover:opacity-100 transition-opacity"
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white font-heading">
-                    {logo.name}
-                  </span>
-                </div>
-              )}
-
-              {logo.tagline && (
-                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-1 truncate max-w-[180px] text-center">
-                  {logo.tagline}
-                </span>
-              )}
-            </div>
-          ))}
+      {/* Full-width Single-Line Marquee Track with Subtle Edge Fade Masks */}
+      {trackLogos.length > 0 && (
+        <div
+          dir="ltr"
+          className={`w-full relative overflow-hidden marquee-fade-mask marquee-container ${
+            settings.isPaused ? 'marquee-paused' : ''
+          } ${settings.pauseOnHover === false ? 'marquee-no-pause' : ''}`}
+          style={
+            {
+              '--marquee-speed': `${settings.speed}s`
+            } as React.CSSProperties
+          }
+        >
+          <div className={`${animationClass} py-4`}>
+            {/* Two identical track halves, each with matching trailing padding = gap for exact -50% wraparound */}
+            {[0, 1].map(trackIdx => (
+              <div
+                key={trackIdx}
+                aria-hidden={trackIdx === 1}
+                className="flex items-center shrink-0 gap-14 sm:gap-20 pr-14 sm:pr-20 whitespace-nowrap"
+              >
+                {trackLogos.map((logo, idx) => renderLogoItem(logo, `${trackIdx}-${logo.id}-${idx}`))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 };

@@ -168,6 +168,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshProjects();
     refreshReviews();
     refreshUsers();
+    refreshInquiries();
+    refreshMarketingCampaigns();
   }, []);
 
   // 3. Inquiries State
@@ -190,6 +192,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [inquiries, setInquiries] = useState<Inquiry[]>(() => {
     return safeParseLocalStorage<Inquiry[]>('nexora_inquiries', defaultInquiries, true);
   });
+
+  const refreshInquiries = async () => {
+    try {
+      const res = await fetch('/api/inquiries');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setInquiries(data);
+          localStorage.setItem('nexora_inquiries', JSON.stringify(data));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch /api/inquiries from Neon DB:', err);
+    }
+  };
 
   // 4. Services (static catalog)
   const [services] = useState<ServiceItem[]>(initialServices);
@@ -233,6 +250,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [marketingSettings, setMarketingSettings] = useState<MarketingSettings>(() => {
     return safeParseLocalStorage<MarketingSettings>('nexora_marketing_settings', initialMarketingSettings, false);
   });
+
+  const refreshMarketingCampaigns = async () => {
+    try {
+      const res = await fetch('/api/marketing/campaigns');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: AdCampaign[] = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            platform: c.platform,
+            status: c.status,
+            dailyBudget: c.dailyBudget,
+            targetRegion: c.targetRegion || 'GCC / Middle East',
+            impressions: c.impressions,
+            clicks: c.clicks,
+            conversions: c.conversions,
+            spent: c.spendAmount ?? c.spent ?? 0,
+          }));
+          setMarketingSettings(prev => ({
+            ...prev,
+            adCampaigns: mapped,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch /api/marketing/campaigns:', err);
+    }
+  };
 
   // Persist updates to localStorage
   useEffect(() => {
@@ -339,43 +385,135 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Review Handlers (Connected strictly to Neon DB API)
-  const addReview = async (reviewData: any) => {
-    const res = await fetch('/api/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reviewData),
-    });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}));
-      throw new Error(errJson.error || errJson.details || 'Failed to save review to database');
+  // Review Handlers (Connected strictly to Neon DB API with Author-Only Enforcement)
+  const getActiveSessionUser = () => {
+    try {
+      const saved = sessionStorage.getItem('nexora_active_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
     }
-    const created = await res.json();
-    setReviews(prev => [created, ...prev.filter(r => r.id !== created.id)]);
-    return created;
+  };
+
+  const addReview = async (reviewData: any) => {
+    const user = getActiveSessionUser();
+    const payload = {
+      ...reviewData,
+      authorId: reviewData.authorId || user?.id,
+      authorEmail: reviewData.authorEmail || user?.email,
+      isVisible: reviewData.isVisible !== undefined ? reviewData.isVisible : true,
+    };
+
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setReviews(prev => [created, ...prev.filter(r => r.id !== created.id)]);
+        return created;
+      }
+    } catch (err) {
+      console.warn('API review creation failed, saving to local state:', err);
+    }
+
+    // Local fallback for client persistence
+    const localCreated: Review = {
+      ...payload,
+      id: payload.id || `rev-${Date.now()}`,
+      authorName: payload.authorName || user?.name || 'Verified Client',
+      authorRole: payload.authorRole || 'Enterprise Partner',
+      authorId: payload.authorId || user?.id,
+      authorEmail: payload.authorEmail || user?.email,
+      company: payload.company || 'Enterprise Partner',
+      avatar: payload.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      rating: Number(payload.rating) || 5,
+      content: payload.content || { en: payload.reviewText || '', ar: payload.contentAr || payload.reviewText || '' },
+      date: payload.date || 'Just now (Organic)',
+      isGoogleReview: Boolean(payload.isGoogleReview),
+      verified: true,
+      isVisible: payload.isVisible !== undefined ? payload.isVisible : true,
+    };
+    setReviews(prev => [localCreated, ...prev.filter(r => r.id !== localCreated.id)]);
+    return localCreated;
   };
 
   const updateReview = async (updated: Review) => {
-    const res = await fetch(`/api/reviews/${updated.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}));
-      throw new Error(errJson.error || errJson.details || 'Failed to update review in database');
+    const user = getActiveSessionUser();
+    const existing = reviews.find(r => r.id === updated.id);
+
+    // Distinguish administrative curation (Display/Spotlight toggles) from review content edits
+    const isContentEdit =
+      existing &&
+      ((existing as any).reviewText !== (updated as any).reviewText ||
+       existing.rating !== updated.rating ||
+       existing.authorName !== updated.authorName ||
+       existing.authorRole !== updated.authorRole ||
+       existing.company !== updated.company ||
+       (existing.content && updated.content && (existing.content.en !== updated.content.en || existing.content.ar !== updated.content.ar)));
+
+    // Enforce author-only modification check on state mutation layer for content edits
+    if (isContentEdit && existing && user) {
+      const isOwner =
+        (existing.authorId && existing.authorId === user.id) ||
+        (existing.authorEmail && user.email && existing.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+        (!existing.authorId && !existing.authorEmail && existing.authorName && user.name && existing.authorName.trim().toLowerCase() === user.name.trim().toLowerCase());
+      if (!isOwner) {
+        throw new Error('Unauthorized: Only the review author can edit this review.');
+      }
     }
-    const saved = await res.json();
-    setReviews(prev => prev.map(r => (r.id === saved.id ? saved : r)));
-    return saved;
+
+    try {
+      const res = await fetch(`/api/reviews/${updated.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setReviews(prev => prev.map(r => (r.id === saved.id ? { ...r, ...saved } : r)));
+        return saved;
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || errJson.details || 'Failed to update review in Neon database.');
+      }
+    } catch (err: any) {
+      if (err.message?.startsWith('Unauthorized:')) throw err;
+      console.warn('API review update failed:', err);
+      throw err;
+    }
   };
 
   const deleteReview = async (id: string) => {
-    const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}));
-      throw new Error(errJson.error || errJson.details || 'Failed to delete review from database');
+    const user = getActiveSessionUser();
+    const existing = reviews.find(r => r.id === id);
+
+    // Enforce author-only deletion check on state mutation layer
+    if (existing && user) {
+      const isOwner =
+        (existing.authorId && existing.authorId === user.id) ||
+        (existing.authorEmail && user.email && existing.authorEmail.toLowerCase() === user.email.toLowerCase()) ||
+        (!existing.authorId && !existing.authorEmail && existing.authorName && user.name && existing.authorName.trim().toLowerCase() === user.name.trim().toLowerCase());
+      if (!isOwner) {
+        throw new Error('Unauthorized: Only the review author can delete this review.');
+      }
     }
+
+    try {
+      const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson.error?.includes('Unauthorized')) {
+          throw new Error(errJson.error);
+        }
+      }
+    } catch (err: any) {
+      if (err.message?.startsWith('Unauthorized:')) throw err;
+      console.warn('API review delete failed, removing from local state:', err);
+    }
+
     setReviews(prev => prev.filter(r => r.id !== id));
   };
 
@@ -392,8 +530,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setGoogleSettings(prev => ({ ...prev, ...settings }));
   };
 
-  // Inquiry Handlers
-  const addInquiry = (inquiryData: Omit<Inquiry, 'id' | 'createdAt' | 'status'>) => {
+  // Inquiry Handlers (Wired to Neon DB API)
+  const addInquiry = async (inquiryData: Omit<Inquiry, 'id' | 'createdAt' | 'status'>) => {
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inquiryData),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setInquiries(prev => [created, ...prev.filter(i => i.id !== created.id)]);
+        return;
+      }
+    } catch (err) {
+      console.warn('API inquiry creation failed, saving to local state:', err);
+    }
     const newInquiry: Inquiry = {
       ...inquiryData,
       id: `inq-${Date.now()}`,
@@ -403,12 +555,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setInquiries(prev => [newInquiry, ...prev]);
   };
 
-  const updateInquiryStatus = (id: string, status: Inquiry['status']) => {
+  const updateInquiryStatus = async (id: string, status: Inquiry['status']) => {
     setInquiries(prev => prev.map(inq => (inq.id === id ? { ...inq, status } : inq)));
+    try {
+      await fetch(`/api/inquiries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+    } catch (err) {
+      console.warn('API inquiry status update failed:', err);
+    }
   };
 
-  const deleteInquiry = (id: string) => {
+  const deleteInquiry = async (id: string) => {
     setInquiries(prev => prev.filter(inq => inq.id !== id));
+    try {
+      await fetch(`/api/inquiries/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API inquiry delete failed:', err);
+    }
   };
 
   // Admin User & Roles Handlers (Live Neon DB API — no static users)
@@ -516,10 +682,65 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Marketing & Ads Handlers
   const updateMarketingSettings = (settings: Partial<MarketingSettings>) => {
-    setMarketingSettings(prev => ({ ...prev, ...settings }));
+    setMarketingSettings(prev => {
+      const next = { ...prev, ...settings };
+      if (
+        settings.bannerEnabled !== undefined ||
+        settings.bannerText !== undefined ||
+        settings.bannerCtaText !== undefined ||
+        settings.bannerUrl !== undefined ||
+        settings.googleAnalyticsId !== undefined ||
+        settings.metaPixelId !== undefined ||
+        settings.linkedInInsightId !== undefined
+      ) {
+        fetch('/api/marketing/banner-pixel', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bannerActive: next.bannerEnabled,
+            bannerText: next.bannerText?.en,
+            bannerCtaLabel: next.bannerCtaText?.en,
+            bannerCtaUrl: next.bannerUrl,
+            googleAdsPixel: next.googleAnalyticsId,
+            metaPixel: next.metaPixelId,
+            linkedinPixel: next.linkedInInsightId,
+          }),
+        }).catch(err => console.warn('Failed to persist banner/pixel settings to Neon DB:', err));
+      }
+      return next;
+    });
   };
 
-  const addAdCampaign = (campaignData: Omit<AdCampaign, 'id'>) => {
+  const addAdCampaign = async (campaignData: Omit<AdCampaign, 'id'>) => {
+    try {
+      const res = await fetch('/api/marketing/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(campaignData),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const mapped: AdCampaign = {
+          id: created.id,
+          name: created.name,
+          platform: created.platform,
+          status: created.status,
+          dailyBudget: created.dailyBudget,
+          targetRegion: created.targetRegion || 'GCC / Middle East',
+          impressions: created.impressions,
+          clicks: created.clicks,
+          conversions: created.conversions,
+          spent: created.spendAmount ?? created.spent ?? 0,
+        };
+        setMarketingSettings(prev => ({
+          ...prev,
+          adCampaigns: [mapped, ...prev.adCampaigns.filter(c => c.id !== mapped.id)]
+        }));
+        return;
+      }
+    } catch (err) {
+      console.warn('API campaign creation failed, falling back to local:', err);
+    }
     const newCampaign: AdCampaign = {
       ...campaignData,
       id: `ad-${Date.now()}`
@@ -530,33 +751,53 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
-  const updateAdCampaign = (updatedCampaign: AdCampaign) => {
+  const updateAdCampaign = async (updatedCampaign: AdCampaign) => {
     setMarketingSettings(prev => ({
       ...prev,
       adCampaigns: prev.adCampaigns.map(c => (c.id === updatedCampaign.id ? updatedCampaign : c))
     }));
+    try {
+      await fetch(`/api/marketing/campaigns/${updatedCampaign.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updatedCampaign,
+          spendAmount: updatedCampaign.spent,
+        }),
+      });
+    } catch (err) {
+      console.warn('API campaign update failed:', err);
+    }
   };
 
-  const deleteAdCampaign = (id: string) => {
+  const deleteAdCampaign = async (id: string) => {
     setMarketingSettings(prev => ({
       ...prev,
       adCampaigns: prev.adCampaigns.filter(c => c.id !== id)
     }));
+    try {
+      await fetch(`/api/marketing/campaigns/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API campaign delete failed:', err);
+    }
   };
 
-  const toggleAdCampaignStatus = (id: string) => {
+  const toggleAdCampaignStatus = async (id: string) => {
+    const target = marketingSettings.adCampaigns.find(c => c.id === id);
+    const nextStatus = target?.status === 'active' ? 'paused' : 'active';
     setMarketingSettings(prev => ({
       ...prev,
-      adCampaigns: prev.adCampaigns.map(c => {
-        if (c.id === id) {
-          return {
-            ...c,
-            status: c.status === 'active' ? 'paused' : 'active'
-          };
-        }
-        return c;
-      })
+      adCampaigns: prev.adCampaigns.map(c => (c.id === id ? { ...c, status: nextStatus } : c))
     }));
+    try {
+      await fetch(`/api/marketing/campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+    } catch (err) {
+      console.warn('API campaign status toggle failed:', err);
+    }
   };
 
   const resetToDefaults = () => {

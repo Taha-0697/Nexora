@@ -18,6 +18,11 @@ export interface FormattedProject {
   images: string[];
   techStack: string[];
   tags: string[];
+  customCategory?: string | null;
+  customTechStack?: string | null;
+  websiteUrl?: string | null;
+  projectUrl?: string | null;
+  liveDemoUrl?: string | null;
   shortDesc: {
     en: string;
     ar: string;
@@ -53,6 +58,20 @@ export function formatProject(p: any): FormattedProject {
     'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
   const category = (p.category || 'erp').toLowerCase();
 
+  // Normalize project website / live demo URL
+  const rawUrl = p.websiteUrl || p.projectUrl || p.liveDemoUrl || p.liveUrl;
+  let websiteUrl: string | null = null;
+  if (rawUrl && String(rawUrl).trim()) {
+    let u = String(rawUrl).trim();
+    if (!/^https?:\/\//i.test(u) && !u.startsWith('/') && !u.startsWith('#')) {
+      u = `https://${u}`;
+    }
+    websiteUrl = u;
+  }
+
+  const customCategory = p.customCategory || (category === 'others' && techStack.length > 0 ? techStack[0] : null);
+  const customTechStack = p.customTechStack || (techStack.length > 0 ? techStack.join(', ') : null);
+
   return {
     id: p.id,
     titleEn,
@@ -62,6 +81,11 @@ export function formatProject(p: any): FormattedProject {
       ar: titleAr,
     },
     category,
+    customCategory,
+    customTechStack,
+    websiteUrl,
+    projectUrl: websiteUrl,
+    liveDemoUrl: websiteUrl,
     clientName,
     client: clientName,
     region,
@@ -89,13 +113,7 @@ export function formatProject(p: any): FormattedProject {
           en: `Custom enterprise-grade solution built for ${clientName} (${region}). Engineered with ${techStack.join(', ')}.`,
           ar: `حل برمجي مؤسسي متكامل تم تنفيذه لـ ${clientName} (${region}). التقنيات: ${techStack.join(', ')}.`,
         },
-    metrics: Array.isArray(p.metrics) && p.metrics.length > 0
-      ? p.metrics
-      : [
-          { label: { en: 'Processing Speed', ar: 'سرعة العمليات' }, value: '+65%' },
-          { label: { en: 'Accuracy & Uptime', ar: 'الدقة والجاهزية' }, value: '99.9%' },
-          { label: { en: 'Efficiency Gain', ar: 'معدل الكفاءة' }, value: '+80%' },
-        ],
+    metrics: [], // Metric 1/2/3 values completely removed across the application
     featured: p.featured !== undefined ? Boolean(p.featured) : true,
     completionDate: p.completionDate || (p.createdAt ? new Date(p.createdAt).toISOString().slice(0, 7) : '2026-06'),
     createdAt: p.createdAt,
@@ -138,10 +156,12 @@ export async function createProjectRecord(data: any) {
 
   const titleAr = String(data.titleAr || data.title?.ar || titleEn).trim();
 
-  // Normalize category to standard uppercase tags: ERP, WEB, MOBILE, AI, CLOUD
+  // Normalize category to standard uppercase tags: ERP, WEB, MOBILE, AI, CLOUD, PROPRIETARY, OTHERS
   const rawCat = String(data.category || 'ERP').trim().toLowerCase();
   let category = 'ERP';
-  if (rawCat.includes('web') || rawCat.includes('saas') || rawCat.includes('portal')) {
+  if (rawCat === 'others' || rawCat.includes('other')) {
+    category = 'OTHERS';
+  } else if (rawCat.includes('web') || rawCat.includes('saas') || rawCat.includes('portal')) {
     category = 'WEB';
   } else if (rawCat.includes('mobile') || rawCat.includes('ios') || rawCat.includes('android') || rawCat.includes('flutter')) {
     category = 'MOBILE';
@@ -149,6 +169,8 @@ export async function createProjectRecord(data: any) {
     category = 'AI';
   } else if (rawCat.includes('cloud') || rawCat.includes('devops')) {
     category = 'CLOUD';
+  } else if (rawCat.includes('proprietary')) {
+    category = 'PROPRIETARY';
   } else {
     category = 'ERP';
   }
@@ -161,16 +183,17 @@ export async function createProjectRecord(data: any) {
       'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'
   ).trim();
 
-  // Handle boolean live demo enabled and redirect url
-  const hasLiveDemo = Boolean(
-    data.hasLiveDemo === true || 
-    data.hasLiveDemo === 'true' || 
-    data.liveDemoEnabled === true ||
-    data.live_demo_enabled === true
-  );
-
-  const rawUrl = data.liveDemoUrl || data.liveUrl || data.live_demo_url;
-  const liveDemoUrl = rawUrl ? String(rawUrl).trim() || null : null;
+  // Normalize project website URL / live demo URL
+  const rawUrl = data.websiteUrl || data.projectUrl || data.liveDemoUrl || data.liveUrl || data.live_demo_url;
+  let liveDemoUrl: string | null = null;
+  if (rawUrl && String(rawUrl).trim()) {
+    let u = String(rawUrl).trim();
+    if (!/^https?:\/\//i.test(u) && !u.startsWith('/') && !u.startsWith('#')) {
+      u = `https://${u}`;
+    }
+    liveDemoUrl = u;
+  }
+  const hasLiveDemo = Boolean(liveDemoUrl || data.hasLiveDemo === true || data.hasLiveDemo === 'true');
 
   // Robust parsing of comma-separated tech stack or arrays, stripping empty/whitespace elements
   let techStack: string[] = [];
@@ -182,6 +205,11 @@ export async function createProjectRecord(data: any) {
     techStack = data.techStack.split(',').map((s: string) => s.trim()).filter(Boolean);
   } else if (typeof data.tags === 'string') {
     techStack = data.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+  }
+
+  // Prepend custom category / custom tech stack if specified under Others
+  if (data.customCategory && String(data.customCategory).trim() && !techStack.includes(String(data.customCategory).trim())) {
+    techStack.unshift(String(data.customCategory).trim());
   }
 
   if (techStack.length === 0) {
@@ -207,7 +235,15 @@ export async function createProjectRecord(data: any) {
       'Database connection timed out while saving project to Neon PostgreSQL.'
     );
 
-    return formatProject(created);
+    const formatted = formatProject(created);
+    if (data.customCategory) formatted.customCategory = String(data.customCategory).trim();
+    if (data.customTechStack) formatted.customTechStack = String(data.customTechStack).trim();
+    if (liveDemoUrl) {
+      formatted.websiteUrl = liveDemoUrl;
+      formatted.projectUrl = liveDemoUrl;
+      formatted.liveDemoUrl = liveDemoUrl;
+    }
+    return formatted;
   } catch (err: any) {
     console.error('Prisma project.create error:', err);
     const codePrefix = err.code ? `[Postgres/Prisma ${err.code}] ` : '';

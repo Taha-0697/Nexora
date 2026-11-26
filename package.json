@@ -22,6 +22,7 @@
     "@neon/env": "^2.1.6",
     "@prisma/client": "^6.19.3",
     "@types/canvas-confetti": "^1.9.0",
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "dotenv": "^18.0.10",
     "lucide-react": "^1.46.0",
@@ -30,6 +31,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

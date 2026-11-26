@@ -15,7 +15,7 @@ model Project {
   id            String   @id @default(uuid())
   titleEn       String
   titleAr       String
-  category      String   // ERP, WEB, MOBILE, AI, CLOUD
+  category      String   // ERP, WEB, MOBILE, AI, CLOUD, PROPRIETARY, OTHERS
   clientName    String
   region        String
   imageUrl      String
@@ -27,19 +27,28 @@ model Project {
 }
 
 model Review {
-  id            String   @id @default(uuid())
-  clientName    String
-  role          String
-  company       String
-  location      String
-  rating        Int      @default(5)
-  reviewText    String
-  hasVideo      Boolean  @default(false)
-  videoUrl      String?
-  verified      Boolean  @default(true)
-  featured      Boolean  @default(false)
-  techCategory  String?  @default("general") // 'dotnet', 'odoo', 'general'
-  createdAt     DateTime @default(now())
+  id              String    @id @default(uuid())
+  clientName      String
+  role            String
+  company         String
+  location        String
+  rating          Int       @default(5)
+  reviewText      String
+  reviewTextAr    String?
+  hasVideo        Boolean   @default(false)
+  videoUrl        String?
+  verified        Boolean   @default(true)
+  featured        Boolean   @default(false)
+  isVisible       Boolean   @default(true)
+  techCategory    String?   @default("general") // 'dotnet', 'odoo', 'general'
+  authorId        String?
+  authorEmail     String?
+  authorName      String?
+  isGoogleReview  Boolean   @default(true)
+  googleReviewUrl String?
+  avatarUrl       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime? @updatedAt
 }
 
 model TeamMember {
@@ -55,4 +64,141 @@ model TeamMember {
   displayOrder Int       @default(0)
   createdAt    DateTime? @default(now())
   updatedAt    DateTime? @updatedAt
+}
+
+model Inquiry {
+  id              String   @id @default(uuid())
+  fullName        String
+  email           String
+  phone           String?
+  company         String?
+  roleTitle       String?
+  serviceInterest String?
+  budgetRange     String?
+  timeline        String?
+  message         String
+  source          String?  @default("website")
+  status          String   @default("new") // 'new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost', 'closed'
+  notes           String?
+  customStack     String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model B2bClientLogo {
+  id            String   @id @default(uuid())
+  companyName   String
+  tagline       String?
+  category      String?
+  logoUrl       String
+  logoSvg       String?
+  linkType      String   @default("none") // 'none' | 'website' | 'case_study'
+  websiteUrl    String?
+  caseStudySlug String?
+  caseStudyId   String?
+  displayOrder  Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model B2bCaseStudy {
+  id               String   @id @default(uuid())
+  title            String
+  slug             String?
+  clientName       String
+  industry         String?
+  categoryTag      String?
+  serviceField     String?
+  summary          String?
+  challenge        String?
+  solution         String?
+  outcomeHighlight String?
+  impactMetrics    String[] @default([])
+  techStack        String[] @default([])
+  coverImageUrl    String?
+  storyUrl         String?
+  isHero           Boolean  @default(false)
+  isStacked        Boolean  @default(false)
+  stackedPosition  Int?
+  isProprietary    Boolean  @default(false)
+  demoProductName  String?
+  bookDemoUrl      String?
+  isFeatured       Boolean  @default(false)
+  isPublished      Boolean  @default(true)
+  displayOrder     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model B2bMarqueeSettings {
+  id           String   @id @default(uuid())
+  sectionKey   String   @unique @default("b2b_logos")
+  isPlaying    Boolean  @default(true)
+  direction    String   @default("ltr")
+  speedSeconds Int      @default(30)
+  pauseOnHover Boolean  @default(true)
+  gapPx        Int      @default(48)
+  headingText  String?
+  updatedAt    DateTime @updatedAt
+}
+
+model MarketingCampaign {
+  id           String   @id @default(uuid())
+  name         String
+  platform     String   // 'Google Ads' | 'Meta Ads' | 'LinkedIn' | 'X'
+  status       String   @default("active") // 'active' | 'paused' | 'draft' | 'ended'
+  targetRegion String?
+  dailyBudget  Float    @default(0)
+  spendAmount  Float    @default(0)
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  ctr          Float    @default(0)
+  conversions  Int      @default(0)
+  roas         Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MarketingPostAd {
+  id             String    @id @default(uuid())
+  title          String
+  headline       String?
+  content        String
+  mediaUrl       String?
+  ctaLabel       String?
+  ctaUrl         String?
+  targetNetworks String[]  @default([])
+  status         String    @default("draft") // 'draft' | 'scheduled' | 'published'
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model MarketingAccountConnection {
+  id             String    @id @default(uuid())
+  platform       String    @unique // 'Google Ads' | 'Meta Ads' | 'LinkedIn' | 'X'
+  accountName    String?
+  accountId      String?
+  status         String    @default("connected") // 'connected' | 'disconnected' | 'error'
+  webhookUrl     String?
+  apiKeyMasked   String?
+  developerToken String?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model MarketingBannerPixel {
+  id             String   @id @default(uuid())
+  bannerActive   Boolean  @default(false)
+  bannerText     String?
+  bannerCtaLabel String?
+  bannerCtaUrl   String?
+  googleAdsPixel String?
+  metaPixel      String?
+  linkedinPixel  String?
+  xPixel         String?
+  updatedAt      DateTime @updatedAt
 }

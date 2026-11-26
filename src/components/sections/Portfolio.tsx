@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useData } from '../../context/DataContext';
 import type { Project, ServiceCategory } from '../../types';
 import {
+  translateToArabicCached,
+  getCachedArabicTranslation,
+  hasArabicCharacters
+} from '../../services/translationService';
+import {
   FolderGit2,
   ArrowUpRight,
-  TrendingUp,
   X,
   Calendar,
   Building,
   Globe2,
   Play,
   Video,
-  Images
+  Images,
+  ExternalLink
 } from 'lucide-react';
 
 interface PortfolioProps {
@@ -26,12 +31,126 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [videoWalkthroughProject, setVideoWalkthroughProject] = useState<Project | null>(null);
   const [activeModalImageIndex, setActiveModalImageIndex] = useState<number>(0);
+  const [arTranslations, setArTranslations] = useState<
+    Record<string, { shortDesc?: string; fullDesc?: string; customCategory?: string; country?: string }>
+  >({});
+
+  // Automatically translate descriptions, labels & regions to Arabic when Arabic mode is active,
+  // while preserving project/product names and tech stack names verbatim.
+  useEffect(() => {
+    if (language !== 'ar' || projects.length === 0) return;
+
+    let cancelled = false;
+
+    const initialMap: Record<string, { shortDesc?: string; fullDesc?: string; customCategory?: string; country?: string }> = {};
+    const pendingTasks: Array<Promise<void>> = [];
+
+    for (const p of projects) {
+      const enTitle = typeof p.title === 'object' ? p.title.en : (p as any).titleEn || '';
+      const clientName = p.client || (p as any).clientName || '';
+      const projectTags: string[] = Array.isArray(p.tags)
+        ? p.tags
+        : Array.isArray((p as any).techStack)
+        ? (p as any).techStack
+        : [];
+      const protectedTerms = [enTitle, clientName, ...projectTags].filter(Boolean);
+
+      const enShort = typeof p.shortDesc === 'object' ? p.shortDesc.en : (p.shortDesc || '');
+      const arShortExisting = typeof p.shortDesc === 'object' ? p.shortDesc.ar : '';
+      const enFull = typeof p.fullDesc === 'object' ? p.fullDesc.en : (p.fullDesc || '');
+      const arFullExisting = typeof p.fullDesc === 'object' ? p.fullDesc.ar : '';
+      const enCustomCat = p.customCategory || '';
+      const enCountry = p.country || (p as any).region || '';
+
+      const entry: { shortDesc?: string; fullDesc?: string; customCategory?: string; country?: string } = {};
+
+      const needsShort = enShort && !hasArabicCharacters(arShortExisting);
+      const needsFull = enFull && !hasArabicCharacters(arFullExisting);
+      const needsCustomCat = enCustomCat && !hasArabicCharacters(enCustomCat);
+      const needsCountry = enCountry && !hasArabicCharacters(enCountry);
+
+      if (needsShort) {
+        const cached = getCachedArabicTranslation(enShort, protectedTerms);
+        if (cached) entry.shortDesc = cached;
+        else {
+          pendingTasks.push(
+            translateToArabicCached(enShort, protectedTerms).then(res => {
+              if (!cancelled && res) {
+                setArTranslations(prev => ({ ...prev, [p.id]: { ...prev[p.id], shortDesc: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (needsFull) {
+        const cached = getCachedArabicTranslation(enFull, protectedTerms);
+        if (cached) entry.fullDesc = cached;
+        else {
+          pendingTasks.push(
+            translateToArabicCached(enFull, protectedTerms).then(res => {
+              if (!cancelled && res) {
+                setArTranslations(prev => ({ ...prev, [p.id]: { ...prev[p.id], fullDesc: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (needsCustomCat) {
+        const cached = getCachedArabicTranslation(enCustomCat, protectedTerms);
+        if (cached) entry.customCategory = cached;
+        else {
+          pendingTasks.push(
+            translateToArabicCached(enCustomCat, protectedTerms).then(res => {
+              if (!cancelled && res) {
+                setArTranslations(prev => ({ ...prev, [p.id]: { ...prev[p.id], customCategory: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (needsCountry) {
+        const cached = getCachedArabicTranslation(enCountry);
+        if (cached) entry.country = cached;
+        else {
+          pendingTasks.push(
+            translateToArabicCached(enCountry).then(res => {
+              if (!cancelled && res) {
+                setArTranslations(prev => ({ ...prev, [p.id]: { ...prev[p.id], country: res } }));
+              }
+            })
+          );
+        }
+      }
+
+      if (Object.keys(entry).length > 0) {
+        initialMap[p.id] = entry;
+      }
+    }
+
+    if (Object.keys(initialMap).length > 0) {
+      setArTranslations(prev => ({ ...prev, ...initialMap }));
+    }
+
+    if (pendingTasks.length > 0) {
+      Promise.all(pendingTasks).catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language, projects]);
 
   const filteredProjects = activeCategory === 'all'
     ? projects
     : projects.filter(p => {
       if (activeCategory === 'proprietary') {
         return p.category === 'proprietary' || p.isProprietary === true || (p.categories && p.categories.includes('proprietary'));
+      }
+      if (activeCategory === 'others') {
+        return p.category === 'others' || (p.categories && p.categories.includes('others'));
       }
       if (p.categories && p.categories.length > 0) {
         return p.categories.includes(activeCategory);
@@ -69,6 +188,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
             { id: 'ai', label: language === 'ar' ? 'ذكاء اصطناعي (AI)' : 'AI Integrations' },
             { id: 'cloud', label: t('portfolio.cloud') },
             { id: 'proprietary', label: language === 'ar' ? 'البرمجيات الحصرية (Proprietary Suite)' : 'Proprietary Suite' },
+            { id: 'others', label: language === 'ar' ? 'أخرى (تقنيات مخصصة)' : 'Others' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -101,17 +221,26 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {filteredProjects.map((project) => {
+              // Keep project/product name in original form/spelling
               const projectTitle = typeof project.title === 'object'
-                ? (project.title[language] || project.title.en)
+                ? project.title.en
                 : ((project as any).titleEn || 'Untitled Deliverable');
+
               const projectImage = (project.images && project.images.length > 0 ? project.images[0] : null) || project.image || (project as any).imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
               const projectClient = project.client || (project as any).clientName || 'Enterprise Partner';
-              const projectCountry = project.country || (project as any).region || 'UAE / GCC';
+              const rawCountry = project.country || (project as any).region || 'UAE / GCC';
+              const projectCountry = language === 'ar' ? (arTranslations[project.id]?.country || rawCountry) : rawCountry;
               const projectTags = Array.isArray(project.tags) ? project.tags : (Array.isArray((project as any).techStack) ? (project as any).techStack : []);
-              const projectMetrics = Array.isArray(project.metrics) ? project.metrics : [];
-              const projectShortDesc = typeof project.shortDesc === 'object'
-                ? (project.shortDesc[language] || project.shortDesc.en)
-                : (project.shortDesc || '');
+
+              const rawShortEn = typeof project.shortDesc === 'object' ? project.shortDesc.en : (project.shortDesc || '');
+              const rawShortAr = typeof project.shortDesc === 'object' ? project.shortDesc.ar : '';
+              const projectShortDesc = language === 'ar'
+                ? (arTranslations[project.id]?.shortDesc || (hasArabicCharacters(rawShortAr) ? rawShortAr : rawShortEn))
+                : rawShortEn;
+
+              const displayCustomCategory = language === 'ar'
+                ? (arTranslations[project.id]?.customCategory || project.customCategory || 'أخرى')
+                : (project.customCategory || 'Other Tech');
 
               return (
                 <div
@@ -140,11 +269,15 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
 
                       {/* Category Pills */}
                       <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[60%]">
-                        {(project.categories && project.categories.length > 0 ? project.categories : [project.category]).map(cat => (
-                          <span key={cat} className="px-2.5 py-0.5 rounded-full bg-slate-900/90 border border-indigo-400/40 text-[9px] font-mono uppercase font-bold text-sky-300 backdrop-blur-md">
-                            {cat}
-                          </span>
-                        ))}
+                        {(project.categories && project.categories.length > 0 ? project.categories : [project.category]).map(cat => {
+                          const isOther = cat === 'others';
+                          const displayCat = isOther ? displayCustomCategory : cat;
+                          return (
+                            <span key={cat} className="px-2.5 py-0.5 rounded-full bg-slate-900/90 border border-indigo-400/40 text-[9px] font-mono uppercase font-bold text-sky-300 backdrop-blur-md">
+                              {displayCat}
+                            </span>
+                          );
+                        })}
                       </div>
 
                       {/* Pulsing Watch 30s Demo Badge (Phase 4) */}
@@ -185,22 +318,6 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
                         {projectShortDesc}
                       </p>
 
-                      {/* Key Metrics Badges */}
-                      {projectMetrics.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 mb-4">
-                          {projectMetrics.slice(0, 3).map((metric, idx) => (
-                            <div key={idx} className="text-center">
-                              <div className="text-xs font-black text-indigo-600 dark:text-sky-400">
-                                {metric.value}
-                              </div>
-                              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                                {metric.label ? (metric.label[language] || metric.label.en) : ''}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1.5">
                         {projectTags.slice(0, 4).map((tag: string, idx: number) => (
@@ -228,32 +345,47 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* Action Button: Live Demo or Book Free Live Demo for Proprietary */}
-                      {project.category === 'proprietary' || project.isProprietary ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onBookDemo) {
-                              onBookDemo(project);
-                            } else {
-                              window.dispatchEvent(new CustomEvent('nexora_book_demo', { detail: { project } }));
-                            }
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 cursor-pointer"
-                          title="Schedule a private interactive 30-minute walkthrough"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{language === 'ar' ? 'حجز عرض حي مجاني' : 'Book Free Live Demo'}</span>
-                        </button>
-                      ) : project.images && project.images.length > 1 ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-sky-300 text-[11px] font-mono font-semibold">
-                          <Images className="w-3.5 h-3.5" />
-                          <span>{project.images.length} Arch Views</span>
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-mono text-slate-400">Enterprise Solution</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {/* Requirement 2: Project Website URL Link */}
+                        {(project.websiteUrl || project.liveDemoUrl || (project as any).projectUrl) && (
+                          <a
+                            href={project.websiteUrl || project.liveDemoUrl || (project as any).projectUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-sky-300 text-xs font-bold transition-all shadow-xs hover:scale-[1.02] active:scale-95 cursor-pointer"
+                            title={language === 'ar' ? 'زيارة موقع المشروع المباشر' : 'Visit Live Project Website'}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>{language === 'ar' ? 'الموقع المباشر' : 'Live Website'}</span>
+                          </a>
+                        )}
+
+                        {/* Action Button: Live Demo or Book Free Live Demo for Proprietary */}
+                        {project.category === 'proprietary' || project.isProprietary ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onBookDemo) {
+                                onBookDemo(project);
+                              } else {
+                                window.dispatchEvent(new CustomEvent('nexora_book_demo', { detail: { project } }));
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 cursor-pointer"
+                            title="Schedule a private interactive 30-minute walkthrough"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>{language === 'ar' ? 'حجز عرض حي مجاني' : 'Book Free Live Demo'}</span>
+                          </button>
+                        ) : project.images && project.images.length > 1 ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-sky-300 text-[11px] font-mono font-semibold">
+                            <Images className="w-3.5 h-3.5" />
+                            <span>{project.images.length} Arch Views</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -297,16 +429,22 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
+                    <div className="absolute bottom-4 left-4 right-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                       <div className="flex flex-wrap gap-1.5 mb-2">
-                        {(selectedProject.categories && selectedProject.categories.length > 0 ? selectedProject.categories : [selectedProject.category]).map(cat => (
-                          <span key={cat} className="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black uppercase tracking-wider inline-block shadow-sm">
-                            {cat}
-                          </span>
-                        ))}
+                        {(selectedProject.categories && selectedProject.categories.length > 0 ? selectedProject.categories : [selectedProject.category]).map(cat => {
+                          const isOther = cat === 'others';
+                          const displayCat = isOther
+                            ? (language === 'ar' ? (arTranslations[selectedProject.id]?.customCategory || selectedProject.customCategory || 'أخرى') : (selectedProject.customCategory || 'Other Tech'))
+                            : cat;
+                          return (
+                            <span key={cat} className="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black uppercase tracking-wider inline-block shadow-sm">
+                              {displayCat}
+                            </span>
+                          );
+                        })}
                       </div>
                       <h3 className="text-xl sm:text-2xl font-extrabold text-white">
-                        {typeof selectedProject.title === 'object' ? (selectedProject.title[language] || selectedProject.title.en) : ((selectedProject as any).titleEn || '')}
+                        {typeof selectedProject.title === 'object' ? selectedProject.title.en : ((selectedProject as any).titleEn || '')}
                       </h3>
                     </div>
                   </div>
@@ -363,32 +501,17 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
                 <h4 className="text-sm font-bold uppercase tracking-wider text-indigo-600 dark:text-sky-400 mb-2">
                   {language === 'ar' ? 'نظرة عامة على النظام والهندسة المعمارية' : 'System Overview & Engineering Architecture'}
                 </h4>
-                <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
-                  {typeof selectedProject.fullDesc === 'object' ? (selectedProject.fullDesc[language] || selectedProject.fullDesc.en) : (selectedProject.fullDesc || selectedProject.shortDesc || '')}
+                <p dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+                  {(() => {
+                    const rawFullEn = typeof selectedProject.fullDesc === 'object' ? selectedProject.fullDesc.en : (selectedProject.fullDesc || selectedProject.shortDesc || '');
+                    const rawFullAr = typeof selectedProject.fullDesc === 'object' ? selectedProject.fullDesc.ar : '';
+                    if (language === 'ar') {
+                      return arTranslations[selectedProject.id]?.fullDesc || (hasArabicCharacters(rawFullAr) ? rawFullAr : rawFullEn);
+                    }
+                    return rawFullEn;
+                  })()}
                 </p>
               </div>
-
-              {/* Metrics Grid */}
-              {Array.isArray(selectedProject.metrics) && selectedProject.metrics.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-sky-400" />
-                    <span>{t('portfolio.metrics')}</span>
-                  </h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    {selectedProject.metrics.map((metric, idx) => (
-                      <div key={idx} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
-                        <div className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-sky-400 mb-1">
-                          {metric.value}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {metric.label ? (metric.label[language] || metric.label.en) : ''}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Technologies Architecture */}
               <div>
@@ -407,6 +530,19 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onBookDemo }) => {
 
             {/* Modal Actions */}
             <div className="flex flex-wrap items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+              {/* Requirement 2: Live Project Website Link */}
+              {(selectedProject.websiteUrl || selectedProject.liveDemoUrl || (selectedProject as any).projectUrl) && (
+                <a
+                  href={selectedProject.websiteUrl || selectedProject.liveDemoUrl || (selectedProject as any).projectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs flex items-center gap-2 transition-all shadow-md hover:opacity-90 cursor-pointer"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>{language === 'ar' ? 'زيارة موقع المشروع المباشر' : 'Visit Live Project Website'}</span>
+                </a>
+              )}
+
               {(selectedProject.category === 'proprietary' || selectedProject.isProprietary) && (
                 <button
                   type="button"

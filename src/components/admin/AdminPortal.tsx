@@ -11,6 +11,8 @@ import {
   Trash2,
   Edit,
   Eye,
+  EyeOff,
+  Languages,
   CheckCircle,
   Star,
   Mail,
@@ -32,13 +34,24 @@ import {
   Upload,
   Image as ImageIcon,
   AlertTriangle,
-  Layout
+  Layout,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { B2BSectionsAdminDrawer } from './B2BSectionsAdminDrawer';
 import { B2BConsoleCmsModule } from './B2BConsoleCmsModule';
+import { translateReviewText } from '../../services/translationService';
 
 interface AdminPortalProps {
   onBackToWebsite: () => void;
+}
+
+function normalizeWebsiteUrl(url: string): string {
+  const trimmed = url ? url.trim() : '';
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
 }
 
 function isValidUrl(url: string): boolean {
@@ -126,6 +139,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     titleEn: '',
     titleAr: '',
     category: 'erp' as ServiceCategory,
+    customCategory: '', // Requirement 1: conditional custom category when "others" is selected
+    customTechStack: '', // Requirement 1: custom tech stack details
+    websiteUrl: '', // Requirement 2: project website URL / live project link
     client: '',
     country: 'UAE / GCC',
     shortDescEn: '',
@@ -134,15 +150,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     fullDescAr: '',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
     tags: '.NET Core Web API, Next.js, MSSQL, Redis, REST APIs',
-    metric1Val: '+65%',
-    metric1LabelEn: 'Processing Speed',
-    metric1LabelAr: 'سرعة العمليات',
-    metric2Val: '99.99%',
-    metric2LabelEn: 'Accuracy',
-    metric2LabelAr: 'دقة المحاسبة',
-    metric3Val: '-80%',
-    metric3LabelEn: 'Time Saved',
-    metric3LabelAr: 'توفير الوقت',
     images: [] as string[],
     newImageUrl: '',
     isProprietary: false,
@@ -159,6 +166,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [reviewForm, setReviewForm] = useState({
     authorName: '',
     authorRole: '',
+    authorId: '',
+    authorEmail: '',
     company: '',
     location: 'Dubai, UAE',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
@@ -168,13 +177,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     hasVideo: false,
     videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-42994-large.mp4',
     featured: false,
+    isVisible: true, // Display on public website (default: true)
     techCategory: 'dotnet' as 'dotnet' | 'odoo' | 'general',
     isGoogleReview: true,
     googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
   });
 
+  // Review Bidirectional Translation State
+  const [isTranslatingReview, setIsTranslatingReview] = useState(false);
+  const [reviewTranslationNotice, setReviewTranslationNotice] = useState('');
+  const reviewTranslationTimerRef = React.useRef<any>(null);
+
   const [isSavingReview, setIsSavingReview] = useState(false);
   const [reviewSubmitError, setReviewSubmitError] = useState('');
+  const [togglingReview, setTogglingReview] = useState<{ id: string; type: 'visibility' | 'featured' } | null>(null);
+  const [reviewToast, setReviewToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [userSubmitError, setUserSubmitError] = useState('');
 
@@ -333,7 +350,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     setProjectForm({
       titleEn: proj.titleEn || proj.title?.en || '',
       titleAr: proj.titleAr || proj.title?.ar || '',
-      category: proj.category,
+      category: proj.category || 'erp',
+      customCategory: proj.customCategory || '',
+      customTechStack: proj.customTechStack || '',
+      websiteUrl: proj.websiteUrl || proj.liveDemoUrl || proj.projectUrl || '',
       client: proj.clientName || proj.client || '',
       country: proj.region || proj.country || 'UAE / GCC',
       shortDescEn: proj.shortDesc?.en || '',
@@ -342,15 +362,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       fullDescAr: proj.fullDesc?.ar || '',
       image: proj.imageUrl || proj.image || '',
       tags: (proj.techStack || proj.tags || []).join(', '),
-      metric1Val: proj.metrics?.[0]?.value || '+50%',
-      metric1LabelEn: proj.metrics?.[0]?.label?.en || 'Performance',
-      metric1LabelAr: proj.metrics?.[0]?.label?.ar || 'الأداء',
-      metric2Val: proj.metrics?.[1]?.value || '99.9%',
-      metric2LabelEn: proj.metrics?.[1]?.label?.en || 'Uptime',
-      metric2LabelAr: proj.metrics?.[1]?.label?.ar || 'التوفر',
-      metric3Val: proj.metrics?.[2]?.value || '-40%',
-      metric3LabelEn: proj.metrics?.[2]?.label?.en || 'Efficiency',
-      metric3LabelAr: proj.metrics?.[2]?.label?.ar || 'الكفاءة',
       images: Array.isArray(proj.images) ? proj.images : (proj.image ? [proj.image] : []),
       newImageUrl: '',
       isProprietary: proj.category === 'proprietary' || Boolean(proj.isProprietary),
@@ -377,6 +388,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       }
     }
 
+    // Requirement 2: Project Website URL normalization & validation
+    const normalizedWebsiteUrl = normalizeWebsiteUrl(projectForm.websiteUrl);
+    if (normalizedWebsiteUrl && !isValidUrl(normalizedWebsiteUrl)) {
+      setProjectSubmitError('Invalid Project Website URL format (must begin with http:// or https://)');
+      return;
+    }
+
     setIsSavingProject(true);
     setProjectSubmitError('');
 
@@ -386,10 +404,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       ? projectForm.images
       : [projectForm.image || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'];
 
-    const projectPayload = {
+    const projectPayload: any = {
       titleEn: projectForm.titleEn,
       titleAr: projectForm.titleAr || projectForm.titleEn,
       category: projectForm.category,
+      customCategory: projectForm.category === 'others' ? (projectForm.customCategory.trim() || 'Custom Architecture') : undefined,
+      customTechStack: projectForm.category === 'others' ? projectForm.customTechStack.trim() : undefined,
+      websiteUrl: normalizedWebsiteUrl || undefined,
+      projectUrl: normalizedWebsiteUrl || undefined,
+      liveDemoUrl: normalizedWebsiteUrl || undefined,
+      hasLiveDemo: Boolean(normalizedWebsiteUrl),
       clientName: projectForm.client || 'Enterprise Partner',
       region: projectForm.country || 'UAE / GCC',
       imageUrl: projectForm.image || effectiveImages[0],
@@ -404,28 +428,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       country: projectForm.country || 'UAE / GCC',
       image: projectForm.image || effectiveImages[0],
       shortDesc: {
-        en: projectForm.shortDescEn || `${projectForm.category.toUpperCase()} solution engineered for ${projectForm.client || 'Enterprise Partner'}.`,
-        ar: projectForm.shortDescAr || `منظومة ${projectForm.category.toUpperCase()} تم تطويرها لـ ${projectForm.client || 'الشركاء'}.`
+        en: projectForm.shortDescEn || `${(projectForm.category === 'others' ? projectForm.customCategory || 'Custom' : projectForm.category).toUpperCase()} solution engineered for ${projectForm.client || 'Enterprise Partner'}.`,
+        ar: projectForm.shortDescAr || `منظومة ${(projectForm.category === 'others' ? projectForm.customCategory || 'مخصصة' : projectForm.category).toUpperCase()} تم تطويرها لـ ${projectForm.client || 'الشركاء'}.`
       },
       fullDesc: {
         en: projectForm.fullDescEn || projectForm.shortDescEn || `Enterprise application engineered for ${projectForm.client || 'Enterprise Partner'}.`,
         ar: projectForm.fullDescAr || projectForm.shortDescAr || `منظومة رقمية متكاملة تم تطويرها لصالح ${projectForm.client || 'الشركاء'}.`
       },
       tags: tagsArray,
-      metrics: [
-        {
-          label: { en: projectForm.metric1LabelEn, ar: projectForm.metric1LabelAr },
-          value: projectForm.metric1Val
-        },
-        {
-          label: { en: projectForm.metric2LabelEn, ar: projectForm.metric2LabelAr },
-          value: projectForm.metric2Val
-        },
-        {
-          label: { en: projectForm.metric3LabelEn, ar: projectForm.metric3LabelAr },
-          value: projectForm.metric3Val
-        }
-      ],
+      // Requirement 4: Metric 1, Metric 2, and Metric 3 completely removed
+      metrics: [],
       featured: projectForm.featured,
       isProprietary: projectForm.category === 'proprietary' || Boolean(projectForm.isProprietary),
       demoBookingMetadata: {
@@ -455,22 +467,114 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     }
   };
 
+  // Requirement 1: Restrict Edit & Delete Permissions to the Review Author Only
+  // Administrators and other team members must NOT be able to edit or delete another person's review.
+  const canUserModifyReview = (rev: Review | null | undefined): boolean => {
+    if (!rev || !currentUser) return false;
+    if (rev.authorId && rev.authorId === currentUser.id) return true;
+    if (rev.authorEmail && currentUser.email && rev.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) return true;
+    if (!rev.authorId && !rev.authorEmail && rev.authorName && currentUser.name && rev.authorName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()) return true;
+    return false;
+  };
+
+  // Requirement 2: Bidirectional Auto-Translation Between English & Arabic
+  const handleReviewContentEnChange = (newEn: string) => {
+    setReviewForm(prev => ({ ...prev, contentEn: newEn }));
+    if (reviewTranslationTimerRef.current) clearTimeout(reviewTranslationTimerRef.current);
+
+    if (!newEn.trim()) return;
+
+    reviewTranslationTimerRef.current = setTimeout(async () => {
+      try {
+        setIsTranslatingReview(true);
+        setReviewTranslationNotice('Translating to Arabic…');
+        const translated = await translateReviewText(newEn, 'en', 'ar');
+        if (translated) {
+          setReviewForm(prev => ({ ...prev, contentAr: translated }));
+          setReviewTranslationNotice('Auto-translated to Arabic ✓');
+          setTimeout(() => setReviewTranslationNotice(''), 3500);
+        }
+      } catch (err) {
+        console.warn('Auto-translation to Arabic failed:', err);
+      } finally {
+        setIsTranslatingReview(false);
+      }
+    }, 700);
+  };
+
+  const handleReviewContentArChange = (newAr: string) => {
+    setReviewForm(prev => ({ ...prev, contentAr: newAr }));
+    if (reviewTranslationTimerRef.current) clearTimeout(reviewTranslationTimerRef.current);
+
+    if (!newAr.trim()) return;
+
+    reviewTranslationTimerRef.current = setTimeout(async () => {
+      try {
+        setIsTranslatingReview(true);
+        setReviewTranslationNotice('Translating to English…');
+        const translated = await translateReviewText(newAr, 'ar', 'en');
+        if (translated) {
+          setReviewForm(prev => ({ ...prev, contentEn: translated }));
+          setReviewTranslationNotice('Auto-translated to English ✓');
+          setTimeout(() => setReviewTranslationNotice(''), 3500);
+        }
+      } catch (err) {
+        console.warn('Auto-translation to English failed:', err);
+      } finally {
+        setIsTranslatingReview(false);
+      }
+    }, 700);
+  };
+
+  const handleManualTranslate = async (target: 'ar' | 'en') => {
+    try {
+      setIsTranslatingReview(true);
+      if (target === 'ar') {
+        if (!reviewForm.contentEn.trim()) return;
+        setReviewTranslationNotice('Translating to Arabic…');
+        const translated = await translateReviewText(reviewForm.contentEn, 'en', 'ar');
+        if (translated) {
+          setReviewForm(prev => ({ ...prev, contentAr: translated }));
+          setReviewTranslationNotice('Auto-translated to Arabic ✓');
+          setTimeout(() => setReviewTranslationNotice(''), 3500);
+        }
+      } else {
+        if (!reviewForm.contentAr.trim()) return;
+        setReviewTranslationNotice('Translating to English…');
+        const translated = await translateReviewText(reviewForm.contentAr, 'ar', 'en');
+        if (translated) {
+          setReviewForm(prev => ({ ...prev, contentEn: translated }));
+          setReviewTranslationNotice('Auto-translated to English ✓');
+          setTimeout(() => setReviewTranslationNotice(''), 3500);
+        }
+      }
+    } catch (err) {
+      console.warn('Manual translation failed:', err);
+    } finally {
+      setIsTranslatingReview(false);
+    }
+  };
+
   // Open Add Review Modal (reset form)
   const handleOpenAddReview = () => {
     setEditingReview(null);
     setReviewSubmitError('');
+    setReviewTranslationNotice('');
     setReviewForm({
-      authorName: '',
-      authorRole: '',
+      authorName: currentUser?.name || '',
+      authorRole: currentUser?.role || 'Verified Client',
+      authorId: currentUser?.id || '',
+      authorEmail: currentUser?.email || '',
       company: '',
       location: 'Dubai, UAE',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      avatar: currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       rating: 5,
       contentEn: '',
       contentAr: '',
       hasVideo: false,
       videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-42994-large.mp4',
       featured: false,
+      isVisible: true, // Requirement 3: Default visible/display
       techCategory: 'dotnet',
       isGoogleReview: true,
       googleReviewUrl: 'https://maps.google.com/?q=Nexora+Systems'
@@ -478,13 +582,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     setShowAddReviewModal(true);
   };
 
-  // Open Edit Review Modal
+  // Open Edit Review Modal (Author-only access)
   const handleOpenEditReview = (rev: Review) => {
+    if (!canUserModifyReview(rev)) {
+      alert('Permission Denied: Only the review author can edit this review. Administrators cannot edit reviews submitted by others.');
+      return;
+    }
     setEditingReview(rev);
     setReviewSubmitError('');
+    setReviewTranslationNotice('');
     setReviewForm({
       authorName: rev.authorName,
       authorRole: rev.authorRole,
+      authorId: rev.authorId || currentUser?.id || '',
+      authorEmail: rev.authorEmail || currentUser?.email || '',
       company: rev.company,
       location: rev.location || 'Dubai, UAE',
       avatar: rev.avatar,
@@ -494,6 +605,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       hasVideo: Boolean(rev.hasVideo),
       videoUrl: rev.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-42994-large.mp4',
       featured: Boolean((rev as any).featured),
+      isVisible: rev.isVisible !== undefined ? rev.isVisible : true,
       techCategory: ((rev as any).techCategory || 'dotnet') as 'dotnet' | 'odoo' | 'general',
       isGoogleReview: rev.isGoogleReview,
       googleReviewUrl: rev.googleReviewUrl || 'https://maps.google.com/?q=Nexora+Systems',
@@ -501,13 +613,74 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     setShowAddReviewModal(true);
   };
 
+  // Delete Review Handler (Author-only access)
+  const handleDeleteReview = async (rev: Review) => {
+    if (!canUserModifyReview(rev)) {
+      alert('Permission Denied: Only the review author can delete this review. Administrators cannot delete reviews submitted by others.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete your review as "${rev.authorName}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteReview(rev.id);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete review');
+    }
+  };
+
   // Toggle Featured status directly from card
   const handleToggleFeatured = async (rev: Review) => {
     const newFeatured = !(rev as any).featured;
-    await updateReview({
-      ...rev,
-      featured: newFeatured,
-    } as any);
+    setTogglingReview({ id: rev.id, type: 'featured' });
+    setReviewToast(null);
+    try {
+      await updateReview({
+        ...rev,
+        featured: newFeatured,
+      } as any);
+      setReviewToast({
+        message: newFeatured
+          ? `Spotlight pinned for "${rev.authorName}" in Neon DB.`
+          : `Spotlight removed for "${rev.authorName}".`,
+        type: 'success',
+      });
+      setTimeout(() => setReviewToast(null), 3500);
+    } catch (err: any) {
+      setReviewToast({
+        message: err?.message || 'Failed to update spotlight status in Neon DB.',
+        type: 'error',
+      });
+    } finally {
+      setTogglingReview(null);
+    }
+  };
+
+  // Requirement 3: Toggle Display / Hide Visibility directly from card
+  const handleToggleVisibility = async (rev: Review) => {
+    const nextVisible = rev.isVisible === false ? true : false;
+    setTogglingReview({ id: rev.id, type: 'visibility' });
+    setReviewToast(null);
+    try {
+      await updateReview({
+        ...rev,
+        isVisible: nextVisible,
+      });
+      setReviewToast({
+        message: nextVisible
+          ? `"${rev.authorName}" review is now Displayed on public website.`
+          : `"${rev.authorName}" review is now Hidden from public website.`,
+        type: 'success',
+      });
+      setTimeout(() => setReviewToast(null), 3500);
+    } catch (err: any) {
+      setReviewToast({
+        message: err?.message || 'Failed to update visibility status in Neon DB.',
+        type: 'error',
+      });
+    } finally {
+      setTogglingReview(null);
+    }
   };
 
   // Submit Review (Add or Edit - Connected strictly to Neon DB)
@@ -519,12 +692,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
     try {
       if (editingReview) {
+        if (!canUserModifyReview(editingReview)) {
+          setReviewSubmitError('Permission Denied: Only the review author can edit this review.');
+          setIsSavingReview(false);
+          return;
+        }
         await updateReview({
           ...editingReview,
           authorName: reviewForm.authorName,
           clientName: reviewForm.authorName,
           authorRole: reviewForm.authorRole || 'Managing Director',
           role: reviewForm.authorRole || 'Managing Director',
+          authorId: editingReview.authorId || currentUser?.id,
+          authorEmail: editingReview.authorEmail || currentUser?.email,
           company: reviewForm.company || 'Enterprise Partner',
           location: reviewForm.location || 'Dubai, UAE',
           avatar: reviewForm.avatar,
@@ -537,6 +717,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           hasVideo: Boolean(reviewForm.hasVideo),
           videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
           featured: Boolean(reviewForm.featured),
+          isVisible: Boolean(reviewForm.isVisible),
           techCategory: reviewForm.techCategory,
           verified: true,
         } as any);
@@ -546,6 +727,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           clientName: reviewForm.authorName,
           authorRole: reviewForm.authorRole || 'Managing Director',
           role: reviewForm.authorRole || 'Managing Director',
+          authorId: currentUser?.id,
+          authorEmail: currentUser?.email,
           company: reviewForm.company || 'Enterprise Partner',
           location: reviewForm.location || 'Dubai, UAE',
           avatar: reviewForm.avatar,
@@ -558,6 +741,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
           hasVideo: Boolean(reviewForm.hasVideo),
           videoUrl: reviewForm.hasVideo ? reviewForm.videoUrl : null,
           featured: Boolean(reviewForm.featured),
+          isVisible: Boolean(reviewForm.isVisible),
           techCategory: reviewForm.techCategory,
           date: 'Just now (Organic)',
           isGoogleReview: reviewForm.isGoogleReview,
@@ -992,6 +1176,29 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <button
                 onClick={() => {
                   setEditingProject(null);
+                  setProjectForm({
+                    titleEn: '',
+                    titleAr: '',
+                    category: 'erp',
+                    customCategory: '',
+                    customTechStack: '',
+                    websiteUrl: '',
+                    client: '',
+                    country: 'UAE / GCC',
+                    shortDescEn: '',
+                    shortDescAr: '',
+                    fullDescEn: '',
+                    fullDescAr: '',
+                    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+                    tags: '.NET Core Web API, Next.js, MSSQL, Redis, REST APIs',
+                    images: [],
+                    newImageUrl: '',
+                    isProprietary: false,
+                    demoProductName: '',
+                    demoBadgeText: 'Instant Staging Access',
+                    featured: true,
+                    completionDate: '2026-06'
+                  });
                   setShowAddProjectModal(true);
                 }}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
@@ -1056,8 +1263,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-indigo-700 dark:text-sky-300 font-mono text-[10px] uppercase font-bold border border-slate-200 dark:border-slate-700 whitespace-nowrap inline-block">
-                                {proj.category}
+                                {proj.category === 'others' ? (proj.customCategory || 'OTHERS') : proj.category}
                               </span>
+                              {(proj.websiteUrl || (proj as any).liveDemoUrl || (proj as any).projectUrl) && (
+                                <a
+                                  href={proj.websiteUrl || (proj as any).liveDemoUrl || (proj as any).projectUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-1 flex items-center gap-1 text-[10px] font-mono text-indigo-600 dark:text-sky-400 hover:underline"
+                                  title="Open live project link"
+                                >
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                  <span className="truncate max-w-[130px]">
+                                    {(proj.websiteUrl || (proj as any).liveDemoUrl || (proj as any).projectUrl).replace(/^https?:\/\//, '')}
+                                  </span>
+                                </a>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="font-medium text-slate-800 dark:text-slate-200">
@@ -1172,101 +1393,173 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
             </div>
 
+            {reviewToast && (
+              <div
+                className={`mb-4 px-4 py-3 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all ${
+                  reviewToast.type === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                }`}
+              >
+                <span>{reviewToast.message}</span>
+                <button
+                  type="button"
+                  onClick={() => setReviewToast(null)}
+                  className="ml-4 opacity-70 hover:opacity-100 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Reviews Cards List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviews.map(rev => (
-                <div
-                  key={rev.id}
-                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between bg-white dark:bg-slate-900 shadow-xs"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={rev.avatar}
-                          alt=""
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-white text-sm">
-                              {rev.authorName}
+              {reviews.map(rev => {
+                const isAuthor = canUserModifyReview(rev);
+                const isDisplayed = rev.isVisible !== false;
+
+                return (
+                  <div
+                    key={rev.id}
+                    className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between bg-white dark:bg-slate-900 shadow-xs transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={rev.avatar}
+                            alt=""
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80';
+                            }}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 dark:text-white text-sm">
+                                {rev.authorName}
+                              </span>
+                              {/* Tech Category Badge */}
+                              {(rev as any).techCategory === 'odoo' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-400/30 text-[9px] font-mono font-bold text-emerald-800 dark:text-emerald-400">
+                                  Odoo
+                                </span>
+                              ) : (rev as any).techCategory === 'dotnet' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-400/30 text-[9px] font-mono font-bold text-indigo-800 dark:text-sky-300">
+                                  .NET
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 flex-wrap">
+                              <span>{rev.authorRole} • {rev.company}</span>
+                              {isAuthor && (
+                                <span className="px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-sky-300 font-bold text-[9px] border border-indigo-200 dark:border-indigo-500/30">
+                                  Your Review (Author)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                            <Star className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-400" />
+                            <span className="font-bold text-xs">{rev.rating}.0</span>
+                          </div>
+                          {rev.hasVideo && (
+                            <span className="text-[10px] font-mono text-sky-400 flex items-center gap-0.5">
+                              <Video className="w-2.5 h-2.5" /> Video
                             </span>
-                            {/* Tech Category Badge */}
-                            {(rev as any).techCategory === 'odoo' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-400/30 text-[9px] font-mono font-bold text-emerald-800 dark:text-emerald-400">
-                                Odoo
-                              </span>
-                            ) : (rev as any).techCategory === 'dotnet' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-400/30 text-[9px] font-mono font-bold text-indigo-800 dark:text-sky-300">
-                                .NET
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                            {rev.authorRole} • {rev.company}
-                          </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
-                          <Star className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-400" />
-                          <span className="font-bold text-xs">{rev.rating}.0</span>
-                        </div>
-                        {rev.hasVideo && (
-                          <span className="text-[10px] font-mono text-sky-400 flex items-center gap-0.5">
-                            <Video className="w-2.5 h-2.5" /> Video
+                      <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic mb-2">
+                        "{rev.content.en}"
+                      </p>
+                      <p className="text-indigo-600 dark:text-sky-300/80 text-xs font-arabic leading-relaxed">
+                        "{rev.content.ar}"
+                      </p>
+                    </div>
+
+                    <div className="pt-3 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] flex-wrap gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Requirement 3: Visibility Control (Display / Hide) */}
+                        <button
+                          type="button"
+                          disabled={togglingReview?.id === rev.id && togglingReview?.type === 'visibility'}
+                          onClick={() => handleToggleVisibility(rev)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 ${
+                            isDisplayed
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-400/40'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+                          }`}
+                          title="Click to toggle Public Website visibility"
+                        >
+                          {togglingReview?.id === rev.id && togglingReview?.type === 'visibility' ? (
+                            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : isDisplayed ? (
+                            <Eye className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <EyeOff className="w-3 h-3 text-slate-400" />
+                          )}
+                          <span>{isDisplayed ? 'Display' : 'Hide'}</span>
+                        </button>
+
+                        {/* Featured Spotlight Toggle Button */}
+                        <button
+                          type="button"
+                          disabled={togglingReview?.id === rev.id && togglingReview?.type === 'featured'}
+                          onClick={() => handleToggleFeatured(rev)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50 ${(rev as any).featured
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
+                            }`}
+                          title="Click to pin or unpin from 40% Left Spotlight"
+                        >
+                          {togglingReview?.id === rev.id && togglingReview?.type === 'featured' ? (
+                            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Star className={`w-3 h-3 ${(rev as any).featured ? 'fill-current' : ''}`} />
+                          )}
+                          <span>{(rev as any).featured ? 'Spotlight' : 'Set Spotlight'}</span>
+                        </button>
+                        <span className="text-slate-500 dark:text-slate-400 font-mono font-medium text-[10px]">{rev.date}</span>
+                      </div>
+
+                      {/* Requirement 1: Restrict Edit & Delete to Review Author Only */}
+                      <div className="flex items-center gap-2">
+                        {isAuthor ? (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditReview(rev)}
+                              className="text-indigo-600 dark:text-sky-400 hover:underline flex items-center gap-1 text-xs cursor-pointer font-semibold"
+                            >
+                              <Edit className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReview(rev)}
+                              className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-xs cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 dark:text-slate-500 py-0.5 px-2 rounded-md bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 cursor-not-allowed"
+                            title="Only the review author can edit or delete this review. Command Center admins cannot edit other reviewers' submissions."
+                          >
+                            <Lock className="w-3 h-3 text-slate-400" />
+                            <span>Author Locked</span>
                           </span>
                         )}
                       </div>
                     </div>
-
-                    <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic mb-2">
-                      "{rev.content.en}"
-                    </p>
-                    <p className="text-indigo-600 dark:text-sky-300/80 text-xs font-arabic leading-relaxed">
-                      "{rev.content.ar}"
-                    </p>
                   </div>
-
-                  <div className="pt-3 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-2">
-                      {/* Featured Spotlight Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFeatured(rev)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${(rev as any).featured
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        title="Click to pin or unpin from 40% Left Spotlight"
-                      >
-                        <Star className={`w-3 h-3 ${(rev as any).featured ? 'fill-current' : ''}`} />
-                        <span>{(rev as any).featured ? 'Featured Spotlight' : 'Set Featured'}</span>
-                      </button>
-                      <span className="text-slate-500 dark:text-slate-400 font-mono font-medium">{rev.date}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditReview(rev)}
-                        className="text-indigo-600 dark:text-sky-400 hover:underline flex items-center gap-1 text-xs cursor-pointer font-semibold"
-                      >
-                        <Edit className="w-3 h-3" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => deleteReview(rev.id)}
-                        className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-xs cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1739,31 +2032,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
             </p>
 
             <form onSubmit={handleSaveProject} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Project Title (English)</label>
-                  <input
-                    type="text"
-                    required
-                    value={projectForm.titleEn}
-                    onChange={e => setProjectForm({ ...projectForm, titleEn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Project Title (Arabic)</label>
-                  <input
-                    type="text"
-                    value={projectForm.titleAr}
-                    onChange={e => setProjectForm({ ...projectForm, titleAr: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-arabic text-right"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Project Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. MedPulse Multi-Hospital Clinical ERP"
+                  value={projectForm.titleEn}
+                  onChange={e => setProjectForm({ ...projectForm, titleEn: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
               </div>
 
+              {/* Requirement 1: Category with "Others" + Client & Country */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
                   <select
                     value={projectForm.category}
                     onChange={e => setProjectForm({ ...projectForm, category: e.target.value as any })}
@@ -1775,12 +2061,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     <option value="ai">AI Integrations & LLMs</option>
                     <option value="cloud">Cloud & DevOps</option>
                     <option value="proprietary">Proprietary Suite (SaaS & Packaged IP)</option>
+                    <option value="others">Others (Custom Category / Tech Stack)</option>
                   </select>
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
                   <input
                     type="text"
+                    placeholder="e.g. GulfLink Logistics"
                     value={projectForm.client}
                     onChange={e => setProjectForm({ ...projectForm, client: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -1790,11 +2078,90 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Country / Region</label>
                   <input
                     type="text"
+                    placeholder="e.g. Dubai, UAE"
                     value={projectForm.country}
                     onChange={e => setProjectForm({ ...projectForm, country: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* Requirement 1: Conditional "Custom Category / Tech Stack" text input when "Others" is selected */}
+              {projectForm.category === 'others' && (
+                <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-sky-400" />
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                      Custom Category & Bespoke Tech Stack Details
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Custom Category Title / Tag *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Industrial IoT & SCADA Telemetry"
+                        value={projectForm.customCategory}
+                        onChange={e => setProjectForm({ ...projectForm, customCategory: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Custom Tech Stack Specifications (optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Rust, WebSockets, Modbus, TimescaleDB"
+                        value={projectForm.customTechStack}
+                        onChange={e => setProjectForm({ ...projectForm, customTechStack: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    This custom category tag will be rendered on the public portfolio cards, filter tabs, and case study views.
+                  </p>
+                </div>
+              )}
+
+              {/* Requirement 2: Project Website URL (Live Project Link) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Project Website URL / Live Project Link</span>
+                    <span className="text-slate-400 font-normal text-[11px]">— optional</span>
+                  </label>
+                  {projectForm.websiteUrl && (
+                    <a
+                      href={normalizeWebsiteUrl(projectForm.websiteUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-sky-400 hover:underline"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Test link</span>
+                    </a>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. https://portal.client.com or client-domain.com"
+                  value={projectForm.websiteUrl}
+                  onChange={e => setProjectForm({ ...projectForm, websiteUrl: e.target.value })}
+                  onBlur={() => {
+                    if (projectForm.websiteUrl) {
+                      setProjectForm(prev => ({ ...prev, websiteUrl: normalizeWebsiteUrl(prev.websiteUrl) }));
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
+                />
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">
+                  When specified, a "Visit Live Project" button is automatically rendered on the portfolio card and case study view. URLs without protocol are automatically prefixed with https://.
+                </span>
               </div>
 
               {/* Primary Image & Multi-Image Architecture Gallery */}
@@ -1958,9 +2325,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               )}
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Short Description (English)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Short Description
+                </label>
                 <textarea
                   rows={2}
+                  placeholder="Brief 1-2 sentence executive summary..."
                   value={projectForm.shortDescEn}
                   onChange={e => setProjectForm({ ...projectForm, shortDescEn: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -1968,9 +2338,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Technical Description (English)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Technical Description
+                </label>
                 <textarea
                   rows={3}
+                  placeholder="In-depth architecture description and engineering details..."
                   value={projectForm.fullDescEn}
                   onChange={e => setProjectForm({ ...projectForm, fullDescEn: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -1978,43 +2351,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tech Stack Tags (Comma separated)</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Tech Stack Tags (Comma separated)
+                </label>
                 <input
                   type="text"
+                  placeholder="e.g. .NET Core Web API, Next.js, MSSQL, Redis, REST APIs"
                   value={projectForm.tags}
                   onChange={e => setProjectForm({ ...projectForm, tags: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
                 />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block font-semibold text-slate-500 mb-1">Metric 1 Value</label>
-                  <input
-                    type="text"
-                    value={projectForm.metric1Val}
-                    onChange={e => setProjectForm({ ...projectForm, metric1Val: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-500 mb-1">Metric 2 Value</label>
-                  <input
-                    type="text"
-                    value={projectForm.metric2Val}
-                    onChange={e => setProjectForm({ ...projectForm, metric2Val: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-500 mb-1">Metric 3 Value</label>
-                  <input
-                    type="text"
-                    value={projectForm.metric3Val}
-                    onChange={e => setProjectForm({ ...projectForm, metric3Val: e.target.value })}
-                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono"
-                  />
-                </div>
               </div>
 
               {projectSubmitError && (
@@ -2267,31 +2613,79 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                 </div>
               </div>
 
-              {/* Section 3: Review Content */}
-              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                  <MessageSquarePlus className="w-3.5 h-3.5" />
-                  <span>Review Content</span>
-                </h4>
+              {/* Section 3: Review Content & Auto-Translation */}
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                    <MessageSquarePlus className="w-3.5 h-3.5" />
+                    <span>Review Content & Neural Translation</span>
+                  </h4>
+                  {reviewTranslationNotice && (
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      isTranslatingReview
+                        ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 animate-pulse border border-sky-200 dark:border-sky-800'
+                        : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                    }`}>
+                      {isTranslatingReview ? (
+                        <RefreshCw className="w-3 h-3 animate-spin text-sky-500" />
+                      ) : (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      )}
+                      <span>{reviewTranslationNotice}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* English Review Field */}
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review Text (English) *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      Review Text (English) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleManualTranslate('ar')}
+                      disabled={isTranslatingReview || !reviewForm.contentEn.trim()}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 disabled:opacity-40 transition-colors cursor-pointer"
+                      title="Translate English to Arabic"
+                    >
+                      <Languages className="w-3 h-3" />
+                      <span>Translate to Arabic →</span>
+                    </button>
+                  </div>
                   <textarea
                     rows={3}
                     required
-                    placeholder="Enter the client's review in English..."
+                    placeholder="Enter the client's review in English... (typing automatically translates to Arabic)"
                     value={reviewForm.contentEn}
-                    onChange={e => setReviewForm({ ...reviewForm, contentEn: e.target.value })}
+                    onChange={e => handleReviewContentEnChange(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-indigo-500 focus:outline-none transition-colors leading-relaxed"
                   />
                 </div>
+
+                {/* Arabic Review Field */}
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Review Text (Arabic) <span className="text-slate-400 font-normal">— optional</span></label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      Review Text (Arabic) <span className="text-slate-400 font-normal">— auto-populated or manual</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleManualTranslate('en')}
+                      disabled={isTranslatingReview || !reviewForm.contentAr.trim()}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 disabled:opacity-40 transition-colors cursor-pointer"
+                      title="Translate Arabic to English"
+                    >
+                      <Languages className="w-3 h-3" />
+                      <span>← Translate to English</span>
+                    </button>
+                  </div>
                   <textarea
                     rows={3}
                     dir="rtl"
-                    placeholder="أدخل نص التقييم بالعربية (اختياري)..."
+                    placeholder="أدخل نص التقييم بالعربية... (الكتابة هنا تترجم تلقائياً إلى الإنجليزية)"
                     value={reviewForm.contentAr}
-                    onChange={e => setReviewForm({ ...reviewForm, contentAr: e.target.value })}
+                    onChange={e => handleReviewContentArChange(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-arabic text-right focus:border-indigo-500 focus:outline-none transition-colors leading-relaxed"
                   />
                 </div>
@@ -2301,8 +2695,48 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5" />
-                  <span>Display Options</span>
+                  <span>Display & Visibility Options</span>
                 </h4>
+
+                {/* Display / Hide Toggle (Visible on Public Website vs Hidden) */}
+                <div className={`p-3.5 rounded-xl border transition-colors ${
+                  reviewForm.isVisible !== false
+                    ? 'bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/50'
+                    : 'bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50'
+                }`}>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reviewForm.isVisible !== false}
+                      onChange={e => setReviewForm({ ...reviewForm, isVisible: e.target.checked })}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {reviewForm.isVisible !== false ? (
+                          <>
+                            <Eye className="w-4 h-4 text-emerald-500" />
+                            <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                              Display on Public Website
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-4 h-4 text-amber-500" />
+                            <span className="font-bold text-slate-900 dark:text-white block text-xs">
+                              Hidden from Public Website
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                        {reviewForm.isVisible !== false
+                          ? 'This review is published and rendered on the public Client Reviews section.'
+                          : 'This review is hidden from the public website, but remains permanently visible in Command Center for team and management review.'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
 
                 {/* Featured Spotlight Toggle */}
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 transition-colors">

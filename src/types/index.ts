@@ -8,6 +8,7 @@ export type ServiceCategory =
   | 'ai'
   | 'wordpress'
   | 'proprietary'
+  | 'others'
   | 'all';
 
 export interface LocalizedString {
@@ -23,8 +24,15 @@ export interface ProjectMetric {
 export interface Project {
   id: string;
   title: LocalizedString;
+  titleEn?: string;
+  titleAr?: string;
   category: ServiceCategory;
   categories?: string[];
+  customCategory?: string; // Requirement 1: custom category when "others" is selected
+  customTechStack?: string; // Requirement 1: custom tech stack details
+  websiteUrl?: string; // Requirement 2: project website URL / live project link
+  projectUrl?: string; // Compatibility alias
+  liveDemoUrl?: string; // Compatibility alias
   shortDesc: LocalizedString;
   fullDesc: LocalizedString;
   client: string;
@@ -32,7 +40,7 @@ export interface Project {
   image: string;
   images?: string[];
   tags: string[];
-  metrics: ProjectMetric[];
+  metrics?: ProjectMetric[]; // Optional for backward compatibility, completely removed from UI
   featured: boolean;
   isProprietary?: boolean;
   demoBookingMetadata?: {
@@ -48,6 +56,8 @@ export interface Review {
   id: string;
   authorName: string;
   authorRole: string;
+  authorId?: string; // Identity of the submitting reviewer/team member
+  authorEmail?: string; // Email of submitting reviewer/team member
   company: string;
   location?: string;
   avatar: string;
@@ -60,6 +70,7 @@ export interface Review {
   hasVideo?: boolean;
   videoUrl?: string | null;
   featured?: boolean;
+  isVisible?: boolean; // Display on public website (defaults to true)
   techCategory?: string; // 'dotnet' | 'odoo' | 'general'
 }
 

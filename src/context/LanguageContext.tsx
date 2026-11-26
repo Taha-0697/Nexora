@@ -71,6 +71,7 @@ const translations: Record<string, { en: string; ar: string }> = {
   'portfolio.mobile': { en: 'iOS & Android', ar: 'تطبيقات الجوال' },
   'portfolio.wordpress': { en: 'WordPress & CMS', ar: 'ووردبريس' },
   'portfolio.erp': { en: 'Odoo & ERPs', ar: 'أودو و ERP' },
+  'portfolio.others': { en: 'Others', ar: 'أخرى' },
   'portfolio.viewDetails': { en: 'View Case Study', ar: 'تفاصيل دراسة الحالة' },
   'portfolio.client': { en: 'Client', ar: 'العميل' },
   'portfolio.metrics': { en: 'Key Impact Metrics', ar: 'مؤشرات الأثر والأداء' },

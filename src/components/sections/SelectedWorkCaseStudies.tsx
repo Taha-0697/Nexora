@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, Settings, Sparkles } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  translateToArabicCached,
+  getCachedArabicTranslation
+} from '../../services/translationService';
 import {
   getCaseStudies,
   getCaseStudiesSettings,
@@ -19,7 +24,10 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
   onOpenConsultation,
   onViewAllProjects
 }) => {
+  const { language } = useLanguage();
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
+  const [arCsMap, setArCsMap] = useState<Record<string, { title?: string; summary?: string; outcomeHighlight?: string; categoryTag?: string }>>({});
+  const [arSettings, setArSettings] = useState<Partial<CaseStudiesSettings>>({});
   const [settings, setSettings] = useState<CaseStudiesSettings>({
     eyebrowLabel: 'SELECTED WORK',
     headingText: 'Real projects, real operational outcomes',
@@ -45,6 +53,41 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
       window.removeEventListener(B2B_SECTIONS_EVENT, handleUpdate);
     };
   }, [loadData]);
+
+  // Automatic Arabic translation for Case Studies when Arabic mode is active
+  useEffect(() => {
+    if (language !== 'ar') return;
+    let cancelled = false;
+
+    const translateField = (val: string | undefined, protectedTerms: string[], onDone: (tr: string) => void) => {
+      if (!val) return;
+      const cached = getCachedArabicTranslation(val, protectedTerms);
+      if (cached) {
+        onDone(cached);
+      } else {
+        translateToArabicCached(val, protectedTerms).then(tr => {
+          if (!cancelled && tr) onDone(tr);
+        });
+      }
+    };
+
+    translateField(settings.headingText, [], tr => setArSettings(prev => ({ ...prev, headingText: tr })));
+    translateField(settings.subtitleText, [], tr => setArSettings(prev => ({ ...prev, subtitleText: tr })));
+    translateField(settings.eyebrowLabel, [], tr => setArSettings(prev => ({ ...prev, eyebrowLabel: tr })));
+    translateField(settings.primaryCtaText, [], tr => setArSettings(prev => ({ ...prev, primaryCtaText: tr })));
+    translateField(settings.secondaryCtaText, [], tr => setArSettings(prev => ({ ...prev, secondaryCtaText: tr })));
+
+    for (const cs of caseStudies) {
+      const protectedTerms = [cs.client, cs.demoProductName].filter(Boolean) as string[];
+      translateField(cs.summary, protectedTerms, tr => setArCsMap(prev => ({ ...prev, [cs.id]: { ...prev[cs.id], summary: tr } })));
+      translateField(cs.outcomeHighlight, protectedTerms, tr => setArCsMap(prev => ({ ...prev, [cs.id]: { ...prev[cs.id], outcomeHighlight: tr } })));
+      translateField(cs.categoryTag, protectedTerms, tr => setArCsMap(prev => ({ ...prev, [cs.id]: { ...prev[cs.id], categoryTag: tr } })));
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language, caseStudies, settings.headingText, settings.subtitleText]);
 
   // Identify Hero Card (Left ~60%) and Stacked Cards (Right ~40%)
   const heroCard = caseStudies.find(cs => cs.isHero) || caseStudies[0];
@@ -101,12 +144,12 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
 
             {/* Bold Heading */}
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[#0F172A] dark:text-white tracking-tight mb-3">
-              {settings.headingText}
+              {language === 'ar' ? (arSettings.headingText || settings.headingText) : settings.headingText}
             </h2>
 
             {/* 1-sentence subtitle */}
             <p className="text-sm sm:text-base text-[#475569] dark:text-slate-300 leading-relaxed">
-              {settings.subtitleText}
+              {language === 'ar' ? (arSettings.subtitleText || settings.subtitleText) : settings.subtitleText}
             </p>
           </div>
 
@@ -157,15 +200,15 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
                 </div>
 
                 {/* Card Content Body */}
-                <div className="p-6 sm:p-8 flex flex-col justify-between flex-1 space-y-5">
+                <div className="p-6 sm:p-8 flex flex-col justify-between flex-1 space-y-5" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                   <div className="space-y-4">
                     <h3 className="text-xl sm:text-2xl font-black text-[#0F172A] dark:text-white leading-snug group-hover:text-[#0F766E] dark:group-hover:text-teal-400 transition-colors">
-                      {heroCard.title}
+                      {language === 'ar' ? (arCsMap[heroCard.id]?.title || heroCard.title) : heroCard.title}
                     </h3>
 
                     {/* 2-Sentence Summary */}
                     <p className="text-xs sm:text-sm text-[#475569] dark:text-slate-300 leading-relaxed">
-                      {heroCard.summary}
+                      {language === 'ar' ? (arCsMap[heroCard.id]?.summary || heroCard.summary) : heroCard.summary}
                     </p>
 
                     {/* Checkmark Bullet Point Highlighting Measurable Impact */}
@@ -174,7 +217,7 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
                         ✓
                       </div>
                       <p className="text-xs sm:text-sm font-semibold text-[#0F766E] dark:text-teal-200 leading-snug">
-                        {heroCard.outcomeHighlight}
+                        {language === 'ar' ? (arCsMap[heroCard.id]?.outcomeHighlight || heroCard.outcomeHighlight) : heroCard.outcomeHighlight}
                       </p>
                     </div>
                   </div>
@@ -185,12 +228,12 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
                       href={heroCard.storyUrl || '#portfolio'}
                       className="inline-flex items-center gap-2 text-sm font-bold text-[#0F766E] dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 transition-colors group/link"
                     >
-                      <span>Read the story</span>
-                      <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
+                      <span>{language === 'ar' ? 'اقرأ القصة الكاملة' : 'Read the story'}</span>
+                      <ArrowRight className={`w-4 h-4 transition-transform ${language === 'ar' ? 'rotate-180 group-hover/link:-translate-x-1' : 'group-hover/link:translate-x-1'}`} />
                     </a>
 
                     <span className="text-[11px] font-mono font-medium text-[#475569] dark:text-slate-400">
-                      Featured Case Study
+                      {language === 'ar' ? 'دراسة حالة مميزة' : 'Featured Case Study'}
                     </span>
                   </div>
 
@@ -221,28 +264,28 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
                     </div>
 
                     {/* Meta info & Category */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                       <span className="text-[9px] sm:text-[10px] font-mono font-bold tracking-wider text-[#0F766E] dark:text-teal-400 uppercase block truncate mb-1">
-                        {card.categoryTag}
+                        {language === 'ar' ? (arCsMap[card.id]?.categoryTag || card.categoryTag) : card.categoryTag}
                       </span>
                       <h4 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-white leading-snug line-clamp-2 group-hover:text-[#0F766E] dark:group-hover:text-teal-400 transition-colors">
-                        {card.title}
+                        {language === 'ar' ? (arCsMap[card.id]?.title || card.title) : card.title}
                       </h4>
                     </div>
                   </div>
 
                   {/* Summary preview on medium+ screens */}
-                  <p className="text-xs text-[#475569] dark:text-slate-300 leading-relaxed line-clamp-2">
-                    {card.summary}
+                  <p dir={language === 'ar' ? 'rtl' : 'ltr'} className="text-xs text-[#475569] dark:text-slate-300 leading-relaxed line-clamp-2">
+                    {language === 'ar' ? (arCsMap[card.id]?.summary || card.summary) : card.summary}
                   </p>
 
                   {/* Single Checkmark Outcome Line */}
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-[#E2E8F0] dark:border-slate-800 flex items-start gap-2.5">
+                  <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-[#E2E8F0] dark:border-slate-800 flex items-start gap-2.5">
                     <div className="w-4 h-4 rounded-full bg-[#0F766E] text-white flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
                       ✓
                     </div>
                     <span className="text-xs font-medium text-slate-800 dark:text-slate-200 leading-snug">
-                      {card.outcomeHighlight}
+                      {language === 'ar' ? (arCsMap[card.id]?.outcomeHighlight || card.outcomeHighlight) : card.outcomeHighlight}
                     </span>
                   </div>
                 </div>
@@ -253,8 +296,8 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
                     href={card.storyUrl || '#portfolio'}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0F766E] dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 transition-colors"
                   >
-                    <span>Read case details</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>{language === 'ar' ? 'تفاصيل دراسة الحالة' : 'Read case details'}</span>
+                    <ArrowRight className={`w-3.5 h-3.5 ${language === 'ar' ? 'rotate-180' : ''}`} />
                   </a>
 
                   {card.client && (
@@ -280,7 +323,7 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
             onClick={handleDiscussClick}
             className="w-full sm:w-auto px-7 py-4 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white font-extrabold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
-            <span>{settings.primaryCtaText}</span>
+            <span>{language === 'ar' ? (arSettings.primaryCtaText || settings.primaryCtaText) : settings.primaryCtaText}</span>
           </button>
 
           {/* Secondary White Outlined Button */}
@@ -289,7 +332,7 @@ export const SelectedWorkCaseStudies: React.FC<SelectedWorkCaseStudiesProps> = (
             onClick={handleViewAllClick}
             className="w-full sm:w-auto px-7 py-4 rounded-xl bg-white hover:bg-slate-50 dark:bg-transparent dark:hover:bg-slate-900 text-[#0F172A] dark:text-slate-200 border border-[#CBD5E1] dark:border-slate-700 font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
-            <span>{settings.secondaryCtaText}</span>
+            <span>{language === 'ar' ? (arSettings.secondaryCtaText || settings.secondaryCtaText) : settings.secondaryCtaText}</span>
           </button>
         </div>
 

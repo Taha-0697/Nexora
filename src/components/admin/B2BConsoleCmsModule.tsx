@@ -75,6 +75,10 @@ export const B2BConsoleCmsModule: React.FC = () => {
     category: string;
     logoSvg: string;
     imageUrl: string;
+    linkType: 'none' | 'website' | 'case_study';
+    websiteUrl: string;
+    caseStudySlug: string;
+    caseStudyId: string;
     active: boolean;
   }>({
     name: '',
@@ -82,6 +86,10 @@ export const B2BConsoleCmsModule: React.FC = () => {
     category: 'Enterprise',
     logoSvg: '',
     imageUrl: '',
+    linkType: 'none',
+    websiteUrl: '',
+    caseStudySlug: '',
+    caseStudyId: '',
     active: true
   });
 
@@ -214,6 +222,10 @@ export const B2BConsoleCmsModule: React.FC = () => {
       category: 'Enterprise',
       logoSvg: '',
       imageUrl: '',
+      linkType: 'none',
+      websiteUrl: '',
+      caseStudySlug: '',
+      caseStudyId: '',
       active: true
     });
     setLogoUploadError(null);
@@ -222,6 +234,10 @@ export const B2BConsoleCmsModule: React.FC = () => {
   };
 
   const handleOpenEditLogo = (logo: ClientLogo) => {
+    const inferredType: 'none' | 'website' | 'case_study' =
+      logo.linkType ||
+      (logo.websiteUrl ? 'website' : logo.caseStudySlug || logo.caseStudyId ? 'case_study' : 'none');
+
     setEditingLogo(logo);
     setLogoForm({
       name: logo.name,
@@ -229,6 +245,10 @@ export const B2BConsoleCmsModule: React.FC = () => {
       category: logo.category || 'Enterprise',
       logoSvg: logo.logoSvg || '',
       imageUrl: logo.imageUrl || '',
+      linkType: inferredType,
+      websiteUrl: logo.websiteUrl || '',
+      caseStudySlug: logo.caseStudySlug || '',
+      caseStudyId: logo.caseStudyId || '',
       active: logo.active
     });
     setLogoUploadError(null);
@@ -239,11 +259,43 @@ export const B2BConsoleCmsModule: React.FC = () => {
     e.preventDefault();
     if (!logoForm.name.trim()) return;
 
+    // Enforce single mutually exclusive link option
+    let websiteUrl: string | undefined = undefined;
+    let caseStudySlug: string | undefined = undefined;
+    let caseStudyId: string | undefined = undefined;
+    let linkType: 'none' | 'website' | 'case_study' = logoForm.linkType;
+
+    if (linkType === 'website') {
+      let url = logoForm.websiteUrl.trim();
+      if (url && !/^https?:\/\//i.test(url) && !url.startsWith('/') && !url.startsWith('#')) {
+        url = `https://${url}`;
+      }
+      websiteUrl = url || undefined;
+      if (!websiteUrl) linkType = 'none';
+    } else if (linkType === 'case_study') {
+      caseStudySlug = logoForm.caseStudySlug.trim() || undefined;
+      caseStudyId = logoForm.caseStudyId.trim() || undefined;
+      if (!caseStudySlug && !caseStudyId) linkType = 'none';
+    }
+
+    const payload = {
+      name: logoForm.name.trim(),
+      tagline: logoForm.tagline.trim(),
+      category: logoForm.category.trim(),
+      logoSvg: logoForm.logoSvg,
+      imageUrl: logoForm.imageUrl,
+      linkType,
+      websiteUrl,
+      caseStudySlug,
+      caseStudyId,
+      active: logoForm.active,
+    };
+
     if (editingLogo) {
-      updateClientLogo(editingLogo.id, logoForm);
+      updateClientLogo(editingLogo.id, payload);
       showToast(`Updated logo for "${logoForm.name}".`);
     } else {
-      addClientLogo(logoForm);
+      addClientLogo(payload);
       showToast(`Added "${logoForm.name}" to marquee.`);
     }
     setIsAddingLogo(false);
@@ -643,6 +695,101 @@ export const B2BConsoleCmsModule: React.FC = () => {
                   placeholder='Paste <svg>...</svg> or https://example.com/logo.png'
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white resize-none"
                 />
+              </div>
+
+              {/* Single Destination Link Option (Website URL OR Case Study Link) */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="block text-[11px] font-mono uppercase font-semibold text-slate-700 dark:text-slate-300">
+                    Destination Link (Optional • Single Choice)
+                  </label>
+                  <div className="inline-flex rounded-lg bg-slate-200/70 dark:bg-slate-800 p-0.5 gap-0.5">
+                    {(
+                      [
+                        { id: 'none', label: 'None' },
+                        { id: 'website', label: 'Website URL (New Tab)' },
+                        { id: 'case_study', label: 'Case Study Link' },
+                      ] as const
+                    ).map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setLogoForm(prev => ({
+                            ...prev,
+                            linkType: opt.id,
+                            websiteUrl: opt.id === 'website' ? prev.websiteUrl : '',
+                            caseStudySlug: opt.id === 'case_study' ? prev.caseStudySlug : '',
+                            caseStudyId: opt.id === 'case_study' ? prev.caseStudyId : '',
+                          }));
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                          logoForm.linkType === opt.id
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {logoForm.linkType === 'website' && (
+                  <div>
+                    <input
+                      type="text"
+                      value={logoForm.websiteUrl}
+                      onChange={e => setLogoForm({ ...logoForm, websiteUrl: e.target.value })}
+                      placeholder="https://client-company.com"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      Opens in a new browser tab when clicked in the live marquee.
+                    </p>
+                  </div>
+                )}
+
+                {logoForm.linkType === 'case_study' && (
+                  <div className="space-y-2">
+                    <select
+                      value={logoForm.caseStudyId || logoForm.caseStudySlug}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const matched = caseStudies.find(cs => cs.id === val);
+                        if (matched) {
+                          const slug = matched.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                          setLogoForm({
+                            ...logoForm,
+                            caseStudyId: matched.id,
+                            caseStudySlug: slug,
+                          });
+                        } else {
+                          setLogoForm({
+                            ...logoForm,
+                            caseStudyId: '',
+                            caseStudySlug: val,
+                          });
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                    >
+                      <option value="">Select a Case Study…</option>
+                      {caseStudies.map(cs => (
+                        <option key={cs.id} value={cs.id}>
+                          {cs.title} ({cs.client})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={logoForm.caseStudySlug}
+                      onChange={e => setLogoForm({ ...logoForm, caseStudySlug: e.target.value })}
+                      placeholder="Case study slug (e.g. medpulse-clinical-erp)"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
