@@ -165,11 +165,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
+    // Public data — always fetch on mount
     refreshProjects();
     refreshReviews();
-    refreshUsers();
-    refreshInquiries();
-    refreshMarketingCampaigns();
+    // Admin-only data — only fetch if the user has an active session
+    // (avoids noisy 401s on the public landing page)
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((me) => {
+        if (me?.authenticated) {
+          refreshUsers();
+          refreshInquiries();
+          refreshMarketingCampaigns();
+        }
+      })
+      .catch(() => { /* not authenticated — skip admin fetches */ });
   }, []);
 
   // 3. Inquiries State
@@ -604,13 +614,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await fetch(`/api/users/${updatedUser.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedUser),
       });
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to update user in database');
+        const rawMsg = String(errJson.error || '');
+        if (rawMsg.includes("Can't reach database server") || rawMsg.includes('Invalid `prisma.') || rawMsg.includes('Invalid prisma.')) {
+          throw new Error('Unable to reach Neon PostgreSQL right now. The database compute may be waking up — please click Save Profile again in a moment.');
+        }
+        throw new Error(rawMsg || 'Failed to update user in database');
       }
 
       const updated = await res.json();

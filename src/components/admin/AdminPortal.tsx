@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useTheme } from '../../context/ThemeContext';
 import type { ServiceCategory, Project, Review, UserRole, TeamMember, AdCampaign } from '../../types';
@@ -36,7 +36,11 @@ import {
   AlertTriangle,
   Layout,
   ExternalLink,
-  Globe
+  Globe,
+  Camera,
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { B2BSectionsAdminDrawer } from './B2BSectionsAdminDrawer';
 import { B2BConsoleCmsModule } from './B2BConsoleCmsModule';
@@ -77,6 +81,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     googleSettings,
     updateGoogleSettings,
     adminUsers,
+    refreshUsers,
     updateAdminUser,
     addAdminUser,
     deleteAdminUser,
@@ -105,6 +110,25 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const [loginPassword, setLoginPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Verify server-side HTTP-only session cookie on mount so client sessionStorage cannot be forged
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/me')
+      .then((res) => {
+        if (!active) return;
+        if (res.status === 401) {
+          setCurrentUser(null);
+          sessionStorage.removeItem('nexora_active_user');
+        }
+      })
+      .catch(() => {
+        // ignore transient network abort
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Admin Password Management Modals (Team tab)
   const [showResetAllModal, setShowResetAllModal] = useState(false);
@@ -161,6 +185,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [projectSubmitError, setProjectSubmitError] = useState('');
+  const [isCapturingScreenshots, setIsCapturingScreenshots] = useState(false);
+  const [captureError, setCaptureError] = useState('');
+  const [captureSuccess, setCaptureSuccess] = useState('');
+  const [coverManuallyEdited, setCoverManuallyEdited] = useState(false);
 
   // Review Form
   const [reviewForm, setReviewForm] = useState({
@@ -213,6 +241,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     roles: ['project_manager'] as UserRole[]
   });
 
+  // Edit User Profile State
+  const [editingUser, setEditingUser] = useState<TeamMember | null>(null);
+  const [editUserForm, setEditUserForm] = useState({
+    name: '',
+    email: '',
+    title: '',
+    avatar: '',
+    bio: '',
+    linkedinUrl: '',
+    displayOrder: 0,
+  });
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  const [editUserError, setEditUserError] = useState('');
+  const [editAvatarUploadError, setEditAvatarUploadError] = useState('');
+  const [editUserSuccessNotice, setEditUserSuccessNotice] = useState('');
+
   // Google Syncing state
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState('');
@@ -239,6 +283,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
       const { user } = await res.json();
       setCurrentUser(user);
       sessionStorage.setItem('nexora_active_user', JSON.stringify(user));
+      refreshUsers();
 
       // Set default tab based on roles
       if (user.roles.includes('super_admin') || user.roles.includes('admin') || user.roles.includes('project_manager')) {
@@ -299,6 +344,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
   const handleLogout = () => {
     setCurrentUser(null);
     sessionStorage.removeItem('nexora_active_user');
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   };
 
   // Helper to check user permissions
@@ -344,8 +390,79 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     return 'projects';
   };
 
+  // Auto-capture screenshots from Project Website URL
+  const handleCaptureProjectScreenshots = async (rawUrl?: string) => {
+    const target = normalizeWebsiteUrl(rawUrl ?? projectForm.websiteUrl);
+    if (!target) {
+      setCaptureError('Please enter a Project Website URL first.');
+      return;
+    }
+    if (!isValidUrl(target)) {
+      setCaptureError('Please enter a valid http(s) URL.');
+      return;
+    }
+
+    setIsCapturingScreenshots(true);
+    setCaptureError('');
+    setCaptureSuccess('');
+
+    try {
+      const res = await fetch('/api/projects/capture-screenshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: target }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to capture website screenshots.');
+      }
+
+      const defaultCover =
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80';
+      const capturedGallery: string[] = Array.isArray(data.galleryImages) ? data.galleryImages : [];
+
+      setProjectForm((prev) => {
+        const shouldUpdateCover =
+          !coverManuallyEdited || !prev.image || prev.image === defaultCover;
+        const nextImage = shouldUpdateCover && data.coverImage ? data.coverImage : prev.image;
+        const mergedGallery = [...prev.images];
+        for (const img of capturedGallery) {
+          if (img && !mergedGallery.includes(img)) {
+            mergedGallery.push(img);
+          }
+        }
+        return {
+          ...prev,
+          websiteUrl: data.url || target,
+          image: nextImage,
+          images: mergedGallery,
+        };
+      });
+
+      const host = (() => {
+        try {
+          return new URL(data.url || target).hostname;
+        } catch {
+          return target;
+        }
+      })();
+      setCaptureSuccess(
+        `Captured ${capturedGallery.length} preview image${capturedGallery.length === 1 ? '' : 's'} from ${host}.`
+      );
+    } catch (err: any) {
+      setCaptureError(
+        err?.message || 'Unable to capture screenshots from this URL. You can paste an image URL or upload manually.'
+      );
+    } finally {
+      setIsCapturingScreenshots(false);
+    }
+  };
+
   // Open Edit Project Modal
   const handleStartEditProject = (proj: any) => {
+    setCaptureError('');
+    setCaptureSuccess('');
+    setCoverManuallyEdited(Boolean(proj.imageUrl || proj.image));
     setEditingProject(proj);
     setProjectForm({
       titleEn: proj.titleEn || proj.title?.en || '',
@@ -845,6 +962,87 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
     }
   };
 
+  const handleStartEditUser = (user: TeamMember) => {
+    setEditUserError('');
+    setEditAvatarUploadError('');
+    setEditingUser(user);
+    setEditUserForm({
+      name: user.name || '',
+      email: user.email || '',
+      title: user.title || user.role || '',
+      avatar: user.avatarUrl || user.avatar || '',
+      bio: user.bio || '',
+      linkedinUrl: user.linkedinUrl || '',
+      displayOrder: typeof user.displayOrder === 'number' ? user.displayOrder : 0,
+    });
+  };
+
+  const handleEditAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditAvatarUploadError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setEditAvatarUploadError('Please select a valid image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setEditAvatarUploadError('Profile image must be less than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        setEditUserForm(prev => ({ ...prev, avatar: event.target?.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (!editUserForm.name.trim()) {
+      setEditUserError('Full name is required.');
+      return;
+    }
+    if (!editUserForm.email.trim()) {
+      setEditUserError('Work email is required.');
+      return;
+    }
+
+    setIsUpdatingUser(true);
+    setEditUserError('');
+    try {
+      const updated = await updateAdminUser({
+        ...editingUser,
+        name: editUserForm.name.trim(),
+        email: editUserForm.email.trim(),
+        role: editUserForm.title.trim() || 'Team Specialist',
+        title: editUserForm.title.trim() || 'Team Specialist',
+        avatarUrl: editUserForm.avatar.trim() || null,
+        avatar: editUserForm.avatar.trim() || undefined,
+        bio: editUserForm.bio.trim() || null,
+        linkedinUrl: editUserForm.linkedinUrl.trim() || null,
+        displayOrder: Number(editUserForm.displayOrder) || 0,
+      });
+
+      if (currentUser && currentUser.id === updated.id) {
+        setCurrentUser(updated);
+        sessionStorage.setItem('nexora_active_user', JSON.stringify(updated));
+      }
+
+      setEditUserSuccessNotice(`Updated profile for ${updated.name} and saved to database.`);
+      setEditingUser(null);
+    } catch (err: any) {
+      setEditUserError(err?.message || 'Failed to update team member profile.');
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
   // Handle Revoke / Remove User Access
   const handleConfirmRevokeUser = () => {
     if (!userToRevoke) return;
@@ -1199,6 +1397,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     featured: true,
                     completionDate: '2026-06'
                   });
+                  setCaptureError('');
+                  setCaptureSuccess('');
+                  setCoverManuallyEdited(false);
                   setShowAddProjectModal(true);
                 }}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
@@ -1461,14 +1662,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold whitespace-nowrap">
                             <Star className="w-3.5 h-3.5 fill-amber-600 dark:fill-amber-400" />
                             <span className="font-bold text-xs">{rev.rating}.0</span>
                           </div>
                           {rev.hasVideo && (
-                            <span className="text-[10px] font-mono text-sky-400 flex items-center gap-0.5">
-                              <Video className="w-2.5 h-2.5" /> Video
+                            <span className="text-[10px] font-mono text-sky-400 flex items-center gap-0.5 whitespace-nowrap shrink-0">
+                              <Video className="w-2.5 h-2.5 shrink-0" /> Video
                             </span>
                           )}
                         </div>
@@ -1477,9 +1678,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                       <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed italic mb-2">
                         "{rev.content.en}"
                       </p>
-                      <p className="text-indigo-600 dark:text-sky-300/80 text-xs font-arabic leading-relaxed">
-                        "{rev.content.ar}"
-                      </p>
+                      {rev.content.ar && rev.content.ar.trim() !== rev.content.en.trim() && (
+                        <p className="text-indigo-600 dark:text-sky-300/80 text-xs font-arabic leading-relaxed">
+                          "{rev.content.ar}"
+                        </p>
+                      )}
                     </div>
 
                     <div className="pt-3 mt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] flex-wrap gap-2">
@@ -1715,6 +1918,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
                 />
               </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Changes are synced automatically as you type.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateGoogleSettings({
+                      placeId: googleSettings.placeId,
+                      businessName: googleSettings.businessName,
+                      googleMapsUrl: googleSettings.googleMapsUrl,
+                    });
+                    setSyncSuccessMessage('System & Reputation settings saved.');
+                    setTimeout(() => setSyncSuccessMessage(''), 3000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Save Configuration</span>
+                </button>
+              </div>
+              {syncSuccessMessage && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{syncSuccessMessage}</span>
+                </div>
+              )}
             </div>
 
             <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
@@ -1829,6 +2060,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
               </div>
             )}
 
+            {editUserSuccessNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 flex items-start gap-3 text-xs text-emerald-900 dark:text-emerald-200 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium">{editUserSuccessNotice}</div>
+                <button
+                  onClick={() => setEditUserSuccessNotice('')}
+                  className="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-100 font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {adminUsers.map(user => {
                 const userRolesList = user.roles || [];
@@ -1852,8 +2096,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     key={user.id}
                     className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 bg-white dark:bg-slate-900 shadow-xs"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         {avatarSrc ? (
                           <img
                             src={avatarSrc}
@@ -1865,21 +2109,31 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                             {userInitials}
                           </div>
                         )}
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</h4>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">{user.name}</h4>
                             {isCurrentSessionUser && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-sky-400 border border-indigo-200 dark:border-indigo-500/30">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-sky-400 border border-indigo-200 dark:border-indigo-500/30 whitespace-nowrap shrink-0">
                                 You
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">{user.title || user.role}</div>
-                          <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400">{user.email}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">{user.title || user.role}</div>
+                          <div className="text-[11px] font-mono text-indigo-600 dark:text-sky-400 truncate">{user.email}</div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-start xl:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditUser(user)}
+                          className="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-sky-300 border border-indigo-200 dark:border-indigo-700/60 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                          title={`Edit profile for ${user.name}`}
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -2147,20 +2401,67 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     </a>
                   )}
                 </div>
-                <input
-                  type="text"
-                  placeholder="e.g. https://portal.client.com or client-domain.com"
-                  value={projectForm.websiteUrl}
-                  onChange={e => setProjectForm({ ...projectForm, websiteUrl: e.target.value })}
-                  onBlur={() => {
-                    if (projectForm.websiteUrl) {
-                      setProjectForm(prev => ({ ...prev, websiteUrl: normalizeWebsiteUrl(prev.websiteUrl) }));
-                    }
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. https://portal.client.com or client-domain.com"
+                    value={projectForm.websiteUrl}
+                    onChange={e => {
+                      setCaptureError('');
+                      setCaptureSuccess('');
+                      setProjectForm({ ...projectForm, websiteUrl: e.target.value });
+                    }}
+                    onBlur={() => {
+                      if (projectForm.websiteUrl) {
+                        const normalized = normalizeWebsiteUrl(projectForm.websiteUrl);
+                        setProjectForm(prev => ({ ...prev, websiteUrl: normalized }));
+                        if (
+                          !editingProject &&
+                          !coverManuallyEdited &&
+                          projectForm.images.length === 0 &&
+                          !isCapturingScreenshots &&
+                          isValidUrl(normalized)
+                        ) {
+                          handleCaptureProjectScreenshots(normalized);
+                        }
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    disabled={isCapturingScreenshots || !projectForm.websiteUrl.trim()}
+                    onClick={() => handleCaptureProjectScreenshots()}
+                    className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                    title="Auto-capture website screenshot for Cover & Gallery"
+                  >
+                    {isCapturingScreenshots ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Capturing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Capture</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {captureError && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-[11px] flex items-start gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{captureError}</span>
+                  </div>
+                )}
+                {captureSuccess && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-[11px] flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>{captureSuccess}</span>
+                  </div>
+                )}
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1">
-                  When specified, a "Visit Live Project" button is automatically rendered on the portfolio card and case study view. URLs without protocol are automatically prefixed with https://.
+                  Enter a live URL to auto-capture Cover & Gallery screenshots, or click Capture anytime. You can still override images manually below.
                 </span>
               </div>
 
@@ -2171,10 +2472,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                     Primary Cover Image URL
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     placeholder="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80"
                     value={projectForm.image}
-                    onChange={e => setProjectForm({ ...projectForm, image: e.target.value })}
+                    onChange={e => {
+                      setCoverManuallyEdited(true);
+                      setProjectForm({ ...projectForm, image: e.target.value });
+                    }}
                     className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-xs"
                     maxLength={500}
                   />
@@ -2215,7 +2519,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
 
                   <div className="flex gap-2 mb-2">
                     <input
-                      type="url"
+                      type="text"
                       placeholder="Or paste screenshot / architecture diagram URL..."
                       value={projectForm.newImageUrl}
                       onChange={e => setProjectForm({ ...projectForm, newImageUrl: e.target.value })}
@@ -2244,31 +2548,83 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   {projectForm.images.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {projectForm.images.map((imgUrl, idx) => (
-                        <div key={idx} className="relative group w-20 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                        <div key={imgUrl} className="relative group w-24 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
                           <img
                             src={imgUrl}
                             alt={`Preview ${idx + 1}`}
                             className="w-full h-full object-cover"
+                            onLoad={(e) => {
+                              e.currentTarget.style.display = '';
+                            }}
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                             }}
                           />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setProjectForm(prev => ({
-                                ...prev,
-                                images: prev.images.filter((_, i) => i !== idx)
-                              }));
-                            }}
-                            className="absolute top-1 right-1 p-0.5 rounded-full bg-red-600/90 hover:bg-red-600 text-white transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer shadow-xs"
-                            title="Remove image"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                          <span className="absolute bottom-1 left-1 px-1 py-0.2 rounded bg-slate-950/70 text-[9px] font-mono text-white">
-                            #{idx + 1}
-                          </span>
+                          <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCoverManuallyEdited(true);
+                                setProjectForm(prev => ({ ...prev, image: imgUrl }));
+                              }}
+                              className="p-0.5 rounded bg-indigo-600/90 hover:bg-indigo-600 text-white cursor-pointer shadow-xs"
+                              title="Set as Primary Cover"
+                            >
+                              <Star className="w-2.5 h-2.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProjectForm(prev => ({
+                                  ...prev,
+                                  images: prev.images.filter((_, i) => i !== idx)
+                                }));
+                              }}
+                              className="p-0.5 rounded bg-red-600/90 hover:bg-red-600 text-white cursor-pointer shadow-xs"
+                              title="Remove image"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                          <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between">
+                            <span className="px-1 py-0.2 rounded bg-slate-950/75 text-[9px] font-mono text-white">
+                              #{idx + 1}
+                            </span>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProjectForm(prev => {
+                                      const next = [...prev.images];
+                                      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                                      return { ...prev, images: next };
+                                    });
+                                  }}
+                                  className="p-0.5 rounded bg-slate-950/80 hover:bg-slate-900 text-white cursor-pointer"
+                                  title="Move left"
+                                >
+                                  <ChevronLeft className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                              {idx < projectForm.images.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProjectForm(prev => {
+                                      const next = [...prev.images];
+                                      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                                      return { ...prev, images: next };
+                                    });
+                                  }}
+                                  className="p-0.5 rounded bg-slate-950/80 hover:bg-slate-900 text-white cursor-pointer"
+                                  title="Move right"
+                                >
+                                  <ChevronRight className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2977,6 +3333,182 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToWebsite }) => 
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20"
                 >
                   {isSavingUser ? 'Creating…' : 'Add Team Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL 4B: EDIT TEAM MEMBER PROFILE
+          ========================================== */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 bg-white dark:bg-slate-900 shadow-2xl">
+            <button
+              onClick={() => {
+                setEditingUser(null);
+                setEditUserError('');
+                setEditAvatarUploadError('');
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Edit Team Member Profile
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Update profile details, designation, and avatar in Neon PostgreSQL.
+            </p>
+
+            <form onSubmit={handleUpdateUser} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sarah Jenkins"
+                  value={editUserForm.name}
+                  onChange={e => setEditUserForm({ ...editUserForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Work Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. s.jenkins@nexora.io"
+                  value={editUserForm.email}
+                  onChange={e => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Designation / Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chief Technology Officer"
+                  value={editUserForm.title}
+                  onChange={e => setEditUserForm({ ...editUserForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {/* Profile Image */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300">
+                    Profile Picture
+                  </label>
+                  {editUserForm.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setEditUserForm(prev => ({ ...prev, avatar: '' }))}
+                      className="text-[11px] text-rose-500 hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {editUserForm.avatar ? (
+                    <img
+                      src={editUserForm.avatar}
+                      alt="Profile Preview"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-indigo-500 shrink-0 shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-1.5">
+                    <label className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+                      <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Upload Image (Max 2MB)</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleEditAvatarFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {editAvatarUploadError && (
+                  <div className="text-[11px] text-rose-500 font-medium">{editAvatarUploadError}</div>
+                )}
+
+                <input
+                  type="url"
+                  placeholder="Or paste image URL (https://...)"
+                  value={editUserForm.avatar.startsWith('data:') ? '' : editUserForm.avatar}
+                  onChange={e => setEditUserForm({ ...editUserForm, avatar: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  LinkedIn URL <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://www.linkedin.com/in/..."
+                  value={editUserForm.linkedinUrl}
+                  onChange={e => setEditUserForm({ ...editUserForm, linkedinUrl: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Bio / Summary <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Brief engineering or leadership bio..."
+                  value={editUserForm.bio}
+                  onChange={e => setEditUserForm({ ...editUserForm, bio: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white resize-none"
+                />
+              </div>
+
+              {editUserError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs">
+                  {editUserError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  disabled={isUpdatingUser}
+                  onClick={() => {
+                    setEditingUser(null);
+                    setEditUserError('');
+                    setEditAvatarUploadError('');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingUser}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold cursor-pointer shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
+                >
+                  {isUpdatingUser && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isUpdatingUser ? 'Saving to Neon…' : 'Save Profile'}</span>
                 </button>
               </div>
             </form>

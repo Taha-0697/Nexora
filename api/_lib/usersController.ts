@@ -1,21 +1,16 @@
-import { prisma } from './prisma.js';
+import { prisma, withDbRetry } from './prisma.js';
 import type { User, UserRole } from '../../src/types/index.js';
 import { hashPassword, verifyPassword, isBcryptHash } from './authUtils.js';
 
 async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs = 8000,
+  promiseOrFn: Promise<T> | (() => Promise<T>),
+  timeoutMs = 12000,
   errorMsg = 'Database query timed out. Please verify DATABASE_URL in .env points to an active Neon PostgreSQL instance.'
 ): Promise<T> {
-  let timer: any;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(errorMsg)), timeoutMs);
-  });
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    clearTimeout(timer);
+  if (typeof promiseOrFn === 'function') {
+    return withDbRetry(promiseOrFn, { timeoutMs, errorMsg });
   }
+  return withDbRetry(() => promiseOrFn, { retries: 0, timeoutMs, errorMsg });
 }
 
 export function formatUser(u: any): User {
@@ -59,22 +54,26 @@ export function formatUser(u: any): User {
   };
 }
 
-// Ensure the root Super Admin exists in the TeamMember table with a secure bcrypt hashed password
+// Ensure at least one Super Admin exists if SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD are configured
 export async function ensureRootSuperAdmin(): Promise<void> {
   const teamMember = (prisma as any).teamMember;
   try {
+    const seedEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+    const seedPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
+    if (!seedEmail || !seedPassword) return;
+
     const existing: any = await withTimeout(
       teamMember.findFirst({
-        where: { email: 'admin@nexora.io' },
+        where: { email: seedEmail },
       })
     );
 
     if (!existing) {
-      const hashedPassword = await hashPassword('admin2026!');
+      const hashedPassword = await hashPassword(seedPassword);
       await withTimeout(
         teamMember.create({
           data: {
-            email: 'admin@nexora.io',
+            email: seedEmail,
             name: 'Super Administrator',
             roles: ['super_admin', 'admin', 'project_manager', 'marketing_manager', 'review_manager'],
             password: hashedPassword,
@@ -87,8 +86,7 @@ export async function ensureRootSuperAdmin(): Promise<void> {
       );
       console.log('[Nexora] Seeded root Super Admin with bcrypt hash into TeamMember table.');
     } else if (existing.password && !isBcryptHash(existing.password)) {
-      // Automatic upgrade of existing plaintext password to bcrypt hash
-      const upgradedHash = await hashPassword(existing.password || 'admin2026!');
+      const upgradedHash = await hashPassword(existing.password);
       await withTimeout(
         teamMember.update({
           where: { id: existing.id },
@@ -106,7 +104,7 @@ export async function ensureRootSuperAdmin(): Promise<void> {
 export async function getAllUsers(): Promise<User[]> {
   await ensureRootSuperAdmin();
   const teamMember = (prisma as any).teamMember;
-  const records: any[] = (await withTimeout(
+  const records: any[] = (await withDbRetry(() =>
     teamMember.findMany({
       where: {
         email: { not: null },
@@ -134,7 +132,7 @@ export async function createUserRecord(data: any): Promise<User> {
   if (!rawPassword) throw new Error('A secure password is required.');
 
   // Check duplicate email
-  const existing = await withTimeout(
+  const existing = await withDbRetry(() =>
     teamMember.findFirst({ where: { email } })
   );
   if (existing) throw new Error(`A user with email ${email} already exists.`);
@@ -150,7 +148,7 @@ export async function createUserRecord(data: any): Promise<User> {
   // Hash password before saving to Neon DB
   const hashedPassword = await hashPassword(rawPassword);
 
-  const created = await withTimeout(
+  const created = await withDbRetry(() =>
     teamMember.create({
       data: {
         email,
@@ -174,7 +172,7 @@ export async function updateUserRecord(id: string, data: any): Promise<User> {
   if (!id) throw new Error('User ID is required for update.');
   const teamMember = (prisma as any).teamMember;
 
-  const existing: any = await withTimeout(
+  const existing: any = await withDbRetry(() =>
     teamMember.findUnique({ where: { id } })
   );
   if (!existing) throw new Error(`User with ID ${id} not found.`);
@@ -210,7 +208,7 @@ export async function updateUserRecord(id: string, data: any): Promise<User> {
     const hadAdmin = existingRoles.includes('super_admin') || existingRoles.includes('admin');
     const willHaveAdmin = roles.includes('super_admin') || roles.includes('admin');
     if (hadAdmin && !willHaveAdmin) {
-      const admins: any[] = (await withTimeout(
+      const admins: any[] = (await withDbRetry(() =>
         teamMember.findMany({
           where: { email: { not: null } },
         })
@@ -226,7 +224,7 @@ export async function updateUserRecord(id: string, data: any): Promise<User> {
     updateData.roles = roles;
   }
 
-  const updated = await withTimeout(
+  const updated = await withDbRetry(() =>
     teamMember.update({ where: { id }, data: updateData })
   );
 
@@ -238,7 +236,7 @@ export async function deleteUserRecord(id: string): Promise<{ success: boolean; 
   if (!id) throw new Error('User ID is required.');
   const teamMember = (prisma as any).teamMember;
 
-  const existing: any = await withTimeout(
+  const existing: any = await withDbRetry(() =>
     teamMember.findUnique({ where: { id } })
   );
   if (!existing) throw new Error(`User with ID ${id} not found.`);
@@ -246,7 +244,7 @@ export async function deleteUserRecord(id: string): Promise<{ success: boolean; 
   // Guard sole super admin
   const existingRoles: string[] = Array.isArray(existing.roles) ? existing.roles : [];
   if (existingRoles.includes('super_admin') || existingRoles.includes('admin')) {
-    const allAdmins: any[] = (await withTimeout(
+    const allAdmins: any[] = (await withDbRetry(() =>
       teamMember.findMany({
         where: { email: { not: null } },
       })
@@ -259,7 +257,7 @@ export async function deleteUserRecord(id: string): Promise<{ success: boolean; 
     }
   }
 
-  await withTimeout(teamMember.delete({ where: { id } }));
+  await withDbRetry(() => teamMember.delete({ where: { id } }));
 
   return { success: true, message: `User ${id} removed successfully.` };
 }
@@ -274,7 +272,7 @@ export async function authenticateUser(email: string, password: string): Promise
   if (!normalizedEmail || !trimmedPassword) return null;
 
   // Find by email (case-insensitive)
-  const member: any = await withTimeout(
+  const member: any = await withDbRetry(() =>
     teamMember.findFirst({
       where: { email: normalizedEmail },
     })

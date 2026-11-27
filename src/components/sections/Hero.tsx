@@ -127,7 +127,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenQuote, onBookDemo, onOpenConsu
               <Rocket className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-sky-400 shrink-0" />
             </div>
             <div className="text-2xl sm:text-4xl font-extrabold font-mono text-slate-900 dark:text-white tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-sky-400 transition-colors">
-              4–8 Wks
+              <span dir="ltr">4–8 Wks</span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
               {language === 'ar' ? 'إطلاق النسخة التشغيلية الأولى' : 'First Production Release'}

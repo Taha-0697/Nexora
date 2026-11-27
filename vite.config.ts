@@ -6,6 +6,7 @@ import {
   createProjectRecord,
   deleteProjectRecord,
 } from './src/server/projectsController.ts';
+import { captureWebsiteScreenshots } from './api/_lib/screenshotController.ts';
 import {
   getAllReviews,
   createReviewRecord,
@@ -22,6 +23,13 @@ import {
   deleteUserRecord,
   authenticateUser,
 } from './src/server/usersController.ts';
+import {
+  SESSION_COOKIE_NAME,
+  parseCookies,
+  signSessionToken,
+  verifySessionToken,
+  type SessionPayload,
+} from './api/_lib/authUtils.ts';
 import {
   getAllInquiries,
   createInquiryRecord,
@@ -57,20 +65,56 @@ import {
 
 dotenv.config();
 
+const MAX_JSON_BODY_BYTES = 8 * 1024 * 1024; // 8 MB
+
 function readJsonBody(req: any): Promise<any> {
-  return new Promise((resolve) => {
-    let bodyStr = '';
-    req.on('data', (chunk: any) => {
-      bodyStr += chunk;
+  return new Promise((resolve, reject) => {
+    let totalBytes = 0;
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer | string) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buf.length;
+      if (totalBytes > MAX_JSON_BODY_BYTES) {
+        req.destroy();
+        reject(new Error('Request payload too large (max 8 MB).'));
+        return;
+      }
+      chunks.push(buf);
     });
     req.on('end', () => {
       try {
+        const bodyStr = Buffer.concat(chunks).toString('utf8');
         resolve(JSON.parse(bodyStr || '{}'));
       } catch {
         resolve({});
       }
     });
+    req.on('error', (err: any) => reject(err));
   });
+}
+
+function getAuthSession(req: any): SessionPayload | null {
+  const cookies = parseCookies(req.headers?.cookie);
+  return verifySessionToken(cookies[SESSION_COOKIE_NAME]);
+}
+
+function requireAuth(req: any, res: any, allowedRoles?: string[]): SessionPayload | null {
+  const session = getAuthSession(req);
+  if (!session) {
+    sendJson(res, 401, { error: 'Authentication required. Please sign in.' });
+    return null;
+  }
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRoles = Array.isArray(session.roles) ? session.roles : [];
+    const hasAccess =
+      userRoles.includes('super_admin') ||
+      allowedRoles.some((role) => userRoles.includes(role));
+    if (!hasAccess) {
+      sendJson(res, 403, { error: 'Forbidden: insufficient role permissions.' });
+      return null;
+    }
+  }
+  return session;
 }
 
 function sendJson(res: any, status: number, data: any) {
@@ -99,6 +143,7 @@ function apiMiddlewarePlugin(): Plugin {
 
         // POST /api/upload
         if (url === '/api/upload' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'project_manager', 'marketing_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const { fileBase64, fileName, contentType } = body;
@@ -106,7 +151,7 @@ function apiMiddlewarePlugin(): Plugin {
               return sendJson(res, 400, { error: 'Missing fileBase64 or fileName in payload' });
             }
             const buffer = Buffer.from(fileBase64, 'base64');
-            const result = await uploadToNeonStorage(buffer as any, fileName, contentType || 'application/octet-stream');
+            const result = await uploadToNeonStorage(fileName, buffer as any, contentType || 'application/octet-stream');
             return sendJson(res, 200, result);
           } catch (err: any) {
             console.error('API Upload error:', err.message);
@@ -125,6 +170,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/projects' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'project_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const project = await createProjectRecord(body);
@@ -134,7 +180,25 @@ function apiMiddlewarePlugin(): Plugin {
           }
         }
 
+        if (url === '/api/projects/capture-screenshot' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'project_manager'])) return;
+          try {
+            const body = await readJsonBody(req);
+            const targetUrl = body?.url;
+            if (!targetUrl || typeof targetUrl !== 'string') {
+              return sendJson(res, 400, { error: 'Missing or invalid url in request body.' });
+            }
+            const result = await captureWebsiteScreenshots(targetUrl);
+            return sendJson(res, 200, result);
+          } catch (err: any) {
+            return sendJson(res, 400, {
+              error: err?.message || 'Failed to capture website screenshots.',
+            });
+          }
+        }
+
         if (url.startsWith('/api/projects/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'project_manager'])) return;
           const id = url.replace('/api/projects/', '').trim();
           try {
             const result = await deleteProjectRecord(id);
@@ -155,6 +219,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/reviews' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'review_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const review = await createReviewRecord(body);
@@ -165,6 +230,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/reviews/') && (req.method === 'PUT' || req.method === 'PATCH')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'review_manager'])) return;
           const id = url.replace('/api/reviews/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -176,6 +242,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/reviews/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'review_manager'])) return;
           const id = url.replace('/api/reviews/', '').trim();
           try {
             const result = await deleteReviewRecord(id);
@@ -197,6 +264,7 @@ function apiMiddlewarePlugin(): Plugin {
 
         // --- USERS & AUTH ---
         if (url === '/api/users' && req.method === 'GET') {
+          if (!requireAuth(req, res, ['super_admin', 'admin'])) return;
           try {
             const users = await getAllUsers();
             return sendJson(res, 200, users);
@@ -206,6 +274,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/users' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin'])) return;
           try {
             const body = await readJsonBody(req);
             const newUser = await createUserRecord(body);
@@ -216,23 +285,27 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/users/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin'])) return;
           const id = url.replace('/api/users/', '').trim();
           try {
             const body = await readJsonBody(req);
             const updated = await updateUserRecord(id, body);
             return sendJson(res, 200, updated);
           } catch (err: any) {
-            return sendJson(res, 400, { error: err.message || 'Failed to update user' });
+            const status = typeof err?.statusCode === 'number' ? err.statusCode : 400;
+            return sendJson(res, status, { error: err.message || 'Failed to update user' });
           }
         }
 
         if (url.startsWith('/api/users/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin'])) return;
           const id = url.replace('/api/users/', '').trim();
           try {
             const result = await deleteUserRecord(id);
             return sendJson(res, 200, result);
           } catch (err: any) {
-            return sendJson(res, 400, { error: err.message || 'Failed to delete user' });
+            const status = typeof err?.statusCode === 'number' ? err.statusCode : 400;
+            return sendJson(res, status, { error: err.message || 'Failed to delete user' });
           }
         }
 
@@ -243,14 +316,44 @@ function apiMiddlewarePlugin(): Plugin {
             if (!user) {
               return sendJson(res, 401, { error: 'Invalid email or password. Please verify credentials.' });
             }
+            const token = signSessionToken(user);
+            res.setHeader(
+              'Set-Cookie',
+              `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`
+            );
             return sendJson(res, 200, { success: true, user });
           } catch (err: any) {
             return sendJson(res, 500, { error: err.message || 'Authentication error' });
           }
         }
 
+        if (url === '/api/auth/me' && req.method === 'GET') {
+          const session = getAuthSession(req);
+          if (!session) {
+            return sendJson(res, 401, { authenticated: false, error: 'Not authenticated' });
+          }
+          return sendJson(res, 200, {
+            authenticated: true,
+            user: {
+              id: session.id,
+              email: session.email,
+              name: session.name,
+              roles: session.roles,
+            },
+          });
+        }
+
+        if (url === '/api/auth/logout' && req.method === 'POST') {
+          res.setHeader(
+            'Set-Cookie',
+            `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`
+          );
+          return sendJson(res, 200, { success: true });
+        }
+
         // --- INQUIRIES & LEADS ---
         if (url === '/api/inquiries' && req.method === 'GET') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           try {
             const list = await getAllInquiries();
             return sendJson(res, 200, list);
@@ -270,6 +373,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/inquiries/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/inquiries/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -281,6 +385,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/inquiries/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/inquiries/', '').trim();
           try {
             const result = await deleteInquiryRecord(id);
@@ -302,6 +407,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/b2b/logos' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const created = await createB2bLogo(body);
@@ -312,6 +418,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/b2b/logos/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/b2b/logos/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -323,6 +430,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/b2b/logos/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/b2b/logos/', '').trim();
           try {
             const result = await deleteB2bLogo(id);
@@ -343,6 +451,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/b2b/casestudies' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const created = await createB2bCaseStudy(body);
@@ -353,6 +462,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/b2b/casestudies/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/b2b/casestudies/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -364,6 +474,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/b2b/casestudies/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           const id = url.replace('/api/b2b/casestudies/', '').trim();
           try {
             const result = await deleteB2bCaseStudy(id);
@@ -384,6 +495,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/b2b/marquee' && (req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager', 'project_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const updated = await updateB2bMarqueeSettings(body);
@@ -396,6 +508,7 @@ function apiMiddlewarePlugin(): Plugin {
         // --- MARKETING & ADS ---
         // Campaigns
         if (url === '/api/marketing/campaigns' && req.method === 'GET') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const campaigns = await getAllMarketingCampaigns();
             return sendJson(res, 200, campaigns);
@@ -405,6 +518,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/marketing/campaigns' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const created = await createMarketingCampaign(body);
@@ -415,6 +529,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/marketing/campaigns/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           const id = url.replace('/api/marketing/campaigns/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -426,6 +541,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/marketing/campaigns/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           const id = url.replace('/api/marketing/campaigns/', '').trim();
           try {
             const result = await deleteMarketingCampaign(id);
@@ -437,6 +553,7 @@ function apiMiddlewarePlugin(): Plugin {
 
         // Posts
         if (url === '/api/marketing/posts' && req.method === 'GET') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const posts = await getAllMarketingPosts();
             return sendJson(res, 200, posts);
@@ -446,6 +563,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/marketing/posts' && req.method === 'POST') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const created = await createMarketingPost(body);
@@ -456,6 +574,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/marketing/posts/') && (req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           const id = url.replace('/api/marketing/posts/', '').trim();
           try {
             const body = await readJsonBody(req);
@@ -467,6 +586,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url.startsWith('/api/marketing/posts/') && req.method === 'DELETE') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           const id = url.replace('/api/marketing/posts/', '').trim();
           try {
             const result = await deleteMarketingPost(id);
@@ -478,6 +598,7 @@ function apiMiddlewarePlugin(): Plugin {
 
         // Connections
         if (url === '/api/marketing/connections' && req.method === 'GET') {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const connections = await getAllAccountConnections();
             return sendJson(res, 200, connections);
@@ -487,6 +608,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/marketing/connections' && (req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const updated = await updateAccountConnection(body.platform, body);
@@ -507,6 +629,7 @@ function apiMiddlewarePlugin(): Plugin {
         }
 
         if (url === '/api/marketing/banner-pixel' && (req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT')) {
+          if (!requireAuth(req, res, ['super_admin', 'admin', 'marketing_manager'])) return;
           try {
             const body = await readJsonBody(req);
             const updated = await updateMarketingBannerPixel(body);

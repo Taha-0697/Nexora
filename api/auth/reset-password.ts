@@ -81,8 +81,6 @@ export default async function handler(req: any, res: any) {
           expiresAt: now + OTP_EXPIRY_MS,
           attempts: 0,
         });
-
-        console.log(`[VERCEL SERVERLESS AUTH] 6-digit OTP for ${normalizedEmail}: ${rawOtp}`);
       }
 
       // Always return anti-enumeration generic message

@@ -18,7 +18,8 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(updated);
     } catch (error: any) {
       console.error('API Error (PATCH /api/users/:id):', error);
-      return res.status(400).json({
+      const status = typeof error?.statusCode === 'number' ? error.statusCode : 400;
+      return res.status(status).json({
         error: error.message || 'Failed to update user',
       });
     }
@@ -30,7 +31,8 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(result);
     } catch (error: any) {
       console.error('API Error (DELETE /api/users/:id):', error);
-      return res.status(400).json({
+      const status = typeof error?.statusCode === 'number' ? error.statusCode : 400;
+      return res.status(status).json({
         error: error.message || 'Failed to delete user',
       });
     }

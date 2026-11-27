@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -14,11 +15,10 @@ import {
 } from '../../services/b2bSectionsService';
 
 function safeSvg(raw: string): string {
-  return raw
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/on\w+\s*=/gi, 'data-removed=')
-    .replace(/javascript:/gi, '')
-    .replace(/href\s*=\s*["']?\s*data:[^"'\s>]*/gi, 'href="about:blank"');
+  return DOMPurify.sanitize(raw, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    FORBID_TAGS: ['script', 'foreignObject', 'iframe', 'object', 'embed'],
+  });
 }
 
 export const TrustedByMarquee: React.FC = () => {
